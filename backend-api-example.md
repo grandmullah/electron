@@ -1,430 +1,405 @@
-# Backend API Structure for BetSlip Integration
+# Backend API for Agent Functionality
+
+This document outlines the backend API endpoints needed to support the agent functionality in the BetZone application.
+
+## Base URL
+```
+Development: http://localhost:8000/api
+Production: https://your-production-api.com/api
+```
+
+## Authentication
+All agent endpoints require authentication with a Bearer token in the Authorization header:
+```
+Authorization: Bearer <token>
+```
+
+### Token Refresh
+To extend user sessions before token expiration:
+```
+POST /auth/refresh
+Authorization: Bearer <current-token>
+```
+**Response:**
+```json
+{
+  "success": true,
+  "user": {
+    "id": "uuid-string",
+    "phone_number": "+1234567890",
+    "role": "user",
+    "balance": 1000,
+    "currency": "USD",
+    "isActive": true,
+    "bettingLimits": { ... },
+    "preferences": { ... }
+  },
+  "token": "new-jwt-token-string",
+  "message": "Token refreshed successfully"
+}
+```
 
 ## API Endpoints
 
-### 1. Place Single Bets
-**POST** `/api/bets/single`
+### 1. User Management
 
+#### Get Managed Users
+```
+GET /agent/users
+```
+**Response:**
+```json
+[
+  {
+    "id": "user_123",
+    "name": "John Doe",
+    "phoneNumber": "+1234567890",
+    "balance": 1500.00,
+    "isActive": true,
+    "lastActivity": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### Create New User
+```
+POST /agent/users
+```
 **Request Body:**
 ```json
 {
-  "bets": [
-    {
-      "betId": "bet_1703123456789_abc123def",
-      "gameId": "game_123",
-      "homeTeam": "Manchester United",
-      "awayTeam": "Liverpool",
-      "betType": "3 Way",
-      "selection": "Home",
-      "odds": 2.50,
-      "stake": 10.00,
-      "potentialWinnings": 25.00,
-      "userId": "user_456",
-      "timestamp": "2023-12-21T12:34:56.789Z"
-    },
-    {
-      "betId": "bet_1703123456790_xyz789ghi",
-      "gameId": "game_124",
-      "homeTeam": "Arsenal",
-      "awayTeam": "Chelsea",
-      "betType": "3 Way",
-      "selection": "Draw",
-      "odds": 3.20,
-      "stake": 15.00,
-      "potentialWinnings": 48.00,
-      "userId": "user_456",
-      "timestamp": "2023-12-21T12:34:56.789Z"
-    }
-  ],
-  "totalStake": 25.00,
-  "userId": "user_456",
-  "timestamp": "2023-12-21T12:34:56.789Z"
+  "name": "Jane Smith",
+  "phoneNumber": "+1234567890",
+  "initialBalance": 1000.00
+}
+```
+**Response:**
+```json
+{
+  "id": "user_456",
+  "name": "Jane Smith",
+  "phoneNumber": "+1234567890",
+  "balance": 1000.00,
+  "isActive": true,
+  "lastActivity": "2024-01-15T10:30:00Z"
 }
 ```
 
+#### Update User Balance
+```
+POST /agent/users/balance
+```
+**Request Body:**
+```json
+{
+  "userId": "user_123",
+  "amount": 500.00,
+  "type": "deposit"
+}
+```
+**Response:**
+```json
+{
+  "id": "user_123",
+  "name": "John Doe",
+  "phoneNumber": "+1234567890",
+  "balance": 2000.00,
+  "isActive": true,
+  "lastActivity": "2024-01-15T10:30:00Z"
+}
+```
+
+#### Deactivate User
+```
+POST /agent/users/{userId}/deactivate
+```
 **Response:**
 ```json
 {
   "success": true,
-  "bets": [
+  "message": "User deactivated successfully"
+}
+```
+
+### 2. Bet Management
+
+#### Place Bet for User
+```
+POST /agent/bets
+```
+**Request Body:**
+```json
+{
+  "userId": "user_123",
+  "betType": "single",
+  "stake": 100.00,
+  "selections": [
     {
-      "success": true,
-      "betId": "bet_1703123456789_abc123def",
-      "message": "Bet placed successfully",
-      "status": "accepted",
-      "timestamp": "2023-12-21T12:34:56.789Z"
-    },
-    {
-      "success": true,
-      "betId": "bet_1703123456790_xyz789ghi",
-      "message": "Bet placed successfully",
-      "status": "accepted",
-      "timestamp": "2023-12-21T12:34:56.789Z"
+      "gameId": "game_456",
+      "betType": "match_winner",
+      "selection": "home",
+      "odds": 2.50
     }
   ]
 }
 ```
-
-### 2. Place Multibet
-**POST** `/api/bets/multibet`
-
-**Request Body:**
-```json
-{
-  "betId": "multibet_1703123456789_abc123def",
-  "bets": [
-    {
-      "betId": "bet_1703123456789_abc123def",
-      "gameId": "game_123",
-      "homeTeam": "Manchester United",
-      "awayTeam": "Liverpool",
-      "betType": "3 Way",
-      "selection": "Home",
-      "odds": 2.50,
-      "stake": 10.00,
-      "potentialWinnings": 25.00,
-      "userId": "user_456",
-      "timestamp": "2023-12-21T12:34:56.789Z"
-    },
-    {
-      "betId": "bet_1703123456790_xyz789ghi",
-      "gameId": "game_124",
-      "homeTeam": "Arsenal",
-      "awayTeam": "Chelsea",
-      "betType": "3 Way",
-      "selection": "Draw",
-      "odds": 3.20,
-      "stake": 10.00,
-      "potentialWinnings": 32.00,
-      "userId": "user_456",
-      "timestamp": "2023-12-21T12:34:56.789Z"
-    }
-  ],
-  "totalStake": 10.00,
-  "combinedOdds": 8.00,
-  "potentialWinnings": 80.00,
-  "userId": "user_456",
-  "timestamp": "2023-12-21T12:34:56.789Z",
-  "betType": "multibet"
-}
-```
-
 **Response:**
 ```json
 {
-  "success": true,
-  "betId": "multibet_1703123456789_abc123def",
-  "message": "Multibet placed successfully",
-  "status": "accepted",
-  "timestamp": "2023-12-21T12:34:56.789Z"
-}
-```
-
-### 3. Get Bet History
-**GET** `/api/bets/history/{userId}`
-
-**Response:**
-```json
-{
-  "success": true,
-  "bets": [
-    {
-      "betId": "bet_1703123456789_abc123def",
-      "gameId": "game_123",
-      "homeTeam": "Manchester United",
-      "awayTeam": "Liverpool",
-      "betType": "3 Way",
-      "selection": "Home",
-      "odds": 2.50,
-      "stake": 10.00,
-      "potentialWinnings": 25.00,
-      "status": "won",
-      "result": "Home",
-      "winnings": 25.00,
-      "placedAt": "2023-12-21T12:34:56.789Z",
-      "settledAt": "2023-12-21T15:30:00.000Z"
-    }
-  ]
-}
-```
-
-### 4. Get Bet Status
-**GET** `/api/bets/status/{betId}`
-
-**Response:**
-```json
-{
-  "success": true,
-  "betId": "bet_1703123456789_abc123def",
+  "id": "bet_789",
+  "userId": "user_123",
+  "userName": "John Doe",
+  "betType": "single",
+  "stake": 100.00,
+  "potentialWinnings": 250.00,
   "status": "pending",
-  "message": "Bet is pending settlement",
-  "placedAt": "2023-12-21T12:34:56.789Z",
-  "estimatedSettlement": "2023-12-21T15:30:00.000Z"
+  "createdAt": "2024-01-15T10:30:00Z",
+  "selections": [
+    {
+      "gameId": "game_456",
+      "homeTeam": "Team A",
+      "awayTeam": "Team B",
+      "betType": "match_winner",
+      "selection": "home",
+      "odds": 2.50
+    }
+  ]
+}
+```
+
+#### Get Agent Bets
+```
+GET /agent/bets
+```
+**Response:**
+```json
+[
+  {
+    "id": "bet_789",
+    "userId": "user_123",
+    "userName": "John Doe",
+    "betType": "single",
+    "stake": 100.00,
+    "potentialWinnings": 250.00,
+    "status": "pending",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "selections": [...]
+  }
+]
+```
+
+#### Update Bet Status
+```
+PATCH /agent/bets/{betId}/status
+```
+**Request Body:**
+```json
+{
+  "status": "accepted"
+}
+```
+**Response:**
+```json
+{
+  "id": "bet_789",
+  "userId": "user_123",
+  "userName": "John Doe",
+  "betType": "single",
+  "stake": 100.00,
+  "potentialWinnings": 250.00,
+  "status": "accepted",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "selections": [...]
+}
+```
+
+### 3. Commission Management
+
+#### Get Commission Transactions
+```
+GET /agent/commissions
+```
+**Response:**
+```json
+[
+  {
+    "id": "commission_123",
+    "userId": "user_123",
+    "userName": "John Doe",
+    "betId": "bet_789",
+    "amount": 5.00,
+    "percentage": 5.0,
+    "createdAt": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### Get Agent Statistics
+```
+GET /agent/stats
+```
+**Response:**
+```json
+{
+  "totalCommission": 150.00,
+  "totalBetsPlaced": 25,
+  "totalStake": 5000.00
+}
+```
+
+### 4. User Activity
+
+#### Get User Activity
+```
+GET /agent/users/{userId}/activity
+```
+**Response:**
+```json
+{
+  "bets": [
+    {
+      "id": "bet_789",
+      "betType": "single",
+      "stake": 100.00,
+      "potentialWinnings": 250.00,
+      "status": "accepted",
+      "createdAt": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "balanceHistory": [
+    {
+      "amount": 500.00,
+      "type": "deposit",
+      "date": "2024-01-15T10:30:00Z"
+    }
+  ]
 }
 ```
 
 ## Error Responses
 
-### Validation Error
+All endpoints may return the following error responses:
+
+### 400 Bad Request
 ```json
 {
-  "success": false,
-  "error": "Invalid betslip: Conflicting selections for Manchester United vs Liverpool",
-  "code": "VALIDATION_ERROR",
-  "details": {
-    "field": "selections",
-    "message": "Multiple selections for same game"
-  }
+  "error": "Validation failed",
+  "message": "Invalid request data",
+  "details": [...]
 }
 ```
 
-### Authentication Error
+### 401 Unauthorized
 ```json
 {
-  "success": false,
-  "error": "User not authenticated",
-  "code": "AUTH_ERROR"
+  "error": "Unauthorized",
+  "message": "Invalid or missing authentication token"
 }
 ```
 
-### Insufficient Balance Error
+### 403 Forbidden
 ```json
 {
-  "success": false,
-  "error": "Insufficient balance",
-  "code": "INSUFFICIENT_BALANCE",
-  "details": {
-    "required": 25.00,
-    "available": 15.00
-  }
+  "error": "Forbidden",
+  "message": "Insufficient permissions to access this resource"
 }
 ```
 
-## Database Schema Example
+### 404 Not Found
+```json
+{
+  "error": "Not Found",
+  "message": "Resource not found"
+}
+```
+
+### 500 Internal Server Error
+```json
+{
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred"
+}
+```
+
+## Database Schema
+
+### Users Table
+```sql
+CREATE TABLE users (
+  id VARCHAR(255) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(20) UNIQUE NOT NULL,
+  role ENUM('user', 'agent', 'admin') DEFAULT 'user',
+  balance DECIMAL(10,2) DEFAULT 0.00,
+  agent_id VARCHAR(255),
+  commission DECIMAL(5,2),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (agent_id) REFERENCES users(id)
+);
+```
 
 ### Bets Table
 ```sql
 CREATE TABLE bets (
   id VARCHAR(255) PRIMARY KEY,
   user_id VARCHAR(255) NOT NULL,
-  game_id VARCHAR(255) NOT NULL,
-  home_team VARCHAR(255) NOT NULL,
-  away_team VARCHAR(255) NOT NULL,
-  bet_type VARCHAR(50) NOT NULL,
-  selection VARCHAR(50) NOT NULL,
-  odds DECIMAL(10,2) NOT NULL,
+  agent_id VARCHAR(255),
+  bet_type ENUM('single', 'multibet') NOT NULL,
   stake DECIMAL(10,2) NOT NULL,
   potential_winnings DECIMAL(10,2) NOT NULL,
-  status ENUM('pending', 'accepted', 'rejected', 'won', 'lost', 'void') DEFAULT 'pending',
-  result VARCHAR(50),
-  actual_winnings DECIMAL(10,2),
-  placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  settled_at TIMESTAMP NULL,
+  status ENUM('pending', 'accepted', 'rejected', 'settled') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
-  INDEX idx_user_id (user_id),
-  INDEX idx_game_id (game_id),
-  INDEX idx_status (status),
-  INDEX idx_placed_at (placed_at)
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (agent_id) REFERENCES users(id)
 );
 ```
 
-### Multibets Table
+### Bet Selections Table
 ```sql
-CREATE TABLE multibets (
+CREATE TABLE bet_selections (
   id VARCHAR(255) PRIMARY KEY,
-  user_id VARCHAR(255) NOT NULL,
-  total_stake DECIMAL(10,2) NOT NULL,
-  combined_odds DECIMAL(10,2) NOT NULL,
-  potential_winnings DECIMAL(10,2) NOT NULL,
-  status ENUM('pending', 'accepted', 'rejected', 'won', 'lost', 'void') DEFAULT 'pending',
-  result VARCHAR(50),
-  actual_winnings DECIMAL(10,2),
-  placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  settled_at TIMESTAMP NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
-  INDEX idx_user_id (user_id),
-  INDEX idx_status (status),
-  INDEX idx_placed_at (placed_at)
-);
-```
-
-### Multibet Selections Table
-```sql
-CREATE TABLE multibet_selections (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  multibet_id VARCHAR(255) NOT NULL,
   bet_id VARCHAR(255) NOT NULL,
   game_id VARCHAR(255) NOT NULL,
-  home_team VARCHAR(255) NOT NULL,
-  away_team VARCHAR(255) NOT NULL,
-  bet_type VARCHAR(50) NOT NULL,
-  selection VARCHAR(50) NOT NULL,
-  odds DECIMAL(10,2) NOT NULL,
-  
-  FOREIGN KEY (multibet_id) REFERENCES multibets(id),
-  INDEX idx_multibet_id (multibet_id),
-  INDEX idx_bet_id (bet_id)
+  bet_type VARCHAR(100) NOT NULL,
+  selection VARCHAR(100) NOT NULL,
+  odds DECIMAL(5,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (bet_id) REFERENCES bets(id)
 );
 ```
 
-## Backend Processing Logic
-
-### 1. Validation Steps
-- Check user authentication
-- Validate betslip structure
-- Check for conflicting selections
-- Verify minimum/maximum stakes
-- Check user balance
-- Validate odds haven't changed
-
-### 2. Single Bets Processing
-```javascript
-// Pseudo-code
-async function processSingleBets(betRequests) {
-  // 1. Validate all bets
-  const validation = await validateBetslip(betRequests);
-  if (!validation.isValid) {
-    throw new Error(validation.errors.join(', '));
-  }
-  
-  // 2. Check user balance
-  const totalStake = betRequests.reduce((sum, bet) => sum + bet.stake, 0);
-  const userBalance = await getUserBalance(betRequests[0].userId);
-  if (userBalance < totalStake) {
-    throw new Error('Insufficient balance');
-  }
-  
-  // 3. Deduct stake from user balance
-  await deductFromBalance(betRequests[0].userId, totalStake);
-  
-  // 4. Create bet records
-  const betResults = [];
-  for (const betRequest of betRequests) {
-    const bet = await createBet(betRequest);
-    betResults.push(bet);
-  }
-  
-  // 5. Return results
-  return betResults;
-}
-```
-
-### 3. Multibet Processing
-```javascript
-// Pseudo-code
-async function processMultibet(multibetRequest) {
-  // 1. Validate multibet
-  const validation = await validateMultibet(multibetRequest.bets);
-  if (!validation.isValid) {
-    throw new Error(validation.errors.join(', '));
-  }
-  
-  // 2. Check user balance
-  const userBalance = await getUserBalance(multibetRequest.userId);
-  if (userBalance < multibetRequest.totalStake) {
-    throw new Error('Insufficient balance');
-  }
-  
-  // 3. Deduct stake from user balance
-  await deductFromBalance(multibetRequest.userId, multibetRequest.totalStake);
-  
-  // 4. Create multibet record
-  const multibet = await createMultibet(multibetRequest);
-  
-  // 5. Create individual bet records for tracking
-  for (const betRequest of multibetRequest.bets) {
-    await createBet({
-      ...betRequest,
-      multibetId: multibet.id
-    });
-  }
-  
-  // 6. Return result
-  return multibet;
-}
+### Commission Transactions Table
+```sql
+CREATE TABLE commission_transactions (
+  id VARCHAR(255) PRIMARY KEY,
+  agent_id VARCHAR(255) NOT NULL,
+  user_id VARCHAR(255) NOT NULL,
+  bet_id VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  percentage DECIMAL(5,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (agent_id) REFERENCES users(id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (bet_id) REFERENCES bets(id)
+);
 ```
 
 ## Security Considerations
 
-1. **Authentication**: Require valid JWT tokens
-2. **Rate Limiting**: Prevent rapid bet placement
-3. **Input Validation**: Sanitize all inputs
-4. **Odds Validation**: Check odds haven't changed since selection
-5. **Balance Checks**: Ensure sufficient funds before processing
-6. **Audit Logging**: Log all bet transactions
-7. **Transaction Rollback**: Handle partial failures gracefully
+1. **Authentication**: All agent endpoints require valid authentication tokens
+2. **Authorization**: Agents can only access their managed users
+3. **Input Validation**: All input data should be validated and sanitized
+4. **Rate Limiting**: Implement rate limiting to prevent abuse
+5. **Audit Logging**: Log all agent actions for compliance and security
+6. **Data Encryption**: Sensitive data should be encrypted at rest and in transit
 
-## Testing Examples
+## Implementation Notes
 
-### Test Single Bet Placement
-```bash
-curl -X POST http://localhost:8000/api/bets/single \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "bets": [{
-      "betId": "test_bet_1",
-      "gameId": "game_123",
-      "homeTeam": "Team A",
-      "awayTeam": "Team B",
-      "betType": "3 Way",
-      "selection": "Home",
-      "odds": 2.00,
-      "stake": 10.00,
-      "potentialWinnings": 20.00,
-      "userId": "user_123",
-      "timestamp": "2023-12-21T12:00:00.000Z"
-    }],
-    "totalStake": 10.00,
-    "userId": "user_123",
-    "timestamp": "2023-12-21T12:00:00.000Z"
-  }'
-```
-
-### Test Multibet Placement
-```bash
-curl -X POST http://localhost:8000/api/bets/multibet \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "betId": "test_multibet_1",
-    "bets": [
-      {
-        "betId": "test_bet_1",
-        "gameId": "game_123",
-        "homeTeam": "Team A",
-        "awayTeam": "Team B",
-        "betType": "3 Way",
-        "selection": "Home",
-        "odds": 2.00,
-        "stake": 10.00,
-        "potentialWinnings": 20.00,
-        "userId": "user_123",
-        "timestamp": "2023-12-21T12:00:00.000Z"
-      },
-      {
-        "betId": "test_bet_2",
-        "gameId": "game_124",
-        "homeTeam": "Team C",
-        "awayTeam": "Team D",
-        "betType": "3 Way",
-        "selection": "Draw",
-        "odds": 3.00,
-        "stake": 10.00,
-        "potentialWinnings": 30.00,
-        "userId": "user_123",
-        "timestamp": "2023-12-21T12:00:00.000Z"
-      }
-    ],
-    "totalStake": 10.00,
-    "combinedOdds": 6.00,
-    "potentialWinnings": 60.00,
-    "userId": "user_123",
-    "timestamp": "2023-12-21T12:00:00.000Z",
-    "betType": "multibet"
-  }'
-``` 
+1. **Commission Calculation**: Commission is calculated as a percentage of the stake amount
+2. **Bet Status Flow**: pending → accepted/rejected → settled
+3. **Balance Updates**: All balance changes should be atomic transactions
+4. **User Deactivation**: Deactivated users cannot place new bets but existing bets remain active
+5. **Agent Permissions**: Agents can only manage users assigned to them 

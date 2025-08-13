@@ -10,6 +10,9 @@ export interface BetSlipItem {
       odds: number;
       stake: number;
       potentialWinnings: number;
+      bookmaker: string;
+      gameTime: string;
+      sportKey: string;
 }
 
 export interface BetSlipState {
@@ -71,6 +74,9 @@ export const betslipSlice = createSlice({
             toggleMultibetMode: (state) => {
                   state.isMultibetMode = !state.isMultibetMode;
             },
+            enableMultibetMode: (state) => {
+                  state.isMultibetMode = true;
+            },
             setMultibetStake: (state, action: PayloadAction<number>) => {
                   state.multibetStake = action.payload;
             },
@@ -86,6 +92,7 @@ export const {
       setBetSlipVisibility,
       hideBetSlip,
       toggleMultibetMode,
+      enableMultibetMode,
       setMultibetStake,
 } = betslipSlice.actions;
 

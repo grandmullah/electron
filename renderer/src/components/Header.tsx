@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { loginSuccess, logout, User } from "../store/authSlice";
+import { logout } from "../store/authSlice";
 import {
   addToBetSlip,
   removeFromBetSlip,
@@ -9,20 +9,32 @@ import {
   toggleBetSlipVisibility,
   hideBetSlip,
   toggleMultibetMode,
+  enableMultibetMode,
   setMultibetStake,
   BetSlipItem,
 } from "../store/betslipSlice";
 import { placeBets } from "../services/betslipService";
-import { getCountryCallingCode, getCountries } from "react-phone-number-input";
-
-type CountryCode = string;
+import AuthService from "../services/authService";
+import AgentService from "../services/agentService";
+import { addAgentBet } from "../store/agentSlice";
+import BetSlipSummary from "./BetSlipSummary";
+import { BetSlipService } from "../services/betslipService";
 
 interface HeaderProps {
-  onNavigate: (page: "home" | "dashboard" | "settings" | "games") => void;
+  onNavigate: (
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+  ) => void;
   currentPage: string;
+  selectedUser?: { id: string; phone_number: string } | null;
+  isAgentMode?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onNavigate,
+  currentPage,
+  selectedUser,
+  isAgentMode = false,
+}) => {
   const dispatch = useAppDispatch();
   const { user, isLoading } = useAppSelector((state) => state.auth);
   const {
@@ -31,91 +43,83 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
     isMultibetMode,
     multibetStake,
   } = useAppSelector((state) => state.betslip);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>("US");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [isPlacingBets, setIsPlacingBets] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [betSlipData, setBetSlipData] = useState<any>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 7) {
-      setError("Please enter a valid phone number");
-      return;
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Auto-enable multibet mode when multiple selections are added
+  useEffect(() => {
+    if (betSlipItems.length > 1 && !isMultibetMode) {
+      // Automatically switch to multibet mode for multiple selections
+      dispatch(enableMultibetMode());
     }
+  }, [betSlipItems.length, isMultibetMode, dispatch]);
 
-    setLoading(true);
-    setError("");
+  // Fetch betslip data when selections change
+  useEffect(() => {
+    const fetchBetSlipData = async () => {
+      if (betSlipItems.length > 0) {
+        try {
+          const stake =
+            betSlipItems.length > 1
+              ? multibetStake
+              : betSlipItems[0]?.stake || 0;
+          const response = await BetSlipService.createBetSlip(
+            betSlipItems,
+            stake,
+            user?.id
+          );
+          if (response.success) {
+            setBetSlipData(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch betslip data:", error);
+        }
+      } else {
+        setBetSlipData(null);
+      }
+    };
 
-    try {
-      // Simulate API call to send OTP
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // For demo purposes, we'll just simulate success
-      setOtpSent(true);
-      setError("");
-    } catch (err) {
-      setError("Failed to send OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (!otp || otp.length !== 6) {
-      setError("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      // Simulate API call to verify OTP
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // For demo purposes, we'll accept any 6-digit OTP
-      const fullPhoneNumber = `+${getCountryCallingCode(
-        selectedCountry as any
-      )}${phoneNumber}`;
-      const newUser: User = {
-        id: "1",
-        name: `User ${phoneNumber.slice(-4)}`,
-        phoneNumber: fullPhoneNumber,
-        isLoggedIn: true,
-      };
-
-      dispatch(loginSuccess(newUser));
-      setShowLoginModal(false);
-      setPhoneNumber("");
-      setOtp("");
-      setOtpSent(false);
-      setError("");
-      setSelectedCountry("US");
-    } catch (err) {
-      setError("Invalid OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchBetSlipData();
+  }, [betSlipItems, multibetStake, user?.id]);
 
   const handleLogout = () => {
+    AuthService.logout();
     dispatch(logout());
   };
 
-  const handleResendOTP = () => {
-    setOtpSent(false);
-    setOtp("");
-    setError("");
-  };
-
-  const getCountryFlag = (countryCode: string) => {
-    const codePoints = countryCode
-      .toUpperCase()
-      .split("")
-      .map((char) => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
+  const getObscuredPhoneNumber = (phoneNumber: string) => {
+    // Extract country code and last 2 digits
+    if (phoneNumber.startsWith("+")) {
+      const cleanNumber = phoneNumber.substring(1);
+      if (cleanNumber.length >= 4) {
+        const countryCode = cleanNumber.substring(0, 3); // First 3 digits as country code
+        const lastDigits = cleanNumber.slice(-2); // Last 2 digits
+        return `${countryCode} *** ${lastDigits}`;
+      }
+    }
+    // Fallback for non-standard format
+    return phoneNumber.length > 4
+      ? `${phoneNumber.substring(0, 3)} *** ${phoneNumber.slice(-2)}`
+      : phoneNumber;
   };
 
   // Bet slip helper functions
@@ -166,37 +170,150 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
     return { isValid: true };
   };
 
-  const [isPlacingBets, setIsPlacingBets] = useState(false);
-
   const handlePlaceBets = async () => {
     if (betSlipItems.length === 0) {
       alert("No bets in slip");
       return;
     }
 
+    // If agent mode, check if user is selected
+    if (isAgentMode && !selectedUser) {
+      alert("Please select a user to place bets for");
+      return;
+    }
+
     setIsPlacingBets(true);
 
     try {
-      const result = await placeBets(
-        betSlipItems,
-        isMultibetMode,
-        multibetStake
-      );
+      if (isAgentMode && selectedUser) {
+        // Agent mode - place bets for selected user
+        if (betSlipItems.length > 1) {
+          // Always place multiple selections as multibet for agent
+          try {
+            const agentBet = await AgentService.placeBetForUser({
+              userId: selectedUser.id,
+              betType: "multibet",
+              stake: multibetStake,
+              selections: betSlipItems.map((bet) => ({
+                gameId: bet.gameId,
+                homeTeam: bet.homeTeam,
+                awayTeam: bet.awayTeam,
+                betType: bet.betType,
+                selection: bet.selection,
+                odds: bet.odds,
+                bookmaker: bet.bookmaker,
+                gameTime: bet.gameTime,
+                sportKey: bet.sportKey,
+              })),
+            });
 
-      if (Array.isArray(result)) {
-        // Single bets
-        alert(`Successfully placed ${result.length} single bets!`);
-        result.forEach((bet) => {
-          console.log("Bet ID:", bet.betId, "Status:", bet.status);
-        });
+            // Add the bet to the Redux store
+            dispatch(addAgentBet(agentBet));
+
+            alert(
+              `Successfully placed multibet for ${
+                selectedUser.phone_number
+              }! Stake: $${multibetStake}${
+                betSlipData
+                  ? `\nTax: ${
+                      betSlipData.taxPercentage
+                    }% ($${betSlipData.taxAmount?.toFixed(2)})`
+                  : ""
+              }`
+            );
+          } catch (error: any) {
+            console.error(`Failed to place multibet:`, error);
+            throw new Error(`Failed to place multibet: ${error.message}`);
+          }
+        } else {
+          // Place as individual single bet for agent
+          if (betSlipItems.length === 1) {
+            const bet = betSlipItems[0];
+            if (bet) {
+              try {
+                const agentBet = await AgentService.placeBetForUser({
+                  userId: selectedUser.id,
+                  betType: "single",
+                  stake: bet.stake,
+                  selections: [
+                    {
+                      gameId: bet.gameId,
+                      homeTeam: bet.homeTeam,
+                      awayTeam: bet.awayTeam,
+                      betType: bet.betType,
+                      selection: bet.selection,
+                      odds: bet.odds,
+                      bookmaker: bet.bookmaker,
+                      gameTime: bet.gameTime,
+                      sportKey: bet.sportKey,
+                    },
+                  ],
+                });
+                // Add the bet to the Redux store
+                dispatch(addAgentBet(agentBet));
+
+                alert(
+                  `Successfully placed single bet for ${
+                    selectedUser.phone_number
+                  }! Stake: $${bet.stake}${
+                    betSlipData
+                      ? `\nTax: ${
+                          betSlipData.taxPercentage
+                        }% ($${betSlipData.taxAmount?.toFixed(2)})`
+                      : ""
+                  }`
+                );
+              } catch (error: any) {
+                console.error(`Failed to place bet:`, error);
+                throw new Error(`Failed to place bet: ${error.message}`);
+              }
+            }
+          }
+        }
+
+        // Clear betslip after successful placement
+        dispatch(clearBetSlip());
       } else {
-        // Multibet
-        alert(`Successfully placed multibet! Bet ID: ${result.betId}`);
-        console.log("Multibet Status:", result.status);
-      }
+        // Regular user mode
+        if (!user || !user.id) {
+          alert("User not authenticated. Please log in again.");
+          return;
+        }
 
-      // Clear betslip after successful placement
-      dispatch(clearBetSlip());
+        const result = await placeBets(
+          betSlipItems,
+          betSlipItems.length > 1, // Automatically use multibet for multiple selections
+          multibetStake,
+          user.id
+        );
+
+        if (Array.isArray(result)) {
+          // Single bets
+          const taxInfo = betSlipData
+            ? `\nTax: ${
+                betSlipData.taxPercentage
+              }% ($${betSlipData.taxAmount?.toFixed(2)})`
+            : "";
+          alert(`Successfully placed ${result.length} single bets!${taxInfo}`);
+          result.forEach((bet) => {
+            console.log("Bet ID:", bet.betId, "Status:", bet.status);
+          });
+        } else {
+          // Multibet
+          const taxInfo = betSlipData
+            ? `\nTax: ${
+                betSlipData.taxPercentage
+              }% ($${betSlipData.taxAmount?.toFixed(2)})`
+            : "";
+          alert(
+            `Successfully placed multibet! Bet ID: ${result.betId}${taxInfo}`
+          );
+          console.log("Multibet Status:", result.status);
+        }
+
+        // Clear betslip after successful placement
+        dispatch(clearBetSlip());
+      }
     } catch (error: any) {
       console.error("Failed to place bets:", error.message);
       alert(`Failed to place bets: ${error.message}`);
@@ -209,7 +326,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
     <>
       <header className="app-header">
         <div className="header-left">
-          <h1 className="app-title">BetZone</h1>
+          <h1 className="app-title">Betzone</h1>
           <nav className="nav-menu">
             <button
               className={`nav-item ${currentPage === "home" ? "active" : ""}`}
@@ -239,6 +356,24 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
             >
               Settings
             </button>
+            <button
+              className={`nav-item ${
+                currentPage === "history" ? "active" : ""
+              }`}
+              onClick={() => onNavigate("history")}
+            >
+              History
+            </button>
+            {user && user.role === "agent" && (
+              <button
+                className={`nav-item ${
+                  currentPage === "agent" ? "active" : ""
+                }`}
+                onClick={() => onNavigate("agent")}
+              >
+                Agent
+              </button>
+            )}
           </nav>
         </div>
 
@@ -254,145 +389,68 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
             </button>
           )}
 
-          {user ? (
-            <div className="user-section">
-              <span className="user-name">Welcome, {user.name}</span>
-              <button className="btn btn-outline" onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
-          ) : (
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowLoginModal(true)}
-            >
-              Login
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Login Modal */}
-      {showLoginModal && (
-        <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Login to BetZone</h2>
-              <button
-                className="modal-close"
-                onClick={() => setShowLoginModal(false)}
+          {user && (
+            <div className="user-section" ref={dropdownRef}>
+              <div
+                className="user-avatar-container"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
               >
-                ✕
-              </button>
-            </div>
+                <div className="user-avatar">
+                  <span className="avatar-text">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span className="dropdown-arrow">
+                  {showUserDropdown ? "▲" : "▼"}
+                </span>
+              </div>
 
-            <div className="modal-body">
-              {!otpSent ? (
-                <div className="login-step">
-                  <h3>Enter Phone Number</h3>
-                  <p>We'll send you a verification code</p>
-
-                  <div className="form-group">
-                    <label htmlFor="countrySelect">Country</label>
-                    <select
-                      id="countrySelect"
-                      value={selectedCountry}
-                      onChange={(e) =>
-                        setSelectedCountry(e.target.value as CountryCode)
-                      }
-                      className="country-select"
-                      disabled={loading}
-                    >
-                      {getCountries().map((country) => (
-                        <option key={country} value={country}>
-                          {getCountryFlag(country)} {country} (+
-                          {getCountryCallingCode(country)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="phoneNumber">Phone Number</label>
-                    <div className="phone-input-container">
-                      <div className="country-display">
-                        <span className="country-flag">
-                          {getCountryFlag(selectedCountry)}
-                        </span>
-                        <span className="country-code">
-                          +{getCountryCallingCode(selectedCountry as any)}
-                        </span>
-                      </div>
-                      <input
-                        id="phoneNumber"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) =>
-                          setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                        }
-                        placeholder="Enter your phone number"
-                        className="phone-number-input"
-                        disabled={loading}
-                      />
+              {showUserDropdown && (
+                <div className="user-dropdown">
+                  <div className="dropdown-header">
+                    <div className="dropdown-avatar">
+                      <span className="dropdown-avatar-text">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="dropdown-user-info">
+                      <span className="dropdown-name">{user.name}</span>
+                      <span className="dropdown-role">{user.role}</span>
                     </div>
                   </div>
 
-                  {error && <div className="error-message">{error}</div>}
+                  <div className="dropdown-divider"></div>
+
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">Phone Number</span>
+                    <span className="dropdown-value">{user.phoneNumber}</span>
+                  </div>
+
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">Balance</span>
+                    <span className="dropdown-value balance-value">
+                      ${user.balance.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="dropdown-divider"></div>
 
                   <button
-                    className="btn btn-primary btn-full"
-                    onClick={handleSendOTP}
-                    disabled={loading || !phoneNumber || phoneNumber.length < 7}
+                    className="dropdown-logout-btn"
+                    onClick={() => {
+                      handleLogout();
+                      setShowUserDropdown(false);
+                    }}
                   >
-                    {loading ? "Sending..." : "Send OTP"}
+                    <span className="logout-icon">🚪</span>
+                    Logout
                   </button>
-                </div>
-              ) : (
-                <div className="login-step">
-                  <h3>Enter Verification Code</h3>
-                  <p>We've sent a 6-digit code to {phoneNumber}</p>
-
-                  <div className="form-group">
-                    <label htmlFor="otp">OTP Code</label>
-                    <input
-                      id="otp"
-                      type="text"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      placeholder="Enter 6-digit code"
-                      className="form-input"
-                      maxLength={6}
-                      disabled={loading}
-                    />
-                  </div>
-
-                  {error && <div className="error-message">{error}</div>}
-
-                  <div className="otp-actions">
-                    <button
-                      className="btn btn-primary btn-full"
-                      onClick={handleVerifyOTP}
-                      disabled={loading || otp.length !== 6}
-                    >
-                      {loading ? "Verifying..." : "Verify OTP"}
-                    </button>
-
-                    <button
-                      className="btn btn-outline btn-full"
-                      onClick={handleResendOTP}
-                      disabled={loading}
-                    >
-                      Resend OTP
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </header>
 
       {/* Bet Slip Modal */}
       {isBetSlipVisible && (
@@ -406,6 +464,14 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
           >
             <div className="betslip-modal-header">
               <h3>📋 Bet Slip ({betSlipItems.length} bets)</h3>
+              {isAgentMode && selectedUser && (
+                <div className="agent-bet-info">
+                  <span className="agent-bet-label">Placing bets for:</span>
+                  <span className="agent-bet-user">
+                    {selectedUser.phone_number}
+                  </span>
+                </div>
+              )}
               <button
                 className="betslip-modal-close"
                 onClick={() => dispatch(hideBetSlip())}
@@ -423,79 +489,95 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                 </div>
               ) : (
                 <>
-                  {/* Bet Mode Toggle */}
-                  <div className="bet-mode-toggle">
-                    <button
-                      className={`mode-btn ${!isMultibetMode ? "active" : ""}`}
-                      onClick={() => dispatch(toggleMultibetMode())}
-                    >
-                      Single Bets
-                    </button>
-                    <button
-                      className={`mode-btn ${isMultibetMode ? "active" : ""}`}
-                      onClick={() => dispatch(toggleMultibetMode())}
-                    >
-                      Multibet
-                    </button>
-                  </div>
-
-                  {/* Multibet Info */}
-                  {isMultibetMode && betSlipItems.length >= 2 && (
-                    <div className="multibet-info">
-                      <div className="multibet-stats">
-                        <div className="stat-item">
-                          <span className="stat-label">Combined Odds:</span>
-                          <span className="stat-value">
-                            {calculateCombinedOdds(betSlipItems).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">
-                            Potential Winnings:
-                          </span>
-                          <span className="stat-value">
-                            $
-                            {calculateMultibetWinnings(
-                              betSlipItems,
-                              multibetStake
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="multibet-stake-input">
-                        <label htmlFor="multibetStake">Stake ($)</label>
-                        <input
-                          type="number"
-                          id="multibetStake"
-                          value={multibetStake}
-                          onChange={(e) =>
-                            dispatch(setMultibetStake(Number(e.target.value)))
-                          }
-                          min="1"
-                          max="1000"
-                          className="stake-input"
-                        />
-                      </div>
+                  {/* Bet Mode Toggle - Only show when single selection */}
+                  {betSlipItems.length === 1 && (
+                    <div className="bet-mode-toggle">
+                      <button
+                        className={`mode-btn ${
+                          !isMultibetMode ? "active" : ""
+                        }`}
+                        onClick={() => dispatch(toggleMultibetMode())}
+                      >
+                        Single Bets
+                      </button>
+                      <button
+                        className={`mode-btn ${isMultibetMode ? "active" : ""}`}
+                        onClick={() => dispatch(toggleMultibetMode())}
+                      >
+                        Multibet
+                      </button>
                     </div>
                   )}
 
-                  {/* Validation Message */}
-                  {isMultibetMode && betSlipItems.length > 0 && (
-                    <div className="validation-message">
-                      {(() => {
-                        const validation = validateMultibet(betSlipItems);
-                        return validation.isValid ? (
-                          <div className="valid-message">
-                            ✅ Valid multibet selections
-                          </div>
-                        ) : (
-                          <div className="invalid-message">
-                            ❌ {validation.error}
-                          </div>
-                        );
-                      })()}
+                  {/* Auto-enable multibet for multiple selections */}
+                  {betSlipItems.length > 1 && !isMultibetMode && (
+                    <div className="auto-multibet-notice">
+                      <p>
+                        🔄 Multiple selections detected - automatically
+                        switching to multibet mode
+                      </p>
                     </div>
                   )}
+
+                  {/* Multibet Info - Show automatically for multiple selections */}
+                  {(betSlipItems.length > 1 || isMultibetMode) &&
+                    betSlipItems.length >= 2 && (
+                      <div className="multibet-info">
+                        <div className="multibet-stats">
+                          <div className="stat-item">
+                            <span className="stat-label">Combined Odds:</span>
+                            <span className="stat-value">
+                              {calculateCombinedOdds(betSlipItems).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">
+                              Potential Winnings:
+                            </span>
+                            <span className="stat-value">
+                              $
+                              {calculateMultibetWinnings(
+                                betSlipItems,
+                                multibetStake
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="multibet-stake-input">
+                          <label htmlFor="multibetStake">Stake ($)</label>
+                          <input
+                            type="number"
+                            id="multibetStake"
+                            value={multibetStake}
+                            onChange={(e) =>
+                              dispatch(setMultibetStake(Number(e.target.value)))
+                            }
+                            min="1"
+                            max="1000"
+                            className="stake-input"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Validation Message - Show automatically for multiple selections */}
+                  {(betSlipItems.length > 1 || isMultibetMode) &&
+                    betSlipItems.length > 0 && (
+                      <div className="validation-message">
+                        {(() => {
+                          const validation = validateMultibet(betSlipItems);
+                          return validation.isValid ? (
+                            <div className="valid-message">
+                              ✅ Valid multibet selections
+                            </div>
+                          ) : (
+                            <div className="invalid-message">
+                              ❌ {validation.error}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
 
                   <div className="betslip-items">
                     {betSlipItems.map((bet) => (
@@ -508,7 +590,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                             {bet.betType}: {bet.selection} @ {bet.odds}
                           </div>
                         </div>
-                        {!isMultibetMode && (
+                        {betSlipItems.length === 1 && !isMultibetMode && (
                           <div className="betslip-stake">
                             <input
                               type="number"
@@ -527,7 +609,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                             />
                           </div>
                         )}
-                        {!isMultibetMode && (
+                        {betSlipItems.length === 1 && !isMultibetMode && (
                           <div className="betslip-winnings">
                             ${bet.potentialWinnings.toFixed(2)}
                           </div>
@@ -543,38 +625,74 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                   </div>
 
                   <div className="betslip-footer">
-                    <div className="total-stake">
-                      {isMultibetMode ? (
-                        <>
-                          <div>Stake: ${multibetStake.toFixed(2)}</div>
-                          <div>
-                            Combined Odds:{" "}
-                            {calculateCombinedOdds(betSlipItems).toFixed(2)}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          Total Stake: $
-                          {betSlipItems
-                            .reduce((sum, bet) => sum + bet.stake, 0)
-                            .toFixed(2)}
-                        </>
-                      )}
-                    </div>
+                    {/* Use BetSlipSummary component for consistent tax display */}
+                    {betSlipItems.length > 0 && (
+                      <BetSlipSummary
+                        slip={
+                          betSlipData || {
+                            id: "temp-slip",
+                            userId: user?.id || "",
+                            selections: betSlipItems.map((bet) => ({
+                              gameId: bet.gameId,
+                              homeTeam: bet.homeTeam,
+                              awayTeam: bet.awayTeam,
+                              marketType: bet.betType,
+                              outcome: bet.selection,
+                              odds: {
+                                decimal: bet.odds,
+                                american: 0,
+                                multiplier: 0,
+                              },
+                              bookmaker: bet.bookmaker,
+                              gameTime: bet.gameTime,
+                              sportKey: bet.sportKey,
+                            })),
+                            stake:
+                              betSlipItems.length > 1
+                                ? multibetStake
+                                : betSlipItems[0]?.stake || 0,
+                            potentialWinnings:
+                              betSlipItems.length > 1
+                                ? calculateMultibetWinnings(
+                                    betSlipItems,
+                                    multibetStake
+                                  )
+                                : (betSlipItems[0]?.stake || 0) *
+                                  (betSlipItems[0]?.odds || 1),
+                            taxPercentage: 5, // Default tax percentage - should come from API
+                            taxAmount: 0, // Will be calculated
+                            netWinnings: 0, // Will be calculated
+                            odds: {
+                              decimal: calculateCombinedOdds(betSlipItems),
+                              american: 0,
+                              multiplier: 0,
+                            },
+                            createdAt: new Date().toISOString(),
+                            expiresAt: new Date(
+                              Date.now() + 24 * 60 * 60 * 1000
+                            ).toISOString(),
+                          }
+                        }
+                        currency={user?.currency || "USD"}
+                        isMultibet={betSlipItems.length > 1}
+                        isLoading={!betSlipData}
+                      />
+                    )}
+
                     <button
                       className="btn btn-primary place-bets-btn"
                       onClick={handlePlaceBets}
                       disabled={
                         isPlacingBets ||
-                        (isMultibetMode &&
+                        (betSlipItems.length > 1 &&
                           !validateMultibet(betSlipItems).isValid)
                       }
                     >
                       {isPlacingBets
                         ? "Placing Bets..."
-                        : isMultibetMode
+                        : betSlipItems.length > 1
                         ? "Place Multibet"
-                        : "Place Bets"}
+                        : "Place Bet"}
                     </button>
                   </div>
                 </>

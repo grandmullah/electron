@@ -1,35 +1,41 @@
 import axios from 'axios';
 import { BetSlipItem } from '../store/betslipSlice';
+import { BetSlip } from '../types/bets';
+import { API_BASE_URL } from './apiConfig';
 
-// API base URL - adjust based on your backend
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-      ? 'https://your-production-api.com/api'
-      : 'http://localhost:8000/api';
+// API base URL is centralized in apiConfig.ts
 
 // Types for API requests and responses
 export interface SingleBetRequest {
-      betId: string;
-      gameId: string;
-      homeTeam: string;
-      awayTeam: string;
-      betType: string;
-      selection: string;
-      odds: number;
-      stake: number;
-      potentialWinnings: number;
-      userId: string;
-      timestamp: string;
+      bets: Array<{
+            gameId: string;
+            homeTeam: string;
+            awayTeam: string;
+            betType: string;
+            selection: string;
+            odds: number;
+            stake: number;
+            timestamp?: string;
+      }>;
+      totalStake: number;
+      timestamp?: string;
 }
 
 export interface MultibetRequest {
-      betId: string;
-      bets: SingleBetRequest[];
+      bets: Array<{
+            gameId: string;
+            homeTeam: string;
+            awayTeam: string;
+            betType: string;
+            selection: string;
+            odds: number;
+            stake: number;
+            timestamp?: string;
+      }>;
       totalStake: number;
-      combinedOdds: number;
-      potentialWinnings: number;
-      userId: string;
-      timestamp: string;
-      betType: 'multibet';
+      combinedOdds?: number;
+      potentialWinnings?: number;
+      timestamp?: string;
 }
 
 export interface BetResponse {
@@ -54,62 +60,202 @@ export class BetSlipService {
       }
 
       private static getUserId(): string {
-            // Get user ID from your auth system
-            // This should come from your Redux auth state or localStorage
+            console.log('getUserId called - checking localStorage for user data...');
+
+            // Try multiple sources for user ID
+            // 1. First try betzone_user (Redux auth state)
             const user = localStorage.getItem('betzone_user');
+            console.log('betzone_user from localStorage:', user);
             if (user) {
-                  const userData = JSON.parse(user);
-                  return userData.id;
+                  try {
+                        const userData = JSON.parse(user);
+                        console.log('Parsed betzone_user data:', userData);
+                        if (userData.id) {
+                              console.log('Found userId from betzone_user:', userData.id);
+                              return userData.id;
+                        }
+                  } catch (error) {
+                        console.error('Error parsing betzone_user:', error);
+                  }
             }
-            throw new Error('User not authenticated');
+
+            // 2. Try authUser (direct auth service)
+            const authUser = localStorage.getItem('authUser');
+            console.log('authUser from localStorage:', authUser);
+            if (authUser) {
+                  try {
+                        const userData = JSON.parse(authUser);
+                        console.log('Parsed authUser data:', userData);
+                        if (userData.id) {
+                              console.log('Found userId from authUser:', userData.id);
+                              return userData.id;
+                        }
+                  } catch (error) {
+                        console.error('Error parsing authUser:', error);
+                  }
+            }
+
+            // 3. Try to get from Redux store if available
+            // This is a fallback for when the service is called from a React component
+            // Note: Cannot directly access Redux store from service layer
+
+            // 4. Check if we have an auth token (user should be logged in)
+            const authToken = localStorage.getItem('authToken');
+            console.log('authToken from localStorage:', authToken);
+            if (!authToken) {
+                  console.error('No auth token found - user not authenticated');
+                  throw new Error('User not authenticated - no auth token found');
+            }
+
+            // If we have a token but no user ID, this suggests a login flow issue
+            console.error('Auth token found but no user ID - login flow issue');
+            throw new Error('User ID not found. Please try logging in again or refresh the page.');
       }
 
-      // Convert betslip items to API format
+      // Convert betslip items to API format (deprecated - keeping for compatibility)
       private static convertToSingleBetRequest(
             bet: BetSlipItem,
             userId: string
       ): SingleBetRequest {
             return {
-                  betId: this.generateBetId(),
-                  gameId: bet.gameId,
-                  homeTeam: bet.homeTeam,
-                  awayTeam: bet.awayTeam,
-                  betType: bet.betType,
-                  selection: bet.selection,
-                  odds: bet.odds,
-                  stake: bet.stake,
-                  potentialWinnings: bet.potentialWinnings,
-                  userId,
+                  bets: [{
+                        gameId: bet.gameId,
+                        homeTeam: bet.homeTeam,
+                        awayTeam: bet.awayTeam,
+                        betType: bet.betType,
+                        selection: bet.selection,
+                        odds: bet.odds,
+                        stake: bet.stake,
+                        timestamp: new Date().toISOString(),
+                  }],
+                  totalStake: bet.stake,
                   timestamp: new Date().toISOString(),
             };
       }
 
-      // Place single bets (multiple individual bets)
-      static async placeSingleBets(bets: BetSlipItem[]): Promise<BetResponse[]> {
+      // Create bet slip (step 1 of bet placement)
+      static async createBetSlip(bets: BetSlipItem[], totalStake: number, userId?: string): Promise<{ success: boolean; data: BetSlip }> {
             try {
-                  const userId = this.getUserId();
+                  console.log('createBetSlip called with:', { bets, totalStake, userId });
 
-                  const betRequests = bets.map(bet =>
-                        this.convertToSingleBetRequest(bet, userId)
-                  );
+                  const finalUserId = userId || this.getUserId();
+                  console.log('Using userId:', finalUserId);
+
+                  const betSlipData = {
+                        userId: finalUserId,
+                        selections: bets.map(bet => {
+                              // Map generic selections to actual team names or specific outcomes
+                              let outcome: string;
+                              const selection = bet.selection.toLowerCase();
+                              switch (selection) {
+                                    case 'home':
+                                          outcome = bet.homeTeam;
+                                          break;
+                                    case 'away':
+                                          outcome = bet.awayTeam;
+                                          break;
+                                    case 'draw':
+                                          outcome = 'Draw';
+                                          break;
+                                    case 'over':
+                                          outcome = 'Over 2.5';
+                                          break;
+                                    case 'under':
+                                          outcome = 'Under 2.5';
+                                          break;
+                                    case 'yes':
+                                          outcome = 'Yes';
+                                          break;
+                                    case 'no':
+                                          outcome = 'No';
+                                          break;
+                                    default:
+                                          // For other bet types, use the selection as is
+                                          outcome = bet.selection;
+                              }
+
+                              const selectionData = {
+                                    gameId: bet.gameId,
+                                    homeTeam: bet.homeTeam,
+                                    awayTeam: bet.awayTeam,
+                                    marketType: 'h2h', // Default market type
+                                    outcome: outcome,
+                                    odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds },
+                                    bookmaker: 'BetZone',
+                                    gameTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Default to tomorrow
+                                    sportKey: 'soccer_epl' // Default sport
+                              };
+
+                              console.log(`Mapping selection: "${bet.selection}" -> "${outcome}" for ${bet.homeTeam} vs ${bet.awayTeam}`);
+                              console.log(`Original bet data:`, bet);
+                              console.log(`Mapped selection data:`, selectionData);
+                              return selectionData;
+                        }),
+                        stake: totalStake
+                  };
+
+                  console.log('Creating bet slip with data:', JSON.stringify(betSlipData, null, 2));
 
                   const response = await axios.post(
-                        `${API_BASE_URL}/bets/single`,
-                        {
-                              bets: betRequests,
-                              totalStake: bets.reduce((sum, bet) => sum + bet.stake, 0),
-                              userId,
-                              timestamp: new Date().toISOString(),
-                        },
+                        `${API_BASE_URL}/bets/slip`,
+                        betSlipData,
                         {
                               headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('betzone_token')}`,
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                               },
                         }
                   );
 
-                  return response.data.bets;
+                  return response.data;
+            } catch (error: any) {
+                  console.error('Failed to create bet slip:', error);
+                  throw this.handleError(error);
+            }
+      }
+
+      // Helper method to convert decimal odds to American
+      private static decimalToAmerican(decimal: number): number {
+            if (decimal >= 2.0) {
+                  return Math.round((decimal - 1) * 100);
+            } else {
+                  return Math.round(-100 / (decimal - 1));
+            }
+      }
+
+      // Place single bets (multiple individual bets)
+      static async placeSingleBets(bets: BetSlipItem[], userId?: string): Promise<BetResponse[]> {
+            try {
+                  const totalStake = bets.reduce((sum, bet) => sum + bet.stake, 0);
+
+                  // Step 1: Create bet slip
+                  const betSlip = await this.createBetSlip(bets, totalStake, userId);
+                  if (!betSlip.success || !betSlip.data?.id) {
+                        throw new Error('Failed to create bet slip');
+                  }
+
+                  // Step 2: Place bet using bet slip ID
+                  const placeBetData = {
+                        userId: userId,
+                        betSlipId: betSlip.data.id
+                  };
+
+                  console.log('Placing single bets with userId:', userId, 'and bet slip ID:', betSlip.data.id);
+                  console.log('Place bet data:', placeBetData);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/bets/place`,
+                        placeBetData,
+                        {
+                              headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                              },
+                        }
+                  );
+
+                  // The API returns an array of bet results
+                  return response.data.bets || [response.data];
             } catch (error: any) {
                   throw this.handleError(error);
             }
@@ -118,36 +264,36 @@ export class BetSlipService {
       // Place multibet (combined bet)
       static async placeMultibet(
             bets: BetSlipItem[],
-            totalStake: number
+            totalStake: number,
+            userId?: string
       ): Promise<BetResponse> {
             try {
-                  const userId = this.getUserId();
-
-                  const betRequests = bets.map(bet =>
-                        this.convertToSingleBetRequest(bet, userId)
-                  );
-
-                  const combinedOdds = bets.reduce((combined, bet) => combined * bet.odds, 1);
+                  // Calculate combined odds
+                  const combinedOdds = bets.reduce((total, bet) => total * bet.odds, 1);
                   const potentialWinnings = totalStake * combinedOdds;
 
-                  const multibetRequest: MultibetRequest = {
-                        betId: this.generateBetId(),
-                        bets: betRequests,
-                        totalStake,
-                        combinedOdds,
-                        potentialWinnings,
-                        userId,
-                        timestamp: new Date().toISOString(),
-                        betType: 'multibet',
+                  // Step 1: Create bet slip
+                  const betSlip = await this.createBetSlip(bets, totalStake, userId);
+                  if (!betSlip.success || !betSlip.data?.id) {
+                        throw new Error('Failed to create bet slip');
+                  }
+
+                  // Step 2: Place bet using bet slip ID
+                  const placeBetData = {
+                        userId: userId,
+                        betSlipId: betSlip.data.id
                   };
 
+                  console.log('Placing multibet with userId:', userId, 'and bet slip ID:', betSlip.data.id);
+                  console.log('Place bet data:', placeBetData);
+
                   const response = await axios.post(
-                        `${API_BASE_URL}/bets/multibet`,
-                        multibetRequest,
+                        `${API_BASE_URL}/bets/place`,
+                        placeBetData,
                         {
                               headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('betzone_token')}`,
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                               },
                         }
                   );
@@ -279,6 +425,37 @@ export class BetSlipService {
             }
       }
 
+      // Validate bet selections
+      static async validateSelections(bets: BetSlipItem[]): Promise<{ success: boolean; data: { isValid: boolean; errors: string[] } }> {
+            try {
+                  const validationData = {
+                        selections: bets.map(bet => ({
+                              gameId: bet.gameId,
+                              marketType: 'h2h',
+                              outcome: bet.selection,
+                              odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds }
+                        }))
+                  };
+
+                  console.log('Validating selections with data:', validationData);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/bets/validate`,
+                        validationData,
+                        {
+                              headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                              },
+                        }
+                  );
+
+                  return response.data;
+            } catch (error: any) {
+                  throw this.handleError(error);
+            }
+      }
+
       // Error handling
       private static handleError(error: any): Error {
             if (error.response) {
@@ -299,7 +476,8 @@ export class BetSlipService {
 export const placeBets = async (
       bets: BetSlipItem[],
       isMultibet: boolean,
-      multibetStake?: number
+      multibetStake?: number,
+      userId?: string
 ): Promise<BetResponse | BetResponse[]> => {
       // Validate betslip first
       const validation = isMultibet
@@ -312,9 +490,9 @@ export const placeBets = async (
 
       // Place bets based on type
       if (isMultibet && multibetStake) {
-            return await BetSlipService.placeMultibet(bets, multibetStake);
+            return await BetSlipService.placeMultibet(bets, multibetStake, userId);
       } else {
-            return await BetSlipService.placeSingleBets(bets);
+            return await BetSlipService.placeSingleBets(bets, userId);
       }
 };
 

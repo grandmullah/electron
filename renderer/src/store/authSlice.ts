@@ -1,10 +1,33 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { AuthUser } from '../services/authService';
 
 export interface User {
       id: string;
       name: string;
       phoneNumber: string;
       isLoggedIn: boolean;
+      role: 'user' | 'agent' | 'admin';
+      agentId?: string; // If user is managed by an agent
+      managedUsers?: string[]; // If user is an agent, list of managed user IDs
+      balance: number;
+      commission?: number; // Agent commission percentage
+      currency: string;
+      isActive: boolean;
+      bettingLimits: {
+            minStake: number;
+            maxStake: number;
+            maxDailyLoss: number;
+            maxWeeklyLoss: number;
+      };
+      preferences: {
+            oddsFormat: 'decimal' | 'fractional' | 'american';
+            timezone: string;
+            notifications: {
+                  betSettled: boolean;
+                  oddsChanged: boolean;
+                  newGames: boolean;
+            };
+      };
 }
 
 export interface AuthState {
@@ -19,17 +42,6 @@ const initialState: AuthState = {
       error: null,
 };
 
-// Load user from localStorage on app start
-const savedUser = localStorage.getItem('betzone_user');
-if (savedUser) {
-      try {
-            initialState.user = JSON.parse(savedUser);
-      } catch (error) {
-            console.error('Error parsing saved user:', error);
-            localStorage.removeItem('betzone_user');
-      }
-}
-
 export const authSlice = createSlice({
       name: 'auth',
       initialState,
@@ -42,7 +54,6 @@ export const authSlice = createSlice({
                   state.user = action.payload;
                   state.isLoading = false;
                   state.error = null;
-                  localStorage.setItem('betzone_user', JSON.stringify(action.payload));
             },
             loginFailure: (state, action: PayloadAction<string>) => {
                   state.isLoading = false;
@@ -52,13 +63,30 @@ export const authSlice = createSlice({
                   state.user = null;
                   state.isLoading = false;
                   state.error = null;
-                  localStorage.removeItem('betzone_user');
             },
             clearError: (state) => {
                   state.error = null;
             },
       },
 });
+
+// Helper function to convert AuthUser to User
+export const convertAuthUserToUser = (authUser: AuthUser): User => {
+      return {
+            id: authUser.id,
+            name: `User ${authUser.phone_number.slice(-4)}`, // Generate name from phone
+            phoneNumber: authUser.phone_number,
+            isLoggedIn: true,
+            role: authUser.role,
+            balance: authUser.balance,
+            currency: authUser.currency,
+            isActive: authUser.isActive,
+            bettingLimits: authUser.bettingLimits,
+            preferences: authUser.preferences,
+            // Add agent-specific fields if needed
+            ...(authUser.role === 'agent' && { commission: 5 }), // Default commission for agents
+      };
+};
 
 export const { loginStart, loginSuccess, loginFailure, logout, clearError } = authSlice.actions;
 export default authSlice.reducer; 
