@@ -1,0 +1,9 @@
+dist
+node_modules
+build
+public
+test
+types
+utils
+vite.config.ts
+node_modules
