@@ -112,6 +112,50 @@ export class BetSlipService {
             throw new Error('User ID not found. Please try logging in again or refresh the page.');
       }
 
+      private static deriveMarketTypeFromBetType(betType: string): string {
+            const key = (betType || '').toLowerCase();
+            if (key.includes('double')) return 'double_chance';
+            if (key.includes('over/under') || key.includes('over') || key.includes('under')) return 'totals';
+            if (key.includes('both') || key.includes('btts')) return 'btts';
+            if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('match')) return 'h2h';
+            return 'h2h';
+      }
+
+      private static deriveOutcomeForMarket(bet: BetSlipItem, marketType: string): string {
+            const selection = (bet.selection || '').toLowerCase();
+            switch (marketType) {
+                  case 'h2h':
+                        if (selection === 'home') return bet.homeTeam;
+                        if (selection === 'away') return bet.awayTeam;
+                        if (selection === 'draw') return 'Draw';
+                        return bet.selection;
+                  case 'double_chance': {
+                        // Map to standardized outcome names the backend expects
+                        if (selection === '1 or x' || selection === '1x' || selection.includes('home') && selection.includes('draw')) {
+                              return '1 or X';
+                        }
+                        if (selection === 'x or 2' || selection === 'x2' || selection.includes('draw') && selection.includes('away')) {
+                              return 'X or 2';
+                        }
+                        if (selection === '1 or 2' || selection === '12' || (selection.includes('home') && selection.includes('away'))) {
+                              return '1 or 2';
+                        }
+                        return bet.selection;
+                  }
+                  case 'totals': {
+                        if (selection === 'over') return 'Over';
+                        if (selection === 'under') return 'Under';
+                        return bet.selection;
+                  }
+                  case 'btts': {
+                        if (selection === 'yes' || selection === 'no') return bet.selection.charAt(0).toUpperCase() + bet.selection.slice(1).toLowerCase();
+                        return bet.selection;
+                  }
+                  default:
+                        return bet.selection;
+            }
+      }
+
       // Convert betslip items to API format (deprecated - keeping for compatibility)
       private static convertToSingleBetRequest(
             bet: BetSlipItem,
@@ -144,46 +188,18 @@ export class BetSlipService {
                   const betSlipData = {
                         userId: finalUserId,
                         selections: bets.map(bet => {
-                              // Map generic selections to actual team names or specific outcomes
-                              let outcome: string;
-                              const selection = bet.selection.toLowerCase();
-                              switch (selection) {
-                                    case 'home':
-                                          outcome = bet.homeTeam;
-                                          break;
-                                    case 'away':
-                                          outcome = bet.awayTeam;
-                                          break;
-                                    case 'draw':
-                                          outcome = 'Draw';
-                                          break;
-                                    case 'over':
-                                          outcome = 'Over 2.5';
-                                          break;
-                                    case 'under':
-                                          outcome = 'Under 2.5';
-                                          break;
-                                    case 'yes':
-                                          outcome = 'Yes';
-                                          break;
-                                    case 'no':
-                                          outcome = 'No';
-                                          break;
-                                    default:
-                                          // For other bet types, use the selection as is
-                                          outcome = bet.selection;
-                              }
-
+                              const marketType = this.deriveMarketTypeFromBetType(bet.betType);
+                              const outcome = this.deriveOutcomeForMarket(bet, marketType);
                               const selectionData = {
                                     gameId: bet.gameId,
                                     homeTeam: bet.homeTeam,
                                     awayTeam: bet.awayTeam,
-                                    marketType: 'h2h', // Default market type
+                                    marketType: marketType,
                                     outcome: outcome,
                                     odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds },
                                     bookmaker: 'BetZone',
-                                    gameTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Default to tomorrow
-                                    sportKey: 'soccer_epl' // Default sport
+                                    gameTime: bet.gameTime || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                    sportKey: bet.sportKey || 'soccer_epl'
                               };
 
                               console.log(`Mapping selection: "${bet.selection}" -> "${outcome}" for ${bet.homeTeam} vs ${bet.awayTeam}`);
@@ -429,12 +445,16 @@ export class BetSlipService {
       static async validateSelections(bets: BetSlipItem[]): Promise<{ success: boolean; data: { isValid: boolean; errors: string[] } }> {
             try {
                   const validationData = {
-                        selections: bets.map(bet => ({
-                              gameId: bet.gameId,
-                              marketType: 'h2h',
-                              outcome: bet.selection,
-                              odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds }
-                        }))
+                        selections: bets.map(bet => {
+                              const marketType = this.deriveMarketTypeFromBetType(bet.betType);
+                              const outcome = this.deriveOutcomeForMarket(bet, marketType);
+                              return {
+                                    gameId: bet.gameId,
+                                    marketType,
+                                    outcome,
+                                    odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds }
+                              };
+                        })
                   };
 
                   console.log('Validating selections with data:', validationData);
