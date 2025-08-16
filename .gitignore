@@ -5,7 +5,7 @@ build
 test
 types
 utils
-vite.config.ts
+
 node_modules
 test*
 out*
