@@ -2,13 +2,6 @@ import { API_BASE_URL } from './apiConfig';
 
 // console.log('API_BASE_URL:', API_BASE_URL, 'Mode:', import.meta.env.MODE);
 
-// Development mode fallback for testing without backend
-// const isDevelopmentMode = import.meta.env.MODE === 'development';
-const isDevelopmentMode = true;
-const ENABLE_DEV_FALLBACK = false; // Set to true to enable mock responses
-const ENABLE_TEST_EXPIRATION = false; // Set to true to test session expiration warning
-const USE_AGENT_TOKEN = true; // Set to true to use specific agent token for testing
-
 export interface RegisterRequest {
       phone_number: string;
       password: string;
@@ -103,38 +96,6 @@ class AuthService {
             };
       }
 
-      // Login with test agent credentials for development testing
-      private static async loginTestAgent(): Promise<string> {
-            try {
-                  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                        method: 'POST',
-                        headers: {
-                              'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                              phone_number: "+1555999001",
-                              password: "agent123"
-                        }),
-                  });
-
-                  if (!response.ok) {
-                        throw new Error(`Failed to login test agent: ${response.status}`);
-                  }
-
-                  const data = await response.json();
-                  console.log('Test agent login response:', data);
-
-                  if (data.success && data.token) {
-                        return data.token;
-                  } else {
-                        throw new Error('Invalid test agent login response');
-                  }
-            } catch (error) {
-                  console.error('Failed to login test agent:', error);
-                  throw error;
-            }
-      }
-
       static async register(userData: RegisterRequest): Promise<AuthResponse> {
             try {
                   const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -170,20 +131,8 @@ class AuthService {
                         throw new Error('Invalid response from server');
                   }
 
-                  // Store the token (or create a test token for expiration testing)
-                  if (ENABLE_TEST_EXPIRATION && isDevelopmentMode) {
-                        // Create a mock JWT token that expires in 6 minutes for testing
-                        const testPayload = {
-                              sub: data.user.id,
-                              exp: Math.floor(Date.now() / 1000) + (6 * 60), // Expires in 6 minutes
-                              iat: Math.floor(Date.now() / 1000)
-                        };
-                        const testToken = 'test.' + btoa(JSON.stringify(testPayload)) + '.signature';
-                        localStorage.setItem('authToken', testToken);
-                        console.log('Test token created, expires in 6 minutes');
-                  } else {
-                        localStorage.setItem('authToken', data.token);
-                  }
+                  // Store the token
+                  localStorage.setItem('authToken', data.token);
 
                   return data;
             } catch (error: any) {
@@ -227,12 +176,11 @@ class AuthService {
 
                   const data: AuthResponse = await response.json();
 
-                  // Validate response structure
+                  // Validate and store token
                   if (!data.success || !data.user || !data.token) {
                         throw new Error('Invalid response from server');
                   }
 
-                  // Store the token
                   localStorage.setItem('authToken', data.token);
 
                   // If this is an agent login, also store agent-specific information
@@ -295,20 +243,6 @@ class AuthService {
 
       static isAgent(): boolean {
             return !!this.getAgentToken();
-      }
-
-      // Initialize test agent token for development testing
-      static async initializeAgentToken(): Promise<void> {
-            if (USE_AGENT_TOKEN && isDevelopmentMode) {
-                  try {
-                        const agentToken = await this.loginTestAgent();
-                        localStorage.setItem('authToken', agentToken);
-                        localStorage.setItem('agentToken', agentToken);
-                        console.log('Test agent token initialized for development');
-                  } catch (error) {
-                        console.error('Failed to initialize test agent token:', error);
-                  }
-            }
       }
 
       static getTokenExpiration(): number | null {

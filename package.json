@@ -7,18 +7,29 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.main.json && vite build && cp -r renderer/*.html dist/renderer/ && cp -r renderer/styles dist/renderer/",
+    "build": "tsc -p tsconfig.main.json && vite build && mkdir -p dist/renderer && cp -r renderer/*.html dist/renderer/ && cp -r renderer/styles dist/renderer/ && cp -r resources dist/",
     "start": "yarn build && electron .",
     "dev": "vite build --watch & tsc -p tsconfig.main.json --watch & electron .",
     "watch": "tsc -p tsconfig.main.json --watch",
     "package": "electron-forge package",
     "premake": "yarn build",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "make:win": "yarn build && electron-forge make --platform win32",
+    "make:win:installer": "yarn build && electron-forge make --platform win32 --arch x64 --targets @electron-forge/maker-squirrel",
+    "make:win:portable": "yarn build && electron-forge make --platform win32 --arch x64 --targets @electron-forge/maker-zip",
+    "build:win": "yarn build && electron-forge make --platform win32 --arch x64 --targets @electron-forge/maker-zip",
+    "build:win:portable": "yarn build && electron-forge make --platform win32 --arch x64 --targets @electron-forge/maker-zip",
+    "build:win:installer": "yarn build && electron-forge make --platform win32 --arch x64 --targets @electron-forge/maker-squirrel",
+    "eb:dir": "yarn build && electron-builder --dir",
+    "eb:win": "yarn build && electron-builder --win --x64 --publish=never",
+    "eb:win:portable": "yarn build && electron-builder --win portable --x64 --publish=never",
+    "publish": "electron-forge publish",
+    "start2": "electron-forge start"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.6.0",
+    "electron-squirrel-startup": "^1.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-phone-number-input": "^3.4.12",
@@ -31,26 +42,108 @@
     "@electron-forge/maker-rpm": "^7.8.3",
     "@electron-forge/maker-squirrel": "^7.8.3",
     "@electron-forge/maker-zip": "^7.8.3",
+   
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.0.0",
-    "electron": "^37.2.4",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.0",
     "typescript": "^5.0.0",
     "vite": "^4.4.0"
   },
   "config": {
     "forge": {
       "packagerConfig": {
-        "asar": true
+        "asar": true,
+        "ignore": [
+          ".git",
+          ".vscode",
+          "out"
+        ],
+        "overwrite": true,
+        "executableName": "Betzone",
+        "appCopyright": "Copyright © 2025 Betzone",
+        "appVersion": "1.0.0",
+        "icon": "resources/favicon.ico",
+        "extraResource": [
+          "resources"
+        ],
+        "derefSymlinks": false,
+        "prune": false,
+        "win32metadata": {
+          "CompanyName": "Betzone",
+          "FileDescription": "Betzone Desktop Application",
+          "OriginalFilename": "Betzone.exe",
+          "ProductName": "Betzone",
+          "InternalName": "Betzone"
+        },
+        "extraFiles": [
+          {
+            "from": "node_modules/electron/dist/",
+            "to": ".",
+            "filter": [
+              "**/*.dll",
+              "**/*.exe",
+              "**/*.pak",
+              "**/*.bin",
+              "**/*.dat"
+            ]
+          }
+        ],
+        "nativeRebuild": true
+      },
+      "hooks": {
+        "prePackage": "echo 'Preparing package...'",
+        "postPackage": "echo 'Package created successfully'"
       },
       "makers": [
-        { "name": "@electron-forge/maker-dmg", "config": {}, "platforms": ["darwin"] },
-        { "name": "@electron-forge/maker-zip", "config": {}, "platforms": ["darwin"] },
-        { "name": "@electron-forge/maker-squirrel", "config": {}, "platforms": ["win32"] },
-        { "name": "@electron-forge/maker-zip", "config": {}, "platforms": ["win32"] },
-        { "name": "@electron-forge/maker-deb", "config": {}, "platforms": ["linux"] },
-        { "name": "@electron-forge/maker-rpm", "config": {}, "platforms": ["linux"] }
+        {
+          "name": "@electron-forge/maker-dmg",
+          "platforms": [
+            "darwin"
+          ],
+          "config": {
+            "icon": "resources/favicon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "linux"
+          ],
+          "config": {
+            "icon": "resources/favicon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "platforms": [
+            "win32"
+          ],
+          "config": {
+            "icon": "resources/favicon.ico",
+            "setupIcon": "resources/favicon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "platforms": [
+            "linux"
+          ],
+          "config": {
+            "icon": "resources/favicon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "platforms": [
+            "linux"
+          ],
+          "config": {
+            "icon": "resources/favicon.ico"
+          }
+        }
       ]
     }
   }
