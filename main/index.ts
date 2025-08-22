@@ -1,6 +1,15 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 
+// Ensure Electron is not forced to run as Node on Windows (breaks child processes)
+if (process.platform === 'win32' && process.env['ELECTRON_RUN_AS_NODE']) {
+      try {
+            delete process.env['ELECTRON_RUN_AS_NODE'];
+      } catch (_e) {
+            process.env['ELECTRON_RUN_AS_NODE'] = '0';
+      }
+}
+
 // Keep a global reference of the window object to prevent GC closing it
 let mainWindow: BrowserWindow | null = null;
 
