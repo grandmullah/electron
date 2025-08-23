@@ -1,12 +1,33 @@
 import type { App, BrowserWindow as BrowserWindowType } from 'electron';
 import * as path from 'path';
 
+// If this file is executed by plain Node, relaunch under Electron
+// so that `require('electron')` provides the runtime APIs.
+if (!process.versions || !process.versions.electron) {
+      try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { spawnSync } = require('child_process');
+            // In a Node context, require('electron') resolves to the Electron binary path
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const electronPath = require('electron');
+            const result = spawnSync(electronPath, ['.'], {
+                  stdio: 'inherit',
+                  env: { ...process.env, ELECTRON_RUN_AS_NODE: '0' },
+            });
+            process.exit(result.status ?? 0);
+      } catch (relaunchError) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to relaunch under Electron:', relaunchError);
+            process.exit(1);
+      }
+}
+
 // Ensure Electron is not forced to run as Node on Windows (breaks child processes)
 if (process.platform === 'win32' && process.env['ELECTRON_RUN_AS_NODE']) {
       try {
             delete process.env['ELECTRON_RUN_AS_NODE'];
       } catch (_e) {
-            process.env['ELECTRON_RUN_AS_NODE'] = '0';
+            // ignore
       }
 }
 
@@ -28,7 +49,9 @@ app.disableHardwareAcceleration();
 // Windows-specific configurations for Electron 37
 if (process.platform === 'win32') {
       // Ensure proper DLL loading
-      process.env['ELECTRON_RUN_AS_NODE'] = '0';
+      if (process.env['ELECTRON_RUN_AS_NODE']) {
+            delete process.env['ELECTRON_RUN_AS_NODE'];
+      }
 
       // Keep to minimal, safe flags
       app.commandLine.appendSwitch('disable-features', 'MediaFoundationVideoCapture');
