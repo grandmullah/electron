@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import type { App, BrowserWindow as BrowserWindowType } from 'electron';
 import * as path from 'path';
 
 // Ensure Electron is not forced to run as Node on Windows (breaks child processes)
@@ -10,8 +10,13 @@ if (process.platform === 'win32' && process.env['ELECTRON_RUN_AS_NODE']) {
       }
 }
 
+// Import Electron only after sanitizing environment variables
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const electronModule = require('electron') as typeof import('electron');
+const { app, BrowserWindow } = electronModule;
+
 // Keep a global reference of the window object to prevent GC closing it
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindowType | null = null;
 
 // NSIS installer doesn't need Squirrel handling - removed for NSIS builds
 
@@ -31,7 +36,7 @@ if (process.platform === 'win32') {
 }
 
 // Add user-friendly error dialog on Windows crashes
-const { dialog } = require('electron');
+const { dialog } = electronModule;
 
 // Lightweight debug logger to help diagnose startup issues on user machines
 function writeDebugLog(message: string): void {
