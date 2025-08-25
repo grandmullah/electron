@@ -38,6 +38,8 @@ const { app, BrowserWindow } = electronModule;
 
 // Keep a global reference of the window object to prevent GC closing it
 let mainWindow: BrowserWindowType | null = null;
+let isShuttingDown = false;
+let healthCheckInterval: NodeJS.Timeout | null = null;
 
 // NSIS installer doesn't need Squirrel handling - removed for NSIS builds
 
@@ -94,10 +96,20 @@ process.on('exit', (code) => {
 // Additional quit event logging
 app.on('will-quit', () => {
       writeDebugLog('App received will-quit event');
+      isShuttingDown = true;
+      if (healthCheckInterval) {
+            clearInterval(healthCheckInterval);
+            healthCheckInterval = null;
+      }
 });
 
 app.on('before-quit', () => {
       writeDebugLog('App received before-quit event');
+      isShuttingDown = true;
+      if (healthCheckInterval) {
+            clearInterval(healthCheckInterval);
+            healthCheckInterval = null;
+      }
 });
 
 async function createWindow(): Promise<void> {
@@ -408,6 +420,7 @@ async function createWindow(): Promise<void> {
             // Log if window closes unexpectedly
             mainWindow.on('close', (event) => {
                   writeDebugLog(`Window is closing, prevented: ${event.defaultPrevented}`);
+                  isShuttingDown = true;
             });
 
             // Open DevTools only in development or if there's an error
@@ -503,18 +516,15 @@ process.on('unhandledRejection', (reason, promise) => {
 // Quit when all windows are closed (with logging and safety check)
 app.on('window-all-closed', () => {
       writeDebugLog('Window-all-closed event fired');
-      // Do NOT quit automatically on Windows; keep app alive for recovery/logging
-      if (process.platform === 'darwin') {
-            if (BrowserWindow.getAllWindows().length === 0) {
-                  writeDebugLog('macOS with no windows - not quitting');
-            } else {
-                  writeDebugLog('Windows still exist - not quitting');
+      if (process.platform !== 'darwin') {
+            isShuttingDown = true;
+            if (healthCheckInterval) {
+                  clearInterval(healthCheckInterval);
+                  healthCheckInterval = null;
             }
-            return;
+            writeDebugLog('Quitting app after window-all-closed (Windows/Linux)');
+            app.quit();
       }
-
-      // On Windows/Linux, keep process alive to allow recovery and logging
-      writeDebugLog('Keeping app alive after window-all-closed (Windows/Linux)');
 });
 
 app.on('activate', () => {
@@ -564,7 +574,11 @@ function createEmergencyWindow(): void {
 }
 
 // Add a health check mechanism with Windows emergency fallback
-setInterval(() => {
+healthCheckInterval = setInterval(() => {
+      if (isShuttingDown) {
+            writeDebugLog('Health check skipped because app is shutting down');
+            return;
+      }
       const windows = BrowserWindow.getAllWindows();
       if (windows.length === 0) {
             console.log('No windows found, creating new window...');
@@ -596,4 +610,4 @@ setInterval(() => {
                   }
             }
       }
-}, 10000); // Increased to 10 seconds to prevent rapid re-crashes 
+}, 10000); // Increased to 10 seconds to prevent rapid re-crashes
