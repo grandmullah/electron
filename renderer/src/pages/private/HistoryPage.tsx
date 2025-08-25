@@ -16,6 +16,7 @@ import {
   getBetStatistics,
   exportBetHistory,
 } from "../../services/betHistoryService";
+import { printThermalTicket as printTicket } from "../../services/printService";
 
 interface HistoryPageProps {
   onNavigate: (
@@ -398,11 +399,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   };
 
   const printThermalTicket = (bet: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {
-      printThermalTicket: doPrint,
-    } = require("../../services/printService");
-    doPrint(bet);
+    printTicket(bet);
   };
 
   const getStatusColor = (status: string) => {

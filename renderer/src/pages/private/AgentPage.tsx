@@ -19,6 +19,7 @@ import {
 } from "../../store/agentSlice";
 import AgentService from "../../services/agentService";
 import { Header } from "../../components/Header";
+import { printThermalTicket as printTicket } from "../../services/printService";
 
 interface AgentPageProps {
   onNavigate: (
@@ -83,12 +84,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
   };
 
   const printThermalTicket = (bet: AgentBet) => {
-    // defer to centralized print service for consistent output
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {
-      printThermalTicket: doPrint,
-    } = require("../../services/printService");
-    doPrint(bet);
+    printTicket(bet);
   };
   const [newUser, setNewUser] = useState({
     phone_number: "",
