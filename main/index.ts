@@ -458,6 +458,12 @@ async function createWindow(): Promise<void> {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+      // Ensure Windows uses our app identity (affects taskbar icon, notifications)
+      try {
+            if (process.platform === 'win32') {
+                  app.setAppUserModelId('com.betzone.desktop');
+            }
+      } catch (_e) { /* ignore */ }
       console.log('Electron app is ready, creating window...');
       createWindow();
 }).catch((error) => {

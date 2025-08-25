@@ -25,59 +25,70 @@ export function printThermalTicket(bet: AnyBet): void {
       const selectionsHtml = (bet?.selections || [])
             .map(
                   (s: any, idx: number) => `
-                <div class="selection">
-                  <p><strong>${idx + 1}. ${s?.homeTeam ?? ''} vs ${s?.awayTeam ?? ''}</strong></p>
-                  <p>${s?.betType ?? ''}: ${s?.selection ?? ''}</p>
-                  <p>Odds: ${s?.odds ?? ''}${s?.gameId ? ` | Game: ${s.gameId}` : ''}</p>
-                </div>`
+                <p class="bold">${idx + 1}. ${String(s?.homeTeam ?? '').replace(/[^\w\s]/g, '')} vs ${String(s?.awayTeam ?? '').replace(/[^\w\s]/g, '')}</p>
+                <p>${String(s?.betType ?? '').replace(/[^\w\s]/g, '')}: ${String(s?.selection ?? '').replace(/[^\w\s]/g, '')}</p>
+                <p>Odds: ${s?.odds ?? ''}${s?.gameId ? ` Game: ${String(s.gameId).replace(/[^\w]/g, '')}` : ''}</p>
+                <div class="line"></div>`
             )
             .join('');
 
+      // Use simple ASCII characters and avoid complex formatting for thermal compatibility
       const html = `
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Bet Ticket - ${bet?.id ?? ''}</title>
+    <title>Bet Ticket</title>
     <style>
-      @media print { @page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact; } }
-      body { font-family: monospace; font-size: 12px; margin: 10px; color: #000; background: #fff; }
-      .ticket { width: 72mm; margin: 0 auto; }
-      .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 10px; }
-      .header h2 { margin: 0 0 4px 0; font-size: 16px; }
-      .header p { margin: 2px 0; }
-      .bet-info { margin-bottom: 10px; }
-      .bet-info p { margin: 2px 0; }
-      .selections { margin-top: 6px; }
-      .selections h4 { margin: 4px 0; }
-      .selection { border-bottom: 1px solid #ccc; padding: 5px 0; }
-      .footer { text-align: center; border-top: 1px dashed #000; padding-top: 8px; margin-top: 10px; }
+      @media print { 
+        @page { size: 80mm auto; margin: 0; } 
+        body { -webkit-print-color-adjust: exact; color-adjust: exact; }
+      }
+      body { 
+        font-family: 'Courier New', 'Courier', monospace; 
+        font-size: 11px; 
+        line-height: 1.2;
+        margin: 5px; 
+        color: #000; 
+        background: #fff; 
+        width: 70mm;
+      }
+      .center { text-align: center; }
+      .line { border-bottom: 1px solid #000; margin: 3px 0; }
+      .dashed { border-bottom: 1px dashed #000; margin: 5px 0; }
+      p { margin: 1px 0; }
+      .bold { font-weight: bold; }
     </style>
   </head>
   <body>
-    <div class="ticket">
-      <div class="header">
-        <h2>BETZONE</h2>
-        <p>Bet Ticket</p>
-        <p>ID: ${bet?.id ?? ''}</p>
-        <p>Date: ${createdAt.toLocaleString()}</p>
-      </div>
-      <div class="bet-info">
-        <p><strong>Bet Type:</strong> ${bet?.betType ?? ''}</p>
-        <p><strong>Stake:</strong> $${formatMoney(bet?.totalStake)}</p>
-        ${bet?.potentialWinnings != null ? `<p><strong>Potential Winnings:</strong> $${formatMoney(bet?.potentialWinnings)}</p>` : ''}
-        ${bet?.taxPercentage ? `<p><strong>Tax (${bet.taxPercentage}%):</strong> -$${formatMoney(bet?.taxAmount)}</p>` : ''}
-        ${bet?.netWinnings != null ? `<p><strong>Net Winnings:</strong> $${formatMoney(bet?.netWinnings)}</p>` : ''}
-        ${bet?.status ? `<p><strong>Status:</strong> ${bet.status}</p>` : ''}
-      </div>
-      <div class="selections">
-        <h4>Selections:</h4>
-        ${selectionsHtml}
-      </div>
-      <div class="footer">
-        <p>Thank you for betting with BetZone!</p>
-        <p>Keep this ticket safe</p>
-      </div>
+    <div class="center bold">
+      <p>BETZONE</p>
+      <p>BET TICKET</p>
+    </div>
+    <div class="dashed"></div>
+    
+    <p><span class="bold">ID:</span> ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}</p>
+    <p><span class="bold">Date:</span> ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}</p>
+    
+    <div class="dashed"></div>
+    
+    <p><span class="bold">Bet Type:</span> ${String(bet?.betType ?? '').toUpperCase()}</p>
+    <p><span class="bold">Stake:</span> $${formatMoney(bet?.totalStake)}</p>
+    ${bet?.potentialWinnings != null ? `<p><span class="bold">Potential:</span> $${formatMoney(bet?.potentialWinnings)}</p>` : ''}
+    ${bet?.taxPercentage ? `<p><span class="bold">Tax (${bet.taxPercentage}%):</span> -$${formatMoney(bet?.taxAmount)}</p>` : ''}
+    ${bet?.netWinnings != null ? `<p><span class="bold">Net:</span> $${formatMoney(bet?.netWinnings)}</p>` : ''}
+    ${bet?.status ? `<p><span class="bold">Status:</span> ${String(bet.status).toUpperCase()}</p>` : ''}
+    
+    <div class="dashed"></div>
+    
+    <p class="bold">SELECTIONS:</p>
+    ${selectionsHtml}
+    
+    <div class="dashed"></div>
+    
+    <div class="center">
+      <p>Thank you for betting with BetZone!</p>
+      <p>Keep this ticket safe</p>
     </div>
   </body>
 </html>`;

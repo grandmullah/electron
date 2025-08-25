@@ -1,6 +1,6 @@
 {
   "name": "betzone-electron",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "betzone desktop app",
   "main": "dist/main/index.js",
   "author": "grandmullah",
@@ -181,7 +181,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "resources/icon-256.png"
+      "icon": "resources/favicon.ico"
     },
     "nsis": {
       "oneClick": false,
