@@ -398,91 +398,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   };
 
   const printThermalTicket = (bet: any) => {
-    const printWindow = window.open("", "_blank", "width=300,height=600");
-    if (!printWindow) {
-      alert("Please allow pop-ups to print the ticket");
-      return;
-    }
-
-    const thermalHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Bet Ticket - ${bet.id}</title>
-          <style>
-            body { font-family: monospace; font-size: 12px; margin: 10px; }
-            .ticket { width: 280px; }
-            .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .bet-info { margin-bottom: 10px; }
-            .selection { border-bottom: 1px solid #ccc; padding: 5px 0; }
-            .footer { text-align: center; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="ticket">
-            <div class="header">
-              <h2>BETZONE</h2>
-              <p>Bet Ticket</p>
-              <p>ID: ${bet.id}</p>
-              <p>Date: ${new Date(bet.createdAt).toLocaleString()}</p>
-            </div>
-            
-            <div class="bet-info">
-              <p><strong>Bet Type:</strong> ${bet.betType}</p>
-              <p><strong>Stake:</strong> $${bet.totalStake}</p>
-              <p><strong>Potential Winnings:</strong> $${
-                bet.potentialWinnings
-              }</p>
-              ${
-                bet.taxPercentage && bet.taxPercentage > 0
-                  ? `
-              <p><strong>Tax (${bet.taxPercentage}%):</strong> -$${
-                      bet.taxAmount?.toFixed(2) || "0.00"
-                    }</p>
-              <p><strong>Net Winnings:</strong> $${
-                bet.netWinnings?.toFixed(2) || "0.00"
-              }</p>
-              `
-                  : ""
-              }
-              <p><strong>Status:</strong> ${bet.status}</p>
-            </div>
-            
-            <div class="selections">
-              <h4>Selections:</h4>
-              ${bet.selections
-                .map(
-                  (selection: any, index: number) => `
-                <div class="selection">
-                  <p><strong>${index + 1}. ${selection.homeTeam} vs ${
-                    selection.awayTeam
-                  }</strong></p>
-                  <p>${selection.betType}: ${selection.selection}</p>
-                  <p>Odds: ${selection.odds}</p>
-                  <p>Stake: $${selection.stake}</p>
-                </div>
-              `
-                )
-                .join("")}
-            </div>
-            
-            <div class="footer">
-              <p>Thank you for betting with BetZone!</p>
-              <p>Keep this ticket safe</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(thermalHTML);
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const {
+      printThermalTicket: doPrint,
+    } = require("../../services/printService");
+    doPrint(bet);
   };
 
   const getStatusColor = (status: string) => {
