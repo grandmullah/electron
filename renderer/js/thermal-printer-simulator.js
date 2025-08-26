@@ -128,3 +128,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create global simulator instance
     window.thermalPrinterSimulator = new ThermalPrinterSimulator();
 });
+
