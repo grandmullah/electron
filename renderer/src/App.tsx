@@ -8,12 +8,11 @@ import { SettingsPage } from "./pages/private/SettingsPage";
 import { GamesPage } from "./pages/public/GamesPage";
 import { AgentPage } from "./pages/private/AgentPage";
 import { HistoryPage } from "./pages/private/HistoryPage";
-import WindowsPrinterTest from "./components/WindowsPrinterTest";
 import AuthService from "./services/authService";
 import { loginSuccess, loginStart, loginFailure } from "./store/authSlice";
 import { convertAuthUserToUser } from "./store/authSlice";
 
-type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "printer-test";
+type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history";
 
 const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -102,8 +101,6 @@ const AppContent: React.FC = () => {
         );
       case "games":
         return <GamesPage onNavigate={navigateTo} />;
-      case "printer-test":
-        return <WindowsPrinterTest />;
       default:
         return <HomePage onNavigate={navigateTo} />;
     }
@@ -121,26 +118,7 @@ const AppContent: React.FC = () => {
     );
   }
 
-  return (
-    <div className="app">
-      {/* Add navigation to printer test */}
-      <div style={{ 
-        position: 'fixed', 
-        top: '10px', 
-        right: '10px', 
-        zIndex: 1000,
-        background: '#007bff',
-        color: 'white',
-        padding: '8px 12px',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        fontSize: '12px'
-      }} onClick={() => navigateTo('printer-test')}>
-        🖨️ Printer Test
-      </div>
-      {renderPage()}
-    </div>
-  );
+  return <div className="app">{renderPage()}</div>;
 };
 
 export const App: React.FC = () => {

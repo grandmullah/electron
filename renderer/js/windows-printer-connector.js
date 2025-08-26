@@ -349,6 +349,106 @@ class WindowsPrinterConnector {
         return new WindowsPrintJob(this, printConfig);
     }
 
+    // Preview bet receipt before printing
+    async previewBetReceipt(betData) {
+        if (!this.connected) {
+            throw new Error('Not connected to printer');
+        }
+
+        console.log('👀 Previewing bet receipt...');
+        
+        try {
+            const printJob = this.createPrintJob();
+            printJob.addBetReceipt(betData);
+            
+            const previewResult = printJob.preview();
+            console.log('✅ Bet receipt preview successful:', previewResult);
+            
+            return {
+                success: true,
+                preview: previewResult,
+                betData: betData
+            };
+            
+        } catch (error) {
+            console.error('❌ Failed to preview bet receipt:', error);
+            throw error;
+        }
+    }
+
+    // Preview bet slip before printing
+    async previewBetSlip(betData) {
+        if (!this.connected) {
+            throw new Error('Not connected to printer');
+        }
+
+        console.log('👀 Previewing bet slip...');
+        
+        try {
+            const printJob = this.createPrintJob();
+            printJob.addBetSlip(betData);
+            
+            const previewResult = printJob.preview();
+            console.log('✅ Bet slip preview successful:', previewResult);
+            
+            return {
+                success: true,
+                preview: previewResult,
+                betData: betData
+            };
+            
+        } catch (error) {
+            console.error('❌ Failed to preview bet slip:', error);
+            throw error;
+        }
+    }
+
+    // Preview and print bet receipt
+    async previewAndPrintBetReceipt(betData) {
+        if (!this.connected) {
+            throw new Error('Not connected to printer');
+        }
+
+        console.log('👀🖨️ Preview and print bet receipt...');
+        
+        try {
+            const printJob = this.createPrintJob();
+            printJob.addBetReceipt(betData);
+            
+            const result = await printJob.previewAndPrint();
+            console.log('✅ Bet receipt preview and print successful:', result);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Failed to preview and print bet receipt:', error);
+            throw error;
+        }
+    }
+
+    // Preview and print bet slip
+    async previewAndPrintBetSlip(betData) {
+        if (!this.connected) {
+            throw new Error('Not connected to printer');
+        }
+
+        console.log('👀🖨️ Preview and print bet slip...');
+        
+        try {
+            const printJob = this.createPrintJob();
+            printJob.addBetSlip(betData);
+            
+            const result = await printJob.previewAndPrint();
+            console.log('✅ Bet slip preview and print successful:', result);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Failed to preview and print bet slip:', error);
+            throw error;
+        }
+    }
+
     // Get connection status
     getStatus() {
         return {
