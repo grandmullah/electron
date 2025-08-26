@@ -74,113 +74,115 @@ export function printThermalTicket(bet: AnyBet): void {
             console.log('Receipt lines:', receiptLines);
             console.log('Receipt text:', receiptLines.join('\n'));
 
-            // Create the absolute simplest possible HTML
-            const minimalHtml = `
-<html>
-<head>
-<title>Bet Ticket</title>
-</head>
-<body>
-<pre>${receiptLines.join('\n')}</pre>
-</body>
-</html>`;
+            // Method 1: Try using iframe approach
+            console.log('Trying iframe method...');
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
 
-            console.log('Minimal HTML created, length:', minimalHtml.length);
-            console.log('Minimal HTML:', minimalHtml);
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc) {
+                  iframeDoc.open();
+                  iframeDoc.body.innerHTML = `
+                      <html>
+                      <head>
+                          <title>Bet Ticket</title>
+                          <style>
+                              @media print {
+                                  @page { size: 80mm auto; margin: 0; }
+                              }
+                              body {
+                                  font-family: monospace;
+                                  font-size: 10px;
+                                  margin: 0;
+                                  padding: 5px;
+                                  width: 70mm;
+                              }
+                          </style>
+                      </head>
+                      <body>
+                          <pre style="font-family: monospace; font-size: 10px; margin: 0; padding: 0; white-space: pre;">
+${receiptLines.join('\n')}
+                          </pre>
+                      </body>
+                      </html>
+                  `;
+                  iframeDoc.close();
 
-            // Create print window
-            const printWindow = window.open('', '_blank', 'width=300,height=600');
-            if (!printWindow) {
-                  alert('Please allow pop-ups to print the ticket');
-                  globalPrintInProgress = false;
-                  return;
+                  // Wait for iframe to load
+                  setTimeout(() => {
+                        try {
+                              console.log('Iframe content loaded, checking...');
+                              const iframeText = iframeDoc.body?.textContent || '';
+                              console.log('Iframe text length:', iframeText.length);
+                              console.log('Iframe text preview:', iframeText.substring(0, 100));
+
+                              if (iframeText.length > 20) {
+                                    console.log('Iframe content verified, printing...');
+                                    iframe.contentWindow?.print();
+                                    console.log('Iframe print command sent');
+
+                                    // Clean up iframe after printing
+                                    setTimeout(() => {
+                                          document.body.removeChild(iframe);
+                                          globalPrintInProgress = false;
+                                          console.log('Iframe print job completed');
+                                    }, 3000);
+                              } else {
+                                    console.error('Iframe content not loaded, trying window method...');
+                                    document.body.removeChild(iframe);
+                                    tryWindowMethod();
+                              }
+                        } catch (error) {
+                              console.error('Iframe print failed:', error);
+                              document.body.removeChild(iframe);
+                              tryWindowMethod();
+                        }
+                  }, 1000);
+            } else {
+                  console.error('Iframe not supported, trying window method...');
+                  tryWindowMethod();
             }
 
-            console.log('Print window created, writing minimal content...');
+            // Fallback method using window.open
+            function tryWindowMethod() {
+                  console.log('Trying window.open method...');
 
-            // Write minimal content
-            printWindow.document.open();
-            printWindow.document.write(minimalHtml);
-            printWindow.document.close();
-
-            // Wait and then print
-            setTimeout(() => {
-                  console.log('Checking content and printing...');
-
-                  try {
-                        // Get the actual text content
-                        const preElement = printWindow.document.querySelector('pre');
-                        const textContent = preElement?.textContent || '';
-
-                        console.log('Pre element found:', !!preElement);
-                        console.log('Text content length:', textContent.length);
-                        console.log('Text content:', textContent);
-
-                        if (textContent && textContent.length > 20) {
-                              console.log('Content verified, printing...');
-                              printWindow.print();
-                              console.log('Print command sent');
-
-                              // Close window after printing
-                              setTimeout(() => {
-                                    try {
-                                          if (!printWindow.closed) {
-                                                printWindow.close();
-                                          }
-                                    } catch (_) {
-                                          // Ignore close errors
-                                    }
-                                    globalPrintInProgress = false;
-                                    console.log('Print job completed');
-                              }, 3000);
-                        } else {
-                              console.error('No text content found, trying direct text method...');
-
-                              // Last resort: Create a completely text-based approach
-                              const textWindow = window.open('', '_blank', 'width=200,height=400');
-                              if (textWindow) {
-                                    textWindow.document.write(`
-                                        <html>
-                                        <head><title>Print</title></head>
-                                        <body>
-                                        ${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
-                                        </body>
-                                        </html>
-                                    `);
-                                    textWindow.document.close();
-
-                                    setTimeout(() => {
-                                          textWindow.print();
-                                          setTimeout(() => {
-                                                try { textWindow.close(); } catch (_) { }
-                                                globalPrintInProgress = false;
-                                          }, 2000);
-                                    }, 500);
-                              } else {
-                                    // Final fallback: Try data URL approach
-                                    console.log('Trying data URL approach...');
-                                    const receiptText = receiptLines.join('\n');
-                                    const dataUrl = `data:text/html,<html><body><pre>${encodeURIComponent(receiptText)}</pre></body></html>`;
-                                    const dataWindow = window.open(dataUrl, '_blank', 'width=200,height=400');
-
-                                    if (dataWindow) {
-                                          setTimeout(() => {
-                                                dataWindow.print();
-                                                setTimeout(() => {
-                                                      try { dataWindow.close(); } catch (_) { }
-                                                      globalPrintInProgress = false;
-                                                }, 2000);
-                                          }, 500);
-                                    } else {
-                                          globalPrintInProgress = false;
-                                    }
-                              }
-                        }
-                  } catch (error) {
-                        console.error('Print failed:', error);
+                  const printWindow = window.open('', '_blank', 'width=300,height=600');
+                  if (!printWindow) {
+                        alert('Please allow pop-ups to print the ticket');
                         globalPrintInProgress = false;
+                        return;
                   }
-            }, 1000);
+
+                  // Create very simple content
+                  const simpleContent = `
+                      <html>
+                      <head><title>Print</title></head>
+                      <body style="font-family: monospace; font-size: 10px;">
+                      ${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
+                      </body>
+                      </html>`;
+
+                  printWindow.document.open();
+                  printWindow.document.body.innerHTML = simpleContent;
+                  printWindow.document.close();
+
+                  setTimeout(() => {
+                        try {
+                              printWindow.print();
+                              console.log('Window print command sent');
+
+                              setTimeout(() => {
+                                    try { printWindow.close(); } catch (_) { }
+                                    globalPrintInProgress = false;
+                              }, 2000);
+                        } catch (error) {
+                              console.error('Window print failed:', error);
+                              globalPrintInProgress = false;
+                        }
+                  }, 1000);
+            }
 
       } catch (error) {
             console.error('Failed to create print ticket:', error);
