@@ -87,6 +87,7 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
 
             // Use BIXOLON Web Print API for thermal printing
             console.log('Using BIXOLON Web Print API for thermal printing...');
+            console.log('💡 Note: API will auto-detect current machine IP for port 18080');
 
             try {
                   // Initialize BIXOLON Web Print API
