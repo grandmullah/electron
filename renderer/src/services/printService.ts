@@ -70,8 +70,22 @@ export function printThermalTicket(bet: AnyBet): void {
                   'Keep this ticket safe'
             ];
 
-            // Create a simple HTML document with minimal styling
-            const html = `
+            // Debug: Log the receipt content
+            console.log('Receipt lines:', receiptLines);
+            console.log('Receipt text:', receiptLines.join('\n'));
+
+            // Create print window with minimal HTML
+            const printWindow = window.open('', '_blank', 'width=400,height=800');
+            if (!printWindow) {
+                  alert('Please allow pop-ups to print the ticket');
+                  globalPrintInProgress = false;
+                  return;
+            }
+
+            console.log('Print window created, writing content...');
+
+            // Create the simplest possible HTML with multiple fallback approaches
+            const simpleHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -83,51 +97,53 @@ export function printThermalTicket(bet: AnyBet): void {
 }
 body {
   font-family: monospace;
-  font-size: 10px;
+  font-size: 12px;
   margin: 0;
-  padding: 5px;
+  padding: 10px;
   width: 70mm;
-  line-height: 1.2;
+  background: white;
+  color: black;
 }
 </style>
 </head>
 <body>
-${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
+<!-- Method 1: Pre-formatted text -->
+<pre style="font-family: monospace; font-size: 12px; margin: 0; padding: 0; white-space: pre;">
+${receiptLines.join('\n')}
+</pre>
+
+<!-- Method 2: Textarea as backup -->
+<textarea style="font-family: monospace; font-size: 12px; width: 100%; height: auto; border: none; resize: none; background: white; color: black;" readonly>
+${receiptLines.join('\n')}
+</textarea>
+
+<!-- Method 3: Direct text nodes -->
+<div style="font-family: monospace; font-size: 12px; white-space: pre-line;">
+${receiptLines.join('\n')}
+</div>
 </body>
 </html>`;
 
-            // Debug: Log the receipt content
-            console.log('Receipt lines:', receiptLines);
-            console.log('HTML content length:', html.length);
-            console.log('First 200 chars of HTML:', html.substring(0, 200));
+            console.log('HTML created, length:', simpleHtml.length);
+            console.log('HTML preview:', simpleHtml.substring(0, 300));
 
-            // Create print window
-            const printWindow = window.open('', '_blank', 'width=300,height=600');
-            if (!printWindow) {
-                  alert('Please allow pop-ups to print the ticket');
-                  globalPrintInProgress = false;
-                  return;
-            }
-
-            console.log('Print window created, writing content...');
-
-            // Write content and print
+            // Write content to window
             printWindow.document.open();
-            printWindow.document.write(html);
+            printWindow.document.write(simpleHtml);
             printWindow.document.close();
 
-            // Print after content is loaded
-            printWindow.onload = () => {
-                  console.log('Content loaded, printing...');
+            // Force a delay and then print
+            setTimeout(() => {
+                  console.log('Attempting to print...');
 
-                  // Debug: Check what's actually in the window
-                  console.log('Window document body:', printWindow.document.body);
-                  console.log('Window innerHTML length:', printWindow.document.body?.innerHTML?.length || 0);
-                  console.log('Window text content:', printWindow.document.body?.textContent?.substring(0, 200));
+                  try {
+                        // Check if content is visible
+                        const bodyText = printWindow.document.body?.textContent || '';
+                        console.log('Body text length:', bodyText.length);
+                        console.log('Body text preview:', bodyText.substring(0, 200));
 
-                  // Wait a moment for rendering, then print
-                  setTimeout(() => {
-                        try {
+                        if (bodyText.length > 50) {
+                              console.log('Content verified, printing...');
                               printWindow.print();
                               console.log('Print command sent');
 
@@ -142,31 +158,50 @@ ${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
                                     }
                                     globalPrintInProgress = false;
                                     console.log('Print job completed');
-                              }, 2000);
+                              }, 3000);
+                        } else {
+                              console.error('Content not properly loaded, trying alternative method...');
 
-                        } catch (error) {
-                              console.error('Print failed:', error);
-                              globalPrintInProgress = false;
-                        }
-                  }, 500);
-            };
+                              // Alternative: Try to copy text to clipboard and create simple print
+                              try {
+                                    const receiptText = receiptLines.join('\n');
+                                    navigator.clipboard.writeText(receiptText).then(() => {
+                                          console.log('Text copied to clipboard, creating simple print...');
 
-            // Fallback if onload doesn't fire
-            setTimeout(() => {
-                  if (globalPrintInProgress) {
-                        console.log('Fallback: printing without onload');
-                        try {
-                              printWindow.print();
-                              setTimeout(() => {
-                                    try { printWindow.close(); } catch (_) { }
+                                          // Create a very simple print window
+                                          const simplePrintWindow = window.open('', '_blank', 'width=300,height=400');
+                                          if (simplePrintWindow) {
+                                                simplePrintWindow.document.write(`
+                                                    <html>
+                                                    <head><title>Print</title></head>
+                                                    <body style="font-family: monospace; font-size: 12px;">
+                                                    <pre>${receiptText}</pre>
+                                                    </body>
+                                                    </html>
+                                                `);
+                                                simplePrintWindow.document.close();
+
+                                                setTimeout(() => {
+                                                      simplePrintWindow.print();
+                                                      setTimeout(() => {
+                                                            try { simplePrintWindow.close(); } catch (_) { }
+                                                            globalPrintInProgress = false;
+                                                      }, 2000);
+                                                }, 500);
+                                          } else {
+                                                globalPrintInProgress = false;
+                                          }
+                                    });
+                              } catch (clipboardError) {
+                                    console.error('Clipboard method failed:', clipboardError);
                                     globalPrintInProgress = false;
-                              }, 2000);
-                        } catch (error) {
-                              console.error('Fallback print failed:', error);
-                              globalPrintInProgress = false;
+                              }
                         }
+                  } catch (error) {
+                        console.error('Print failed:', error);
+                        globalPrintInProgress = false;
                   }
-            }, 2000);
+            }, 1000);
 
       } catch (error) {
             console.error('Failed to create print ticket:', error);
