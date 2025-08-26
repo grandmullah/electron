@@ -30,7 +30,7 @@ function formatMoney(value: unknown): string {
  * 
  * Compatible with: SRP-330, SRP-350, SRP-270, SRP-275, and other Bixolon models
  */
-export function printThermalTicket(bet: AnyBet): void {
+export async function printThermalTicket(bet: AnyBet): Promise<void> {
       // Prevent multiple simultaneous print operations
       if (globalPrintInProgress) {
             console.warn('Print operation already in progress. Please wait.');
@@ -72,22 +72,42 @@ export function printThermalTicket(bet: AnyBet): void {
             console.log('Receipt lines:', receiptLines);
             console.log('Receipt text:', receiptLines.join('\n'));
 
-            // Check if bGate Web Print API is available
+            // Check if BIXOLON Web Print API is available
             if (typeof (window as any).bGateWebPrintAPI === 'undefined') {
-                  console.error('bGate Web Print API not found. Please include the required scripts.');
-                  console.error('Available global objects:', Object.keys(window).filter(key => key.includes('bGate') || key.includes('WS')));
-                  alert('Thermal printer API not available. Please check script inclusion.');
+                  console.error('BIXOLON Web Print API not found. Please include the required scripts.');
+                  console.error('Available global objects:', Object.keys(window).filter(key => 
+                        key.toLowerCase().includes('bixolon') || 
+                        key.toLowerCase().includes('webprint') ||
+                        key.toLowerCase().includes('sdk')
+                  ));
+                  alert('BIXOLON thermal printer API not available. Please check script inclusion.');
                   globalPrintInProgress = false;
                   return;
             }
 
-            // Use bGate Web Print API for thermal printing
-            console.log('Using bGate Web Print API for thermal printing...');
+            // Use BIXOLON Web Print API for thermal printing
+            console.log('Using BIXOLON Web Print API for thermal printing...');
 
             try {
-                  // Initialize bGate Web Print API
-                  const bGateAPI = (window as any).bGateWebPrintAPI;
-
+                                    // Initialize BIXOLON Web Print API
+                  const bixolonAPI = (window as any).bGateWebPrintAPI;
+                  
+                  // Check if connected to BIXOLON printer
+                  if (!bixolonAPI.connected) {
+                        console.log('BIXOLON printer not connected, attempting to connect...');
+                        
+                        try {
+                              const connected = await bixolonAPI.connect();
+                              if (!connected) {
+                                    console.log('Failed to connect to BIXOLON printer, using fallback printing');
+                                    throw new Error('BIXOLON printer connection failed');
+                              }
+                        } catch (connectError) {
+                              console.log('BIXOLON printer connection failed, using fallback printing');
+                              throw connectError;
+                        }
+                  }
+                  
                   // Configure printer settings for 80mm thermal paper
                   const printerConfig = {
                         width: 80, // 80mm paper width
@@ -98,8 +118,8 @@ export function printThermalTicket(bet: AnyBet): void {
                   };
 
                   // Create print job
-                  const printJob = bGateAPI.createPrintJob(printerConfig);
-
+                  const printJob = bixolonAPI.createPrintJob(printerConfig);
+                  
                   // Add receipt content
                   receiptLines.forEach(line => {
                         if (line === '') {
@@ -112,16 +132,16 @@ export function printThermalTicket(bet: AnyBet): void {
 
                   // Execute print job
                   printJob.execute().then(() => {
-                        console.log('Thermal print job completed successfully');
+                        console.log('BIXOLON thermal print job completed successfully');
                         globalPrintInProgress = false;
                   }).catch((error: any) => {
-                        console.error('Thermal print job failed:', error);
+                        console.error('BIXOLON thermal print job failed:', error);
                         globalPrintInProgress = false;
                   });
 
-            } catch (apiError) {
-                  console.error('bGate API error:', apiError);
-
+                        } catch (apiError) {
+                  console.error('BIXOLON API error:', apiError);
+                  
                   // Fallback to simple text printing if API fails
                   console.log('Falling back to simple text printing...');
                   const printWindow = window.open('', '_blank', 'width=300,height=600');
