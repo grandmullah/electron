@@ -48,19 +48,51 @@ class BixolonWebPrintAPI {
         }
     }
 
+    // Get current machine's IP addresses
+    async getCurrentMachineIPs() {
+        const ips = [];
+        
+        // Add hostname from current location
+        if (window.location.hostname && window.location.hostname !== 'localhost') {
+            ips.push(window.location.hostname);
+        }
+        
+        // Add common local IPs
+        ips.push('localhost', '127.0.0.1');
+        
+        // Try to get local network IPs (if available)
+        try {
+            // This might work in some environments
+            const response = await fetch('https://api.ipify.org?format=json');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.ip) {
+                    ips.push(data.ip);
+                }
+            }
+        } catch (error) {
+            // Ignore external IP detection errors
+        }
+        
+        return ips;
+    }
+
     // Try to connect to BIXOLON SDK service
     async tryConnectToSDKService() {
         console.log('🔌 Attempting to connect to BIXOLON SDK service...');
         
+        // Get current machine's IP addresses
+        const currentIPs = await this.getCurrentMachineIPs();
+        
         // Common BIXOLON SDK service endpoints
         const serviceUrls = [
-            'http://192.168.9.82:18080',  // Your configured BIXOLON service
-            'http://localhost:18080',      // Local fallback
-            'http://localhost:8080',       // Standard fallbacks
+            // Dynamic IP detection for port 18080
+            ...currentIPs.map(ip => `http://${ip}:18080`),
+            ...currentIPs.map(ip => `ws://${ip}:18080`),
+            // Standard fallbacks
+            'http://localhost:8080',
             'http://localhost:3000', 
-            'http://localhost:5000',
-            'ws://192.168.9.82:18080',    // WebSocket to your service
-            'ws://localhost:18080'        // Local WebSocket fallback
+            'http://localhost:5000'
         ];
         
         for (const url of serviceUrls) {
