@@ -15,6 +15,23 @@
     <script type="text/javascript" src="js/bGateWebPrintAPI_WS.js"></script>
     <script type="text/javascript" src="js/thermal-printer-simulator.js"></script>
     
+    <!-- Ensure Bixolon API is available globally -->
+    <script type="text/javascript">
+        // Verify Bixolon API is loaded
+        window.addEventListener('load', () => {
+            if (typeof window.BixolonWebPrintAPI !== 'undefined') {
+                console.log('✅ Bixolon Web Print API loaded successfully');
+                console.log('Available methods:', Object.keys(window.BixolonWebPrintAPI.prototype || {}));
+            } else {
+                console.error('❌ Bixolon Web Print API failed to load');
+            }
+            
+            if (typeof window.BixolonLogs !== 'undefined') {
+                console.log('✅ Bixolon enhanced logging available');
+            }
+        });
+    </script>
+    
     <script type="module" src="src/main.js"></script>
 </body>
 </html> 

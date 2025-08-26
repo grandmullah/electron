@@ -73,13 +73,20 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             console.log('Receipt text:', receiptLines.join('\n'));
 
             // Check if BIXOLON Web Print API is available
-            if (typeof (window as any).bGateWebPrintAPI === 'undefined') {
+            if (typeof (window as any).BixolonWebPrintAPI === 'undefined' &&
+                  typeof (window as any).bixolonAPI === 'undefined') {
                   console.error('BIXOLON Web Print API not found. Please include the required scripts.');
                   console.error('Available global objects:', Object.keys(window).filter(key =>
                         key.toLowerCase().includes('bixolon') ||
                         key.toLowerCase().includes('webprint') ||
                         key.toLowerCase().includes('sdk')
                   ));
+
+                  // Try to get enhanced logs if available
+                  if (typeof (window as any).BixolonLogs !== 'undefined') {
+                        console.log('Enhanced Bixolon logs available:', (window as any).BixolonLogs.getLogs());
+                  }
+
                   alert('BIXOLON thermal printer API not available. Please check script inclusion.');
                   globalPrintInProgress = false;
                   return;
@@ -90,8 +97,13 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             console.log('💡 Note: API will auto-detect current machine IP for port 18080');
 
             try {
-                  // Initialize BIXOLON Web Print API
-                  const bixolonAPI = (window as any).bGateWebPrintAPI;
+                  // Initialize BIXOLON Web Print API (try both names for compatibility)
+                  const bixolonAPI = (window as any).bixolonAPI || new (window as any).BixolonWebPrintAPI();
+
+                  // Log current API status
+                  if (typeof (window as any).BixolonLogs !== 'undefined') {
+                        console.log('Current Bixolon API status:', (window as any).BixolonLogs.getLogs());
+                  }
 
                   // Check if connected to BIXOLON printer
                   if (!bixolonAPI.connected) {
