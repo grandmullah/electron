@@ -74,75 +74,49 @@ export function printThermalTicket(bet: AnyBet): void {
             console.log('Receipt lines:', receiptLines);
             console.log('Receipt text:', receiptLines.join('\n'));
 
-            // Create print window with minimal HTML
-            const printWindow = window.open('', '_blank', 'width=400,height=800');
+            // Create the absolute simplest possible HTML
+            const minimalHtml = `
+<html>
+<head>
+<title>Bet Ticket</title>
+</head>
+<body>
+<pre>${receiptLines.join('\n')}</pre>
+</body>
+</html>`;
+
+            console.log('Minimal HTML created, length:', minimalHtml.length);
+            console.log('Minimal HTML:', minimalHtml);
+
+            // Create print window
+            const printWindow = window.open('', '_blank', 'width=300,height=600');
             if (!printWindow) {
                   alert('Please allow pop-ups to print the ticket');
                   globalPrintInProgress = false;
                   return;
             }
 
-            console.log('Print window created, writing content...');
+            console.log('Print window created, writing minimal content...');
 
-            // Create the simplest possible HTML with multiple fallback approaches
-            const simpleHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Bet Ticket</title>
-<style>
-@media print {
-  @page { size: 80mm auto; margin: 0; }
-}
-body {
-  font-family: monospace;
-  font-size: 12px;
-  margin: 0;
-  padding: 10px;
-  width: 70mm;
-  background: white;
-  color: black;
-}
-</style>
-</head>
-<body>
-<!-- Method 1: Pre-formatted text -->
-<pre style="font-family: monospace; font-size: 12px; margin: 0; padding: 0; white-space: pre;">
-${receiptLines.join('\n')}
-</pre>
-
-<!-- Method 2: Textarea as backup -->
-<textarea style="font-family: monospace; font-size: 12px; width: 100%; height: auto; border: none; resize: none; background: white; color: black;" readonly>
-${receiptLines.join('\n')}
-</textarea>
-
-<!-- Method 3: Direct text nodes -->
-<div style="font-family: monospace; font-size: 12px; white-space: pre-line;">
-${receiptLines.join('\n')}
-</div>
-</body>
-</html>`;
-
-            console.log('HTML created, length:', simpleHtml.length);
-            console.log('HTML preview:', simpleHtml.substring(0, 300));
-
-            // Write content to window
+            // Write minimal content
             printWindow.document.open();
-            printWindow.document.write(simpleHtml);
+            printWindow.document.write(minimalHtml);
             printWindow.document.close();
 
-            // Force a delay and then print
+            // Wait and then print
             setTimeout(() => {
-                  console.log('Attempting to print...');
+                  console.log('Checking content and printing...');
 
                   try {
-                        // Check if content is visible
-                        const bodyText = printWindow.document.body?.textContent || '';
-                        console.log('Body text length:', bodyText.length);
-                        console.log('Body text preview:', bodyText.substring(0, 200));
+                        // Get the actual text content
+                        const preElement = printWindow.document.querySelector('pre');
+                        const textContent = preElement?.textContent || '';
 
-                        if (bodyText.length > 50) {
+                        console.log('Pre element found:', !!preElement);
+                        console.log('Text content length:', textContent.length);
+                        console.log('Text content:', textContent);
+
+                        if (textContent && textContent.length > 20) {
                               console.log('Content verified, printing...');
                               printWindow.print();
                               console.log('Print command sent');
@@ -160,41 +134,46 @@ ${receiptLines.join('\n')}
                                     console.log('Print job completed');
                               }, 3000);
                         } else {
-                              console.error('Content not properly loaded, trying alternative method...');
+                              console.error('No text content found, trying direct text method...');
 
-                              // Alternative: Try to copy text to clipboard and create simple print
-                              try {
-                                    const receiptText = receiptLines.join('\n');
-                                    navigator.clipboard.writeText(receiptText).then(() => {
-                                          console.log('Text copied to clipboard, creating simple print...');
+                              // Last resort: Create a completely text-based approach
+                              const textWindow = window.open('', '_blank', 'width=200,height=400');
+                              if (textWindow) {
+                                    textWindow.document.write(`
+                                        <html>
+                                        <head><title>Print</title></head>
+                                        <body>
+                                        ${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
+                                        </body>
+                                        </html>
+                                    `);
+                                    textWindow.document.close();
 
-                                          // Create a very simple print window
-                                          const simplePrintWindow = window.open('', '_blank', 'width=300,height=400');
-                                          if (simplePrintWindow) {
-                                                simplePrintWindow.document.write(`
-                                                    <html>
-                                                    <head><title>Print</title></head>
-                                                    <body style="font-family: monospace; font-size: 12px;">
-                                                    <pre>${receiptText}</pre>
-                                                    </body>
-                                                    </html>
-                                                `);
-                                                simplePrintWindow.document.close();
-
-                                                setTimeout(() => {
-                                                      simplePrintWindow.print();
-                                                      setTimeout(() => {
-                                                            try { simplePrintWindow.close(); } catch (_) { }
-                                                            globalPrintInProgress = false;
-                                                      }, 2000);
-                                                }, 500);
-                                          } else {
+                                    setTimeout(() => {
+                                          textWindow.print();
+                                          setTimeout(() => {
+                                                try { textWindow.close(); } catch (_) { }
                                                 globalPrintInProgress = false;
-                                          }
-                                    });
-                              } catch (clipboardError) {
-                                    console.error('Clipboard method failed:', clipboardError);
-                                    globalPrintInProgress = false;
+                                          }, 2000);
+                                    }, 500);
+                              } else {
+                                    // Final fallback: Try data URL approach
+                                    console.log('Trying data URL approach...');
+                                    const receiptText = receiptLines.join('\n');
+                                    const dataUrl = `data:text/html,<html><body><pre>${encodeURIComponent(receiptText)}</pre></body></html>`;
+                                    const dataWindow = window.open(dataUrl, '_blank', 'width=200,height=400');
+
+                                    if (dataWindow) {
+                                          setTimeout(() => {
+                                                dataWindow.print();
+                                                setTimeout(() => {
+                                                      try { dataWindow.close(); } catch (_) { }
+                                                      globalPrintInProgress = false;
+                                                }, 2000);
+                                          }, 500);
+                                    } else {
+                                          globalPrintInProgress = false;
+                                    }
                               }
                         }
                   } catch (error) {
