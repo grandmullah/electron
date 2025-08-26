@@ -16,14 +16,19 @@ class BixolonWebPrintAPI {
             margin: 0
         };
         
+        // Service connection properties
+        this.serviceConnection = null;
+        this.serviceUrl = null;
+        
         // Check if BIXOLON SDK is available
         this.checkSDKAvailability();
     }
 
     // Check if BIXOLON Web Print SDK is available
     checkSDKAvailability() {
+        // Check for BIXOLON SDK in global scope
         if (typeof window.BixolonWebPrintSDK !== 'undefined') {
-            console.log('✅ BIXOLON Web Print SDK detected');
+            console.log('✅ BIXOLON Web Print SDK detected in global scope');
             this.sdk = window.BixolonWebPrintSDK;
             this.connected = true;
         } else if (typeof window.BixolonWebPrint !== 'undefined') {
@@ -31,13 +36,129 @@ class BixolonWebPrintAPI {
             this.sdk = window.BixolonWebPrint;
             this.connected = true;
         } else {
-            console.log('⚠️ BIXOLON Web Print SDK not found');
+            console.log('⚠️ BIXOLON Web Print SDK not found in global scope');
             console.log('Available global objects:', Object.keys(window).filter(key => 
                 key.toLowerCase().includes('bixolon') || 
                 key.toLowerCase().includes('webprint') ||
                 key.toLowerCase().includes('sdk')
             ));
+            
+            // Try to connect to BIXOLON SDK service via HTTP/WebSocket
+            this.tryConnectToSDKService();
         }
+    }
+
+    // Try to connect to BIXOLON SDK service
+    async tryConnectToSDKService() {
+        console.log('🔌 Attempting to connect to BIXOLON SDK service...');
+        
+        // Common BIXOLON SDK service endpoints
+        const serviceUrls = [
+            'http://192.168.9.82:18080',  // Your configured BIXOLON service
+            'http://localhost:18080',      // Local fallback
+            'http://localhost:8080',       // Standard fallbacks
+            'http://localhost:3000', 
+            'http://localhost:5000',
+            'ws://192.168.9.82:18080',    // WebSocket to your service
+            'ws://localhost:18080'        // Local WebSocket fallback
+        ];
+        
+        for (const url of serviceUrls) {
+            try {
+                console.log(`🔍 Trying to connect to: ${url}`);
+                
+                if (url.startsWith('ws://')) {
+                    // Try WebSocket connection
+                    const connected = await this.tryWebSocketConnection(url);
+                    if (connected) {
+                        console.log(`✅ Connected to BIXOLON service via WebSocket: ${url}`);
+                        this.connected = true;
+                        return;
+                    }
+                } else {
+                    // Try HTTP connection
+                    const connected = await this.tryHTTPConnection(url);
+                    if (connected) {
+                        console.log(`✅ Connected to BIXOLON service via HTTP: ${url}`);
+                        this.connected = true;
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log(`❌ Failed to connect to ${url}:`, error.message);
+            }
+        }
+        
+        console.log('⚠️ Could not connect to BIXOLON SDK service');
+        console.log('💡 Make sure BIXOLON Web Print SDK service is running');
+    }
+
+    // Try WebSocket connection to BIXOLON service
+    async tryWebSocketConnection(url) {
+        return new Promise((resolve) => {
+            try {
+                const ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    console.log(`🔌 WebSocket connected to: ${url}`);
+                    this.serviceConnection = ws;
+                    resolve(true);
+                };
+                
+                ws.onerror = () => {
+                    console.log(`❌ WebSocket error connecting to: ${url}`);
+                    resolve(false);
+                };
+                
+                // Timeout after 2 seconds
+                setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        ws.close();
+                        resolve(false);
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.log(`❌ WebSocket connection failed: ${error.message}`);
+                resolve(false);
+            }
+        });
+    }
+
+    // Try HTTP connection to BIXOLON service
+    async tryHTTPConnection(url) {
+        try {
+            const response = await fetch(`${url}/status`, { 
+                method: 'GET',
+                mode: 'no-cors',
+                timeout: 2000
+            });
+            
+            if (response.ok || response.status === 0) { // no-cors returns status 0
+                console.log(`✅ HTTP connection successful to: ${url}`);
+                this.serviceUrl = url;
+                return true;
+            }
+        } catch (error) {
+            // Try alternative endpoints
+            try {
+                const response = await fetch(`${url}/api/status`, { 
+                    method: 'GET',
+                    mode: 'no-cors',
+                    timeout: 2000
+                });
+                
+                if (response.ok || response.status === 0) {
+                    console.log(`✅ HTTP connection successful to: ${url}/api/status`);
+                    this.serviceUrl = url;
+                    return true;
+                }
+            } catch (altError) {
+                console.log(`❌ Alternative endpoint failed: ${altError.message}`);
+            }
+        }
+        
+        return false;
     }
 
     // Connect to thermal printer (for compatibility)
@@ -50,8 +171,13 @@ class BixolonWebPrintAPI {
                 this.connected = true;
                 console.log('✅ Connected to BIXOLON thermal printer via SDK');
                 return true;
+            } else if (this.serviceConnection || this.serviceUrl) {
+                this.printerName = printerName;
+                this.connected = true;
+                console.log('✅ Connected to BIXOLON thermal printer via service');
+                return true;
             } else {
-                throw new Error('BIXOLON SDK not available');
+                throw new Error('BIXOLON SDK or service not available');
             }
         } catch (error) {
             console.warn('Failed to connect to BIXOLON printer:', error);
@@ -61,13 +187,14 @@ class BixolonWebPrintAPI {
 
     // Create a new print job
     createPrintJob(config = {}) {
-        if (!this.connected || !this.sdk) {
-            throw new Error('Not connected to BIXOLON printer or SDK not available');
+        if (!this.connected) {
+            throw new Error('Not connected to BIXOLON printer');
         }
 
         const printConfig = { ...this.printerConfig, ...config };
         
-        return new BixolonPrintJob(this.sdk, this.printerName, printConfig);
+        // Pass the API instance so the print job can access service connections
+        return new BixolonPrintJob(this, this.printerName, printConfig);
     }
 
     // Get printer status
@@ -91,10 +218,11 @@ class BixolonWebPrintAPI {
     }
 }
 
-// BixolonPrintJob class for managing print jobs via BIXOLON SDK
+// BixolonPrintJob class for managing print jobs via BIXOLON SDK or service
 class BixolonPrintJob {
-    constructor(sdk, printerName, config) {
-        this.sdk = sdk;
+    constructor(apiInstance, printerName, config) {
+        this.api = apiInstance; // Store the full API instance
+        this.sdk = apiInstance.sdk; // SDK if available
         this.printerName = printerName;
         this.config = config;
         this.content = [];
@@ -128,7 +256,7 @@ class BixolonPrintJob {
         return this;
     }
 
-    // Execute the print job using BIXOLON SDK
+    // Execute the print job using BIXOLON SDK or service
     async execute() {
         if (this.content.length === 0) {
             throw new Error('No content to print');
@@ -138,7 +266,7 @@ class BixolonPrintJob {
         console.log('📄 Print content:', this.content);
 
         try {
-            // Use BIXOLON SDK to print
+            // Use BIXOLON SDK to print (if available)
             if (this.sdk && this.sdk.print) {
                 // Convert content to BIXOLON format
                 const printContent = this.content.map(item => {
@@ -150,21 +278,85 @@ class BixolonPrintJob {
                     return '';
                 }).join('');
 
-                console.log('📝 Sending to BIXOLON printer:', printContent);
+                console.log('📝 Sending to BIXOLON printer via SDK:', printContent);
 
                 // Call BIXOLON SDK print method
                 const result = await this.sdk.print(this.printerName, printContent);
                 
-                console.log('✅ BIXOLON print job completed successfully');
+                console.log('✅ BIXOLON print job completed successfully via SDK');
                 return { success: true, jobId: this.jobId, sdk: 'BIXOLON', result };
-            } else {
-                // Fallback if SDK doesn't have print method
-                console.log('⚠️ BIXOLON SDK print method not found, using fallback');
+            } 
+            // Try service connection if SDK not available
+            else if (this.api.serviceConnection || this.api.serviceUrl) {
+                return this.executeViaService();
+            }
+            else {
+                // Fallback if neither SDK nor service available
+                console.log('⚠️ BIXOLON SDK/service not available, using fallback');
                 return this.executeFallback();
             }
         } catch (error) {
             console.error('❌ BIXOLON print job failed:', error);
             // Try fallback method
+            return this.executeFallback();
+        }
+    }
+
+    // Execute print job via BIXOLON service
+    async executeViaService() {
+        try {
+            console.log('🔌 Executing print job via BIXOLON service...');
+            
+            // Convert content to print format
+            const printContent = this.content.map(item => {
+                if (item.type === 'text') {
+                    return item.content;
+                } else if (item.type === 'linebreak') {
+                    return '\n';
+                }
+                return '';
+            }).join('');
+
+            // Send print job to service
+            const printData = {
+                action: 'print',
+                printer: this.printerName,
+                content: printContent,
+                config: this.config,
+                jobId: this.jobId
+            };
+
+            if (this.api.serviceConnection && this.api.serviceConnection.readyState === WebSocket.OPEN) {
+                // Send via WebSocket
+                this.api.serviceConnection.send(JSON.stringify(printData));
+                console.log('📤 Print job sent via WebSocket service');
+                
+                // Wait for confirmation
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        console.log('✅ Print job sent to BIXOLON service');
+                        resolve({ success: true, jobId: this.jobId, service: 'WebSocket' });
+                    }, 1000);
+                });
+            } else if (this.api.serviceUrl) {
+                // Send via HTTP
+                const response = await fetch(`${this.api.serviceUrl}/print`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(printData)
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Print job sent via HTTP service');
+                    return { success: true, jobId: this.jobId, service: 'HTTP' };
+                } else {
+                    throw new Error(`HTTP service error: ${response.status}`);
+                }
+            } else {
+                throw new Error('No service connection available');
+            }
+        } catch (error) {
+            console.error('❌ Service print execution failed:', error);
             return this.executeFallback();
         }
     }
