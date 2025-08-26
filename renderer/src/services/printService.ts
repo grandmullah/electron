@@ -85,7 +85,10 @@ export function printThermalTicket(bet: AnyBet): void {
                   return;
             }
 
-            // Windows-optimized HTML with proper encoding and styling
+            // Add print window reference to prevent multiple windows
+            let printWindowRef = printWindow;
+
+            // Windows 11-optimized HTML with guaranteed text display
             const windowsHtml = `
 <!DOCTYPE html>
 <html>
@@ -112,26 +115,34 @@ export function printThermalTicket(bet: AnyBet): void {
             }
         }
         body {
-            font-family: 'Courier New', 'Courier', monospace;
-            font-size: 11px;
+            font-family: monospace;
+            font-size: 12px;
             margin: 0;
-            padding: 8px;
+            padding: 10px;
             width: 70mm;
             background: white;
             color: black;
-            line-height: 1.2;
+            line-height: 1.3;
         }
         .receipt-content {
-            font-family: 'Courier New', 'Courier', monospace;
-            font-size: 11px;
-            white-space: pre-line;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre;
             margin: 0;
             padding: 0;
+            border: 1px solid #ccc;
+            background: white;
+            min-height: 200px;
         }
         @media screen {
             body { 
                 background: #f0f0f0; 
                 padding: 20px;
+            }
+            .receipt-content {
+                border: 2px solid #333;
+                background: white;
+                padding: 10px;
             }
         }
     </style>
@@ -140,41 +151,112 @@ export function printThermalTicket(bet: AnyBet): void {
     <div class="receipt-content">
 ${receiptLines.join('\n')}
     </div>
+    
+    <!-- Backup text display -->
+    <pre style="font-family: monospace; font-size: 12px; margin: 10px 0; padding: 10px; border: 1px solid #999; background: #f9f9f9;">
+${receiptLines.join('\n')}
+    </pre>
 </body>
 </html>`;
 
             console.log('Windows HTML created, length:', windowsHtml.length);
             console.log('Windows HTML preview:', windowsHtml.substring(0, 300));
 
-            // Write content to window
+            // Write content to window using multiple methods for Windows 11
             printWindow.document.open();
             printWindow.document.write(windowsHtml);
             printWindow.document.close();
+
+            // Alternative method: Also set innerHTML as backup
+            setTimeout(() => {
+                  try {
+                        if (printWindow.document.body) {
+                              printWindow.document.body.innerHTML = windowsHtml;
+                              console.log('Backup innerHTML method applied');
+                        }
+                  } catch (e) {
+                        console.log('Backup method failed:', e);
+                  }
+            }, 100);
+
+            // Windows 11 alternative: Create data URL for better compatibility
+            setTimeout(() => {
+                  try {
+                        const receiptText = receiptLines.join('\n');
+                        const dataUrl = `data:text/html;charset=utf-8,<html><head><title>Bet Ticket</title><style>@media print{@page{size:80mm auto;margin:0}}body{font-family:monospace;font-size:12px;margin:0;padding:10px;width:70mm}</style></head><body><pre>${encodeURIComponent(receiptText)}</pre></body></html>`;
+
+                        const dataWindow = window.open(dataUrl, '_blank', 'width=400,height=600');
+                        if (dataWindow) {
+                              console.log('Windows 11 data URL window created as backup');
+
+                              // Store reference for cleanup
+                              setTimeout(() => {
+                                    try {
+                                          if (dataWindow && !dataWindow.closed) {
+                                                dataWindow.close();
+                                          }
+                                    } catch (_) { }
+                              }, 5000);
+                        }
+                  } catch (e) {
+                        console.log('Data URL method failed:', e);
+                  }
+            }, 200);
 
             // Windows 11-specific timing and print handling
             setTimeout(() => {
                   try {
                         console.log('Checking Windows 11 print window content...');
 
+                        // Debug: Check the entire document
+                        console.log('Document title:', printWindow.document.title);
+                        console.log('Document body exists:', !!printWindow.document.body);
+                        console.log('Document body innerHTML length:', printWindow.document.body?.innerHTML?.length || 0);
+                        console.log('Document body textContent length:', printWindow.document.body?.textContent?.length || 0);
+
                         // Verify content is loaded
                         const contentDiv = printWindow.document.querySelector('.receipt-content');
                         const textContent = contentDiv?.textContent || '';
 
                         console.log('Content div found:', !!contentDiv);
+                        console.log('Content div innerHTML:', contentDiv?.innerHTML?.substring(0, 200) || 'NOT FOUND');
                         console.log('Text content length:', textContent.length);
                         console.log('Text content preview:', textContent.substring(0, 200));
 
                         if (textContent && textContent.length > 30) {
                               console.log('Windows 11 content verified, printing...');
 
+                              // Set flag to prevent multiple prints
+                              let hasPrinted = false;
+
                               // Windows 11-specific print sequence
                               printWindow.focus();
 
                               // Wait for Windows 11 to process the window
                               setTimeout(() => {
+                                    if (hasPrinted) return; // Prevent multiple prints
+                                    hasPrinted = true;
+
                                     try {
+                                          // Windows 11-specific print sequence
+                                          console.log('Executing Windows 11 print sequence...');
+
+                                          // Method 1: Standard print
                                           printWindow.print();
                                           console.log('Windows 11 print command sent');
+
+                                          // Method 2: Alternative print method for Windows 11
+                                          setTimeout(() => {
+                                                try {
+                                                      // Try using execCommand as backup for Windows 11
+                                                      if (printWindow.document.execCommand) {
+                                                            printWindow.document.execCommand('print', false, undefined);
+                                                            console.log('Windows 11 execCommand print sent');
+                                                      }
+                                                } catch (execError) {
+                                                      console.log('execCommand print failed:', execError);
+                                                }
+                                          }, 1000);
 
                                           // Extended timeout for Windows 11 print processing
                                           setTimeout(() => {
@@ -190,7 +272,7 @@ ${receiptLines.join('\n')}
                                           }, 4000); // Extended for Windows 11
                                     } catch (printError) {
                                           console.error('Windows 11 print execution failed:', printError);
-                                          tryFallbackMethod();
+                                          globalPrintInProgress = false;
                                     }
                               }, 500);
                         } else {
@@ -203,8 +285,27 @@ ${receiptLines.join('\n')}
                   }
             }, 2000); // Extended timeout for Windows 11
 
+            // Safety timeout to prevent endless printing
+            setTimeout(() => {
+                  if (globalPrintInProgress) {
+                        console.warn('Safety timeout triggered, resetting print state');
+                        try {
+                              if (printWindowRef && !printWindowRef.closed) {
+                                    printWindowRef.close();
+                              }
+                        } catch (_) { }
+                        globalPrintInProgress = false;
+                  }
+            }, 10000); // 10 second safety timeout
+
             // Fallback method using window.open
             function tryFallbackMethod() {
+                  // Prevent fallback if main method is already printing
+                  if (!globalPrintInProgress) {
+                        console.log('Main print method already completed, skipping fallback');
+                        return;
+                  }
+
                   console.log('Trying window.open method...');
 
                   const printWindow = window.open('', '_blank', 'width=300,height=600');
