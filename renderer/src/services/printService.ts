@@ -75,8 +75,8 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             // Check if BIXOLON Web Print API is available
             if (typeof (window as any).bGateWebPrintAPI === 'undefined') {
                   console.error('BIXOLON Web Print API not found. Please include the required scripts.');
-                  console.error('Available global objects:', Object.keys(window).filter(key => 
-                        key.toLowerCase().includes('bixolon') || 
+                  console.error('Available global objects:', Object.keys(window).filter(key =>
+                        key.toLowerCase().includes('bixolon') ||
                         key.toLowerCase().includes('webprint') ||
                         key.toLowerCase().includes('sdk')
                   ));
@@ -89,13 +89,13 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             console.log('Using BIXOLON Web Print API for thermal printing...');
 
             try {
-                                    // Initialize BIXOLON Web Print API
+                  // Initialize BIXOLON Web Print API
                   const bixolonAPI = (window as any).bGateWebPrintAPI;
-                  
+
                   // Check if connected to BIXOLON printer
                   if (!bixolonAPI.connected) {
                         console.log('BIXOLON printer not connected, attempting to connect...');
-                        
+
                         try {
                               const connected = await bixolonAPI.connect();
                               if (!connected) {
@@ -107,7 +107,7 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                               throw connectError;
                         }
                   }
-                  
+
                   // Configure printer settings for 80mm thermal paper
                   const printerConfig = {
                         width: 80, // 80mm paper width
@@ -119,7 +119,7 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
 
                   // Create print job
                   const printJob = bixolonAPI.createPrintJob(printerConfig);
-                  
+
                   // Add receipt content
                   receiptLines.forEach(line => {
                         if (line === '') {
@@ -139,9 +139,9 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                         globalPrintInProgress = false;
                   });
 
-                        } catch (apiError) {
+            } catch (apiError) {
                   console.error('BIXOLON API error:', apiError);
-                  
+
                   // Fallback to simple text printing if API fails
                   console.log('Falling back to simple text printing...');
                   const printWindow = window.open('', '_blank', 'width=300,height=600');
