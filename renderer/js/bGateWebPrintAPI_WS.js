@@ -2,6 +2,7 @@
  * BIXOLON Web Print SDK Integration
  * Provides direct communication with Bixolon thermal printers via the official SDK
  * Compatible with BIXOLON Web Print SDK V2.2.1+
+ * Enhanced logging and error handling for better debugging
  */
 
 class BixolonWebPrintAPI {
@@ -19,25 +20,102 @@ class BixolonWebPrintAPI {
         // Service connection properties
         this.serviceConnection = null;
         this.serviceUrl = null;
+        this.lastConnectionAttempt = null;
+        this.connectionRetries = 0;
+        this.maxRetries = 3;
+        
+        // Enhanced logging
+        this.logLevel = 'INFO'; // DEBUG, INFO, WARN, ERROR
+        this.logHistory = [];
         
         // Check if BIXOLON SDK is available
         this.checkSDKAvailability();
     }
 
-    // Check if BIXOLON Web Print SDK is available
+    // Enhanced logging method
+    log(level, message, data = null) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            timestamp,
+            level,
+            message,
+            data,
+            jobId: this.currentJobId || 'N/A'
+        };
+        
+        this.logHistory.push(logEntry);
+        
+        // Keep only last 100 log entries
+        if (this.logHistory.length > 100) {
+            this.logHistory = this.logHistory.slice(-100);
+        }
+        
+        // Console output with enhanced formatting
+        const emoji = {
+            'DEBUG': '🔍',
+            'INFO': 'ℹ️',
+            'WARN': '⚠️',
+            'ERROR': '❌',
+            'SUCCESS': '✅'
+        };
+        
+        const color = {
+            'DEBUG': 'color: #6c757d',
+            'INFO': 'color: #007bff',
+            'WARN': 'color: #ffc107',
+            'ERROR': 'color: #dc3545',
+            'SUCCESS': 'color: #28a745'
+        };
+        
+        console.log(
+            `%c${emoji[level] || '📝'} [${timestamp}] ${level}: ${message}`,
+            color[level] || 'color: #000',
+            data ? data : ''
+        );
+        
+        // Also log to console.error for ERROR level
+        if (level === 'ERROR') {
+            console.error('❌ BIXOLON Error Details:', data);
+        }
+    }
+
+    // Get log history for debugging
+    getLogHistory() {
+        return this.logHistory;
+    }
+
+    // Clear log history
+    clearLogHistory() {
+        this.logHistory = [];
+        this.log('INFO', 'Log history cleared');
+    }
+
+    // Check if BIXOLON SDK is available
     checkSDKAvailability() {
+        this.log('INFO', 'Checking BIXOLON SDK availability...');
+        
         // Check for BIXOLON SDK in global scope
         if (typeof window.BixolonWebPrintSDK !== 'undefined') {
-            console.log('✅ BIXOLON Web Print SDK detected in global scope');
+            this.log('SUCCESS', 'BIXOLON Web Print SDK detected in global scope');
             this.sdk = window.BixolonWebPrintSDK;
             this.connected = true;
+            this.log('INFO', 'SDK object details:', {
+                sdkType: typeof this.sdk,
+                sdkKeys: Object.keys(this.sdk || {}),
+                sdkVersion: this.sdk?.version || 'Unknown'
+            });
         } else if (typeof window.BixolonWebPrint !== 'undefined') {
-            console.log('✅ BIXOLON Web Print detected (alternative namespace)');
+            this.log('SUCCESS', 'BIXOLON Web Print detected (alternative namespace)');
             this.sdk = window.BixolonWebPrint;
             this.connected = true;
+            this.log('INFO', 'Alternative SDK object details:', {
+                sdkType: typeof this.sdk,
+                sdkKeys: Object.keys(this.sdk || {}),
+                sdkVersion: this.sdk?.version || 'Unknown'
+            });
         } else {
-            console.log('⚠️ BIXOLON Web Print SDK not found in global scope');
-            console.log('Available global objects:', Object.keys(window).filter(key => 
+            this.log('WARN', 'BIXOLON Web Print SDK not found in global scope');
+            this.log('DEBUG', 'Available global objects:', Object.keys(window).filter(key => 
                 key.toLowerCase().includes('bixolon') || 
                 key.toLowerCase().includes('webprint') ||
                 key.toLowerCase().includes('sdk')
@@ -79,7 +157,7 @@ class BixolonWebPrintAPI {
 
     // Try to connect to BIXOLON SDK service
     async tryConnectToSDKService() {
-        console.log('🔌 Attempting to connect to BIXOLON SDK service...');
+        this.log('INFO', 'Attempting to connect to BIXOLON SDK service...');
         
         // Get current machine's IP addresses
         const currentIPs = await this.getCurrentMachineIPs();
@@ -97,13 +175,13 @@ class BixolonWebPrintAPI {
         
         for (const url of serviceUrls) {
             try {
-                console.log(`🔍 Trying to connect to: ${url}`);
+                this.log('DEBUG', `🔍 Trying to connect to: ${url}`);
                 
                 if (url.startsWith('ws://')) {
                     // Try WebSocket connection
                     const connected = await this.tryWebSocketConnection(url);
                     if (connected) {
-                        console.log(`✅ Connected to BIXOLON service via WebSocket: ${url}`);
+                        this.log('SUCCESS', `✅ Connected to BIXOLON service via WebSocket: ${url}`);
                         this.connected = true;
                         return;
                     }
@@ -111,18 +189,18 @@ class BixolonWebPrintAPI {
                     // Try HTTP connection
                     const connected = await this.tryHTTPConnection(url);
                     if (connected) {
-                        console.log(`✅ Connected to BIXOLON service via HTTP: ${url}`);
+                        this.log('SUCCESS', `✅ Connected to BIXOLON service via HTTP: ${url}`);
                         this.connected = true;
                         return;
                     }
                 }
             } catch (error) {
-                console.log(`❌ Failed to connect to ${url}:`, error.message);
+                this.log('ERROR', `❌ Failed to connect to ${url}:`, error.message);
             }
         }
         
-        console.log('⚠️ Could not connect to BIXOLON SDK service');
-        console.log('💡 Make sure BIXOLON Web Print SDK service is running');
+        this.log('WARN', 'Could not connect to BIXOLON SDK service');
+        this.log('INFO', '💡 Make sure BIXOLON Web Print SDK service is running');
     }
 
     // Try WebSocket connection to BIXOLON service
@@ -132,13 +210,13 @@ class BixolonWebPrintAPI {
                 const ws = new WebSocket(url);
                 
                 ws.onopen = () => {
-                    console.log(`🔌 WebSocket connected to: ${url}`);
+                    this.log('SUCCESS', `🔌 WebSocket connected to: ${url}`);
                     this.serviceConnection = ws;
                     resolve(true);
                 };
                 
                 ws.onerror = () => {
-                    console.log(`❌ WebSocket error connecting to: ${url}`);
+                    this.log('ERROR', `❌ WebSocket error connecting to: ${url}`);
                     resolve(false);
                 };
                 
@@ -151,7 +229,7 @@ class BixolonWebPrintAPI {
                 }, 2000);
                 
             } catch (error) {
-                console.log(`❌ WebSocket connection failed: ${error.message}`);
+                this.log('ERROR', `❌ WebSocket connection failed: ${error.message}`);
                 resolve(false);
             }
         });
@@ -167,7 +245,7 @@ class BixolonWebPrintAPI {
             });
             
             if (response.ok || response.status === 0) { // no-cors returns status 0
-                console.log(`✅ HTTP connection successful to: ${url}`);
+                this.log('SUCCESS', `✅ HTTP connection successful to: ${url}`);
                 this.serviceUrl = url;
                 return true;
             }
@@ -181,12 +259,12 @@ class BixolonWebPrintAPI {
                 });
                 
                 if (response.ok || response.status === 0) {
-                    console.log(`✅ HTTP connection successful to: ${url}/api/status`);
+                    this.log('SUCCESS', `✅ HTTP connection successful to: ${url}/api/status`);
                     this.serviceUrl = url;
                     return true;
                 }
             } catch (altError) {
-                console.log(`❌ Alternative endpoint failed: ${altError.message}`);
+                this.log('ERROR', `❌ Alternative endpoint failed: ${altError.message}`);
             }
         }
         
@@ -196,23 +274,23 @@ class BixolonWebPrintAPI {
     // Connect to thermal printer (for compatibility)
     async connect(printerName = 'Printer1') {
         try {
-            console.log(`Attempting to connect to BIXOLON printer: ${printerName}`);
+            this.log('INFO', `Attempting to connect to BIXOLON printer: ${printerName}`);
             
             if (this.sdk) {
                 this.printerName = printerName;
                 this.connected = true;
-                console.log('✅ Connected to BIXOLON thermal printer via SDK');
+                this.log('SUCCESS', '✅ Connected to BIXOLON thermal printer via SDK');
                 return true;
             } else if (this.serviceConnection || this.serviceUrl) {
                 this.printerName = printerName;
                 this.connected = true;
-                console.log('✅ Connected to BIXOLON thermal printer via service');
+                this.log('SUCCESS', '✅ Connected to BIXOLON thermal printer via service');
                 return true;
             } else {
                 throw new Error('BIXOLON SDK or service not available');
             }
         } catch (error) {
-            console.warn('Failed to connect to BIXOLON printer:', error);
+            this.log('WARN', 'Failed to connect to BIXOLON printer:', error);
             return false;
         }
     }
@@ -246,7 +324,52 @@ class BixolonWebPrintAPI {
     // Disconnect from printer
     disconnect() {
         this.connected = false;
-        console.log('Disconnected from BIXOLON thermal printer');
+        this.log('INFO', 'Disconnected from BIXOLON thermal printer');
+    }
+
+    // Get detailed logging information for debugging
+    getDetailedLogs() {
+        return {
+            connectionStatus: {
+                connected: this.connected,
+                serviceConnection: this.serviceConnection ? {
+                    readyState: this.serviceConnection.readyState,
+                    url: this.serviceConnection.url,
+                    protocol: this.serviceConnection.protocol
+                } : null,
+                serviceUrl: this.serviceUrl,
+                lastConnectionAttempt: this.lastConnectionAttempt,
+                connectionRetries: this.connectionRetries
+            },
+            sdkInfo: {
+                available: !!this.sdk,
+                sdkType: typeof this.sdk,
+                sdkKeys: this.sdk ? Object.keys(this.sdk) : [],
+                sdkVersion: this.sdk?.version || 'Unknown'
+            },
+            printerInfo: {
+                name: this.printerName,
+                config: this.printerConfig
+            },
+            logHistory: this.logHistory,
+            currentJobId: this.currentJobId
+        };
+    }
+
+    // Export logging methods for external use
+    exportLogs() {
+        const logs = this.getDetailedLogs();
+        console.log('📋 BIXOLON Service Logs Export:', logs);
+        return logs;
+    }
+
+    // Clear all logs and reset state
+    resetLogs() {
+        this.logHistory = [];
+        this.connectionRetries = 0;
+        this.lastConnectionAttempt = null;
+        this.currentJobId = null;
+        this.log('INFO', 'All logs and state reset');
     }
 }
 
@@ -294,8 +417,8 @@ class BixolonPrintJob {
             throw new Error('No content to print');
         }
 
-        console.log('🖨️ Executing BIXOLON print job:', this.jobId);
-        console.log('📄 Print content:', this.content);
+        this.api.log('INFO', '��️ Executing BIXOLON print job:', this.jobId);
+        this.api.log('DEBUG', '📄 Print content:', this.content);
 
         try {
             // Use BIXOLON SDK to print (if available)
@@ -310,12 +433,12 @@ class BixolonPrintJob {
                     return '';
                 }).join('');
 
-                console.log('📝 Sending to BIXOLON printer via SDK:', printContent);
+                this.api.log('DEBUG', '📝 Sending to BIXOLON printer via SDK:', printContent);
 
                 // Call BIXOLON SDK print method
                 const result = await this.sdk.print(this.printerName, printContent);
                 
-                console.log('✅ BIXOLON print job completed successfully via SDK');
+                this.api.log('SUCCESS', '✅ BIXOLON print job completed successfully via SDK');
                 return { success: true, jobId: this.jobId, sdk: 'BIXOLON', result };
             } 
             // Try service connection if SDK not available
@@ -324,11 +447,11 @@ class BixolonPrintJob {
             }
             else {
                 // Fallback if neither SDK nor service available
-                console.log('⚠️ BIXOLON SDK/service not available, using fallback');
+                this.api.log('WARN', '⚠️ BIXOLON SDK/service not available, using fallback');
                 return this.executeFallback();
             }
         } catch (error) {
-            console.error('❌ BIXOLON print job failed:', error);
+            this.api.log('ERROR', '❌ BIXOLON print job failed:', error);
             // Try fallback method
             return this.executeFallback();
         }
@@ -337,7 +460,7 @@ class BixolonPrintJob {
     // Execute print job via BIXOLON service
     async executeViaService() {
         try {
-            console.log('🔌 Executing print job via BIXOLON service...');
+            this.api.log('INFO', '🔌 Executing print job via BIXOLON service...');
             
             // Convert content to print format
             const printContent = this.content.map(item => {
@@ -361,12 +484,12 @@ class BixolonPrintJob {
             if (this.api.serviceConnection && this.api.serviceConnection.readyState === WebSocket.OPEN) {
                 // Send via WebSocket
                 this.api.serviceConnection.send(JSON.stringify(printData));
-                console.log('📤 Print job sent via WebSocket service');
+                this.api.log('DEBUG', '�� Print job sent via WebSocket service');
                 
                 // Wait for confirmation
                 return new Promise((resolve) => {
                     setTimeout(() => {
-                        console.log('✅ Print job sent to BIXOLON service');
+                        this.api.log('SUCCESS', '✅ Print job sent to BIXOLON service');
                         resolve({ success: true, jobId: this.jobId, service: 'WebSocket' });
                     }, 1000);
                 });
@@ -379,7 +502,7 @@ class BixolonPrintJob {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Print job sent via HTTP service');
+                    this.api.log('SUCCESS', '✅ Print job sent via HTTP service');
                     return { success: true, jobId: this.jobId, service: 'HTTP' };
                 } else {
                     throw new Error(`HTTP service error: ${response.status}`);
@@ -388,41 +511,56 @@ class BixolonPrintJob {
                 throw new Error('No service connection available');
             }
         } catch (error) {
-            console.error('❌ Service print execution failed:', error);
+            this.api.log('ERROR', '❌ Service print execution failed:', error);
             return this.executeFallback();
         }
     }
 
     // Fallback printing method
     async executeFallback() {
-        console.log('🔄 Using fallback printing method...');
+        this.api.log('INFO', '🔄 Using fallback printing method...');
         
         // Simulate printing delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        console.log('✅ Fallback print job completed');
+        this.api.log('SUCCESS', '✅ Fallback print job completed');
         return { success: true, jobId: this.jobId, fallback: true };
     }
 }
 
-// Make BixolonWebPrintAPI available globally
-window.bGateWebPrintAPI = BixolonWebPrintAPI;
+// Make BixolonWebPrintAPI available globally with enhanced logging
+window.BixolonWebPrintAPI = BixolonWebPrintAPI;
 
-// Auto-connect to BIXOLON printer when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🔌 BIXOLON Web Print API loaded');
+// Export logging methods globally for debugging
+window.BixolonLogs = {
+    getLogs: () => window.bixolonAPI?.getDetailedLogs() || 'API not initialized',
+    exportLogs: () => window.bixolonAPI?.exportLogs() || 'API not initialized',
+    clearLogs: () => window.bixolonAPI?.resetLogs() || 'API not initialized',
+    getLogHistory: () => window.bixolonAPI?.getLogHistory() || []
+};
+
+// Auto-initialize when page loads
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔌 BIXOLON Web Print API initializing...');
     
     // Create API instance
     const api = new BixolonWebPrintAPI();
+    window.bixolonAPI = api;
     
-    // Auto-connect to BIXOLON printer
-    if (api.connected) {
-        console.log('✅ Auto-connected to BIXOLON thermal printer');
-        console.log('🖨️ Printer:', api.getStatus());
-    } else {
-        console.log('⚠️ BIXOLON printer not detected');
-        console.log('💡 Make sure BIXOLON Web Print SDK is running');
+    // Try to connect automatically
+    try {
+        const connected = await api.connect();
+        if (connected) {
+            console.log('✅ BIXOLON Web Print API initialized and connected');
+            console.log('📋 Available logging methods:');
+            console.log('  - BixolonLogs.getLogs() - Get detailed service logs');
+            console.log('  - BixolonLogs.exportLogs() - Export logs to console');
+            console.log('  - BixolonLogs.clearLogs() - Clear all logs');
+            console.log('  - BixolonLogs.getLogHistory() - Get log history');
+        } else {
+            console.log('⚠️ BIXOLON Web Print API initialized but not connected');
+        }
+    } catch (error) {
+        console.error('❌ BIXOLON Web Print API initialization failed:', error);
     }
-    
-    window.bGateWebPrintAPI = api;
 });
