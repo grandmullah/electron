@@ -45,9 +45,11 @@ function fixWindowsPaths() {
         console.error('❌ HTML file not found at:', htmlPath);
     }
     
-    // Ensure styles and resources are copied
+    // Ensure styles, JavaScript files, and resources are copied
     const stylesSource = path.join(__dirname, 'renderer', 'styles');
     const stylesDest = path.join(__dirname, 'dist', 'renderer', 'styles');
+    const jsSource = path.join(__dirname, 'renderer', 'public', 'js');
+    const jsDest = path.join(__dirname, 'dist', 'renderer', 'js');
     const resourcesSource = path.join(__dirname, 'resources');
     const resourcesDest = path.join(__dirname, 'dist', 'resources');
     
@@ -56,6 +58,13 @@ function fixWindowsPaths() {
         fs.mkdirSync(stylesDest, { recursive: true });
         copyFolderSync(stylesSource, stylesDest);
         console.log('✅ Copied styles folder');
+    }
+    
+    // Copy JavaScript files if not already there
+    if (fs.existsSync(jsSource) && !fs.existsSync(jsDest)) {
+        fs.mkdirSync(jsDest, { recursive: true });
+        copyFolderSync(jsSource, jsDest);
+        console.log('✅ Copied JavaScript files folder');
     }
     
     // Copy resources if not already there  

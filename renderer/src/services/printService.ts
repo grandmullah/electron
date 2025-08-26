@@ -75,6 +75,7 @@ export function printThermalTicket(bet: AnyBet): void {
             // Check if bGate Web Print API is available
             if (typeof (window as any).bGateWebPrintAPI === 'undefined') {
                   console.error('bGate Web Print API not found. Please include the required scripts.');
+                  console.error('Available global objects:', Object.keys(window).filter(key => key.includes('bGate') || key.includes('WS')));
                   alert('Thermal printer API not available. Please check script inclusion.');
                   globalPrintInProgress = false;
                   return;

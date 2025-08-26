@@ -20,7 +20,11 @@ export default defineConfig(({ mode }) => ({
                         chunkFileNames: 'src/[name].js',
                         assetFileNames: 'assets/[name].[ext]'
                   }
-            }
+            },
+            // Copy JavaScript files to build output
+            copyPublicDir: true,
+            // Ensure js files are included in build
+            assetsInclude: ['**/*.js']
       },
       resolve: {
             alias: {
