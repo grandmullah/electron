@@ -1,11 +1,10 @@
 /*
-  Centralized thermal ticket printing optimized for Bixolon POS thermal printers.
-  - Ensures correct 80mm paper size with zero margins for Bixolon compatibility
-  - Uses monospace fonts only (no emojis) for thermal printer compatibility
-  - Optimized for Bixolon SRP series (SRP-330, SRP-350, SRP-270, etc.)
-  - Formats numbers consistently with two decimals
-  - Prevents endless printing with multiple safeguards
-  - Uses proper paper width and character spacing for thermal printing
+  Centralized thermal ticket printing using bGate Web Print API.
+  - Direct thermal printer communication via WebSocket
+  - Bypasses browser printing issues and encoding problems
+  - Optimized for Bixolon and other thermal printers
+  - Reliable text rendering without HTML corruption
+  - Supports 80mm thermal paper with proper formatting
 */
 
 type AnyBet = any;
@@ -70,244 +69,83 @@ export function printThermalTicket(bet: AnyBet): void {
                   'Keep this ticket safe'
             ];
 
-            // Debug: Log the receipt content
             console.log('Receipt lines:', receiptLines);
             console.log('Receipt text:', receiptLines.join('\n'));
 
-            // Windows 11-optimized printing approach
-            console.log('Using Windows 11-optimized printing method...');
-
-            // Create a new window with Windows 11-specific settings
-            const printWindow = window.open('', '_blank', 'width=500,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no');
-            if (!printWindow) {
-                  alert('Please allow pop-ups to print the ticket');
+            // Check if bGate Web Print API is available
+            if (typeof (window as any).bGateWebPrintAPI === 'undefined') {
+                  console.error('bGate Web Print API not found. Please include the required scripts.');
+                  alert('Thermal printer API not available. Please check script inclusion.');
                   globalPrintInProgress = false;
                   return;
             }
 
-            // Add print window reference to prevent multiple windows
-            let printWindowRef = printWindow;
+            // Use bGate Web Print API for thermal printing
+            console.log('Using bGate Web Print API for thermal printing...');
 
-            // Windows 11-optimized HTML with guaranteed text display
-            const windowsHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Bet Ticket</title>
-    <style>
-        @media print {
-            @page { 
-                size: 80mm auto; 
-                margin: 0; 
-                padding: 0;
-            }
-            body { 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                color-adjust: exact;
-            }
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-        }
-        body {
-            font-family: monospace;
-            font-size: 12px;
-            margin: 0;
-            padding: 10px;
-            width: 70mm;
-            background: white;
-            color: black;
-            line-height: 1.3;
-        }
-        .receipt-content {
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre;
-            margin: 0;
-            padding: 0;
-            border: 1px solid #ccc;
-            background: white;
-            min-height: 200px;
-        }
-        @media screen {
-            body { 
-                background: #f0f0f0; 
-                padding: 20px;
-            }
-            .receipt-content {
-                border: 2px solid #333;
-                background: white;
-                padding: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="receipt-content">
-${receiptLines.join('\n')}
-    </div>
-    
-    <!-- Backup text display -->
-    <pre style="font-family: monospace; font-size: 12px; margin: 10px 0; padding: 10px; border: 1px solid #999; background: #f9f9f9;">
-${receiptLines.join('\n')}
-    </pre>
-</body>
-</html>`;
+            try {
+                  // Initialize bGate Web Print API
+                  const bGateAPI = (window as any).bGateWebPrintAPI;
 
-            console.log('Windows HTML created, length:', windowsHtml.length);
-            console.log('Windows HTML preview:', windowsHtml.substring(0, 300));
+                  // Configure printer settings for 80mm thermal paper
+                  const printerConfig = {
+                        width: 80, // 80mm paper width
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        lineSpacing: 1.2,
+                        margin: 0
+                  };
 
-            // Write content to window using multiple methods for Windows 11
-            printWindow.document.open();
-            printWindow.document.write(windowsHtml);
-            printWindow.document.close();
+                  // Create print job
+                  const printJob = bGateAPI.createPrintJob(printerConfig);
 
-            // Alternative method: Also set innerHTML as backup
-            setTimeout(() => {
-                  try {
-                        if (printWindow.document.body) {
-                              printWindow.document.body.innerHTML = windowsHtml;
-                              console.log('Backup innerHTML method applied');
-                        }
-                  } catch (e) {
-                        console.log('Backup method failed:', e);
-                  }
-            }, 100);
-
-
-
-            // Windows 11-specific timing and print handling
-            setTimeout(() => {
-                  try {
-                        console.log('Checking Windows 11 print window content...');
-
-                        // Debug: Check the entire document
-                        console.log('Document title:', printWindow.document.title);
-                        console.log('Document body exists:', !!printWindow.document.body);
-                        console.log('Document body innerHTML length:', printWindow.document.body?.innerHTML?.length || 0);
-                        console.log('Document body textContent length:', printWindow.document.body?.textContent?.length || 0);
-
-                        // Verify content is loaded
-                        const contentDiv = printWindow.document.querySelector('.receipt-content');
-                        const textContent = contentDiv?.textContent || '';
-
-                        console.log('Content div found:', !!contentDiv);
-                        console.log('Content div innerHTML:', contentDiv?.innerHTML?.substring(0, 200) || 'NOT FOUND');
-                        console.log('Text content length:', textContent.length);
-                        console.log('Text content preview:', textContent.substring(0, 200));
-
-                        if (textContent && textContent.length > 30) {
-                              console.log('Windows 11 content verified, printing...');
-
-                              // Set flag to prevent multiple prints
-                              let hasPrinted = false;
-
-                              // Windows 11-specific print sequence
-                              printWindow.focus();
-
-                              // Wait for Windows 11 to process the window
-                              setTimeout(() => {
-                                    if (hasPrinted) {
-                                          console.log('Print already executed, skipping...');
-                                          return;
-                                    }
-                                    hasPrinted = true;
-
-                                    try {
-                                          // Single print command for Windows 11
-                                          console.log('Executing single print command...');
-                                          printWindow.print();
-                                          console.log('Print command sent successfully');
-
-                                          // Close window after printing
-                                          setTimeout(() => {
-                                                try {
-                                                      if (!printWindow.closed) {
-                                                            printWindow.close();
-                                                      }
-                                                } catch (_) {
-                                                      // Ignore close errors
-                                                }
-                                                globalPrintInProgress = false;
-                                                console.log('Print job completed and cleaned up');
-                                          }, 3000);
-                                    } catch (printError) {
-                                          console.error('Print execution failed:', printError);
-                                          globalPrintInProgress = false;
-                                    }
-                              }, 500);
+                  // Add receipt content
+                  receiptLines.forEach(line => {
+                        if (line === '') {
+                              printJob.addLineBreak();
                         } else {
-                              console.error('Windows 11 content not loaded, trying fallback...');
-                              tryFallbackMethod();
+                              printJob.addText(line);
+                              printJob.addLineBreak();
                         }
-                  } catch (error) {
-                        console.error('Windows 11 print failed:', error);
-                        tryFallbackMethod();
-                  }
-            }, 2000); // Extended timeout for Windows 11
+                  });
 
-            // Safety timeout to prevent endless printing
-            setTimeout(() => {
-                  if (globalPrintInProgress) {
-                        console.warn('Safety timeout triggered, resetting print state');
-                        try {
-                              if (printWindowRef && !printWindowRef.closed) {
-                                    printWindowRef.close();
-                              }
-                        } catch (_) { }
+                  // Execute print job
+                  printJob.execute().then(() => {
+                        console.log('Thermal print job completed successfully');
                         globalPrintInProgress = false;
-                  }
-            }, 5000); // Reduced to 5 second safety timeout
+                  }).catch((error: any) => {
+                        console.error('Thermal print job failed:', error);
+                        globalPrintInProgress = false;
+                  });
 
-            // Fallback method using window.open
-            function tryFallbackMethod() {
-                  // Prevent fallback if main method is already printing
-                  if (!globalPrintInProgress) {
-                        console.log('Main print method already completed, skipping fallback');
-                        return;
-                  }
+            } catch (apiError) {
+                  console.error('bGate API error:', apiError);
 
-                  console.log('Trying window.open method...');
-
+                  // Fallback to simple text printing if API fails
+                  console.log('Falling back to simple text printing...');
                   const printWindow = window.open('', '_blank', 'width=300,height=600');
-                  if (!printWindow) {
-                        alert('Please allow pop-ups to print the ticket');
-                        globalPrintInProgress = false;
-                        return;
-                  }
+                  if (printWindow) {
+                        const simpleText = receiptLines.join('\n');
+                        printWindow.document.write(`
+                            <html>
+                            <head><title>Print</title></head>
+                            <body style="font-family: monospace; font-size: 11px;">
+                            <pre>${simpleText}</pre>
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
 
-                  // Create very simple content
-                  const simpleContent = `
-                      <html>
-                      <head><title>Print</title></head>
-                      <body style="font-family: monospace; font-size: 10px;">
-                      ${receiptLines.map(line => line === '' ? '<br>' : line).join('<br>')}
-                      </body>
-                      </html>`;
-
-                  printWindow.document.open();
-                  printWindow.document.body.innerHTML = simpleContent;
-                  printWindow.document.close();
-
-                  setTimeout(() => {
-                        try {
+                        setTimeout(() => {
                               printWindow.print();
-                              console.log('Window print command sent');
-
                               setTimeout(() => {
                                     try { printWindow.close(); } catch (_) { }
                                     globalPrintInProgress = false;
                               }, 2000);
-                        } catch (error) {
-                              console.error('Window print failed:', error);
-                              globalPrintInProgress = false;
-                        }
-                  }, 1000);
+                        }, 1000);
+                  } else {
+                        globalPrintInProgress = false;
+                  }
             }
 
       } catch (error) {
