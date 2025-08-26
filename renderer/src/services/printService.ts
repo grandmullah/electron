@@ -74,78 +74,137 @@ export function printThermalTicket(bet: AnyBet): void {
             console.log('Receipt lines:', receiptLines);
             console.log('Receipt text:', receiptLines.join('\n'));
 
-            // Method 1: Try using iframe approach
-            console.log('Trying iframe method...');
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
+            // Windows 11-optimized printing approach
+            console.log('Using Windows 11-optimized printing method...');
 
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-            if (iframeDoc) {
-                  iframeDoc.open();
-                  iframeDoc.body.innerHTML = `
-                      <html>
-                      <head>
-                          <title>Bet Ticket</title>
-                          <style>
-                              @media print {
-                                  @page { size: 80mm auto; margin: 0; }
-                              }
-                              body {
-                                  font-family: monospace;
-                                  font-size: 10px;
-                                  margin: 0;
-                                  padding: 5px;
-                                  width: 70mm;
-                              }
-                          </style>
-                      </head>
-                      <body>
-                          <pre style="font-family: monospace; font-size: 10px; margin: 0; padding: 0; white-space: pre;">
-${receiptLines.join('\n')}
-                          </pre>
-                      </body>
-                      </html>
-                  `;
-                  iframeDoc.close();
-
-                  // Wait for iframe to load
-                  setTimeout(() => {
-                        try {
-                              console.log('Iframe content loaded, checking...');
-                              const iframeText = iframeDoc.body?.textContent || '';
-                              console.log('Iframe text length:', iframeText.length);
-                              console.log('Iframe text preview:', iframeText.substring(0, 100));
-
-                              if (iframeText.length > 20) {
-                                    console.log('Iframe content verified, printing...');
-                                    iframe.contentWindow?.print();
-                                    console.log('Iframe print command sent');
-
-                                    // Clean up iframe after printing
-                                    setTimeout(() => {
-                                          document.body.removeChild(iframe);
-                                          globalPrintInProgress = false;
-                                          console.log('Iframe print job completed');
-                                    }, 3000);
-                              } else {
-                                    console.error('Iframe content not loaded, trying window method...');
-                                    document.body.removeChild(iframe);
-                                    tryWindowMethod();
-                              }
-                        } catch (error) {
-                              console.error('Iframe print failed:', error);
-                              document.body.removeChild(iframe);
-                              tryWindowMethod();
-                        }
-                  }, 1000);
-            } else {
-                  console.error('Iframe not supported, trying window method...');
-                  tryWindowMethod();
+            // Create a new window with Windows 11-specific settings
+            const printWindow = window.open('', '_blank', 'width=500,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no');
+            if (!printWindow) {
+                  alert('Please allow pop-ups to print the ticket');
+                  globalPrintInProgress = false;
+                  return;
             }
 
+            // Windows-optimized HTML with proper encoding and styling
+            const windowsHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Bet Ticket</title>
+    <style>
+        @media print {
+            @page { 
+                size: 80mm auto; 
+                margin: 0; 
+                padding: 0;
+            }
+            body { 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+        body {
+            font-family: 'Courier New', 'Courier', monospace;
+            font-size: 11px;
+            margin: 0;
+            padding: 8px;
+            width: 70mm;
+            background: white;
+            color: black;
+            line-height: 1.2;
+        }
+        .receipt-content {
+            font-family: 'Courier New', 'Courier', monospace;
+            font-size: 11px;
+            white-space: pre-line;
+            margin: 0;
+            padding: 0;
+        }
+        @media screen {
+            body { 
+                background: #f0f0f0; 
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-content">
+${receiptLines.join('\n')}
+    </div>
+</body>
+</html>`;
+
+            console.log('Windows HTML created, length:', windowsHtml.length);
+            console.log('Windows HTML preview:', windowsHtml.substring(0, 300));
+
+            // Write content to window
+            printWindow.document.open();
+            printWindow.document.write(windowsHtml);
+            printWindow.document.close();
+
+            // Windows 11-specific timing and print handling
+            setTimeout(() => {
+                  try {
+                        console.log('Checking Windows 11 print window content...');
+
+                        // Verify content is loaded
+                        const contentDiv = printWindow.document.querySelector('.receipt-content');
+                        const textContent = contentDiv?.textContent || '';
+
+                        console.log('Content div found:', !!contentDiv);
+                        console.log('Text content length:', textContent.length);
+                        console.log('Text content preview:', textContent.substring(0, 200));
+
+                        if (textContent && textContent.length > 30) {
+                              console.log('Windows 11 content verified, printing...');
+
+                              // Windows 11-specific print sequence
+                              printWindow.focus();
+
+                              // Wait for Windows 11 to process the window
+                              setTimeout(() => {
+                                    try {
+                                          printWindow.print();
+                                          console.log('Windows 11 print command sent');
+
+                                          // Extended timeout for Windows 11 print processing
+                                          setTimeout(() => {
+                                                try {
+                                                      if (!printWindow.closed) {
+                                                            printWindow.close();
+                                                      }
+                                                } catch (_) {
+                                                      // Ignore close errors
+                                                }
+                                                globalPrintInProgress = false;
+                                                console.log('Windows 11 print job completed');
+                                          }, 4000); // Extended for Windows 11
+                                    } catch (printError) {
+                                          console.error('Windows 11 print execution failed:', printError);
+                                          tryFallbackMethod();
+                                    }
+                              }, 500);
+                        } else {
+                              console.error('Windows 11 content not loaded, trying fallback...');
+                              tryFallbackMethod();
+                        }
+                  } catch (error) {
+                        console.error('Windows 11 print failed:', error);
+                        tryFallbackMethod();
+                  }
+            }, 2000); // Extended timeout for Windows 11
+
             // Fallback method using window.open
-            function tryWindowMethod() {
+            function tryFallbackMethod() {
                   console.log('Trying window.open method...');
 
                   const printWindow = window.open('', '_blank', 'width=300,height=600');
