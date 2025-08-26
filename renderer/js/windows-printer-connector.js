@@ -422,6 +422,143 @@ class WindowsPrintJob {
         return this;
     }
 
+    // Add Bixolon-specific formatting
+    addBixolonHeader(title) {
+        this.addText(title);
+        this.addLineBreak();
+        this.addSeparator('=');
+        return this;
+    }
+
+    // Add Bixolon receipt format - Main function for bet receipts
+    addBetReceipt(data) {
+        // Receipt header
+        this.addBixolonHeader('BETZONE RECEIPT');
+        
+        // Receipt details
+        if (data.receiptId) {
+            this.addText(`Receipt #: ${data.receiptId}`);
+            this.addLineBreak();
+        }
+        
+        if (data.date) {
+            this.addText(`Date: ${data.date}`);
+            this.addLineBreak();
+        } else {
+            this.addText(`Date: ${new Date().toLocaleString()}`);
+            this.addLineBreak();
+        }
+        
+        if (data.customerName) {
+            this.addText(`Customer: ${data.customerName}`);
+            this.addLineBreak();
+        }
+        
+        if (data.customerPhone) {
+            this.addText(`Phone: ${data.customerPhone}`);
+            this.addLineBreak();
+        }
+        
+        this.addLineBreak();
+        
+        // Bet details
+        if (data.bets && data.bets.length > 0) {
+            this.addText('BET DETAILS:');
+            this.addLineBreak();
+            this.addSeparator('-');
+            
+            data.bets.forEach((bet, index) => {
+                this.addText(`${index + 1}. ${bet.description || 'Unknown'}`);
+                this.addLineBreak();
+                if (bet.selection) {
+                    this.addText(`   Selection: ${bet.selection}`);
+                    this.addLineBreak();
+                }
+                if (bet.odds) {
+                    this.addText(`   Odds: ${bet.odds}`);
+                    this.addLineBreak();
+                }
+                if (bet.stake) {
+                    this.addText(`   Stake: $${bet.stake.toFixed(2)}`);
+                    this.addLineBreak();
+                }
+                if (bet.potentialWin) {
+                    this.addText(`   Potential: $${bet.potentialWin.toFixed(2)}`);
+                    this.addLineBreak();
+                }
+                this.addLineBreak();
+            });
+        }
+        
+        // Totals
+        this.addSeparator('=');
+        if (data.totalStake) {
+            this.addText(`Total Stake: $${data.totalStake.toFixed(2)}`);
+            this.addLineBreak();
+        }
+        if (data.potentialWin) {
+            this.addText(`Potential Win: $${data.potentialWin.toFixed(2)}`);
+            this.addLineBreak();
+        }
+        
+        this.addLineBreak();
+        
+        // Footer
+        this.addSeparator('=');
+        this.addText('Thank you for using Betzone!');
+        this.addLineBreak();
+        this.addText('Good luck! 🍀');
+        this.addLineBreak();
+        this.addText('Keep this receipt for your records');
+        
+        return this;
+    }
+
+    // Add bet slip format - Simplified version
+    addBetSlip(data) {
+        // Slip header
+        this.addBixolonHeader('BETZONE BET SLIP');
+        
+        // Basic bet info
+        if (data.betId) {
+            this.addText(`Bet ID: ${data.betId}`);
+            this.addLineBreak();
+        }
+        
+        this.addText(`Date: ${new Date().toLocaleString()}`);
+        this.addLineBreak();
+        this.addLineBreak();
+        
+        // Bet details
+        if (data.bets && data.bets.length > 0) {
+            this.addText('SELECTIONS:');
+            this.addLineBreak();
+            this.addSeparator('-');
+            
+            data.bets.forEach((bet, index) => {
+                this.addText(`${index + 1}. ${bet.description || 'Unknown'}`);
+                this.addLineBreak();
+                if (bet.selection) {
+                    this.addText(`   ${bet.selection}`);
+                    this.addLineBreak();
+                }
+                this.addLineBreak();
+            });
+        }
+        
+        // Stake info
+        this.addSeparator('=');
+        if (data.totalStake) {
+            this.addText(`Stake: $${data.totalStake.toFixed(2)}`);
+            this.addLineBreak();
+        }
+        
+        this.addLineBreak();
+        this.addText('Present this slip to collect winnings');
+        
+        return this;
+    }
+
     // Execute print job
     async execute() {
         if (this.content.length === 0) {

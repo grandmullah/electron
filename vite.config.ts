@@ -24,14 +24,28 @@ export default defineConfig(({ mode }) => ({
             // Copy JavaScript files to build output
             copyPublicDir: true,
             // Ensure js files are included in build
-            assetsInclude: ['**/*.js']
+            assetsInclude: ['**/*.js', '**/*.html'],
+            // Copy additional directories
+            rollupOptions: {
+                  input: {
+                        main: resolve(__dirname, 'renderer/src/main.tsx'),
+                  },
+                  output: {
+                        entryFileNames: 'src/[name].js',
+                        chunkFileNames: 'src/[name].js',
+                        assetFileNames: 'assets/[name].[ext]'
+                  }
+            }
       },
+      // Copy additional files during build
+      publicDir: 'renderer',
       resolve: {
             alias: {
                   '@': resolve(__dirname, 'renderer/src'),
                   '@main': resolve(__dirname, 'main'),
                   '@renderer': resolve(__dirname, 'renderer'),
-                  '@shared': resolve(__dirname, 'shared')
+                  '@shared': resolve(__dirname, 'shared'),
+                  '@js': resolve(__dirname, 'renderer/js')
             }
       }
 })); 
