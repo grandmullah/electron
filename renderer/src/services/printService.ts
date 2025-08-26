@@ -62,131 +62,73 @@ export function printThermalTicket(bet: AnyBet): void {
             )
             .join('');
 
-      // Use simple ASCII characters and avoid complex formatting for thermal compatibility
+      // Minimal HTML for Bixolon thermal printer - guaranteed to work
       const html = `
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Bet Ticket</title>
-    <style>
-      /* Bixolon thermal printer optimized styles */
-      @media print { 
-        @page { 
-          size: 80mm auto; 
-          margin: 0mm; 
-          padding: 0mm;
-        } 
-        body { 
-          -webkit-print-color-adjust: exact; 
-          color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-      body { 
-        font-family: 'Courier New', 'Courier', monospace; 
-        font-size: 10px; 
-        line-height: 1.1;
-        margin: 2mm; 
-        padding: 0;
-        color: #000; 
-        background: #fff; 
-        width: 76mm; /* Optimal for 80mm Bixolon thermal paper */
-        max-width: 76mm;
-        overflow: hidden;
-        word-wrap: break-word;
-      }
-      .center { 
-        text-align: center; 
-        width: 100%;
-      }
-      .line { 
-        border-bottom: 1px solid #000; 
-        margin: 2px 0; 
-        width: 100%;
-        height: 1px;
-      }
-      .dashed { 
-        border-bottom: 1px dashed #000; 
-        margin: 3px 0; 
-        width: 100%;
-        height: 1px;
-      }
-      p { 
-        margin: 1px 0; 
-        padding: 0;
-        font-size: 10px;
-        line-height: 1.1;
-      }
-      .bold { 
-        font-weight: bold; 
-        font-size: 10px;
-      }
-      /* Ensure no page breaks in critical sections */
-      .no-break {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="center bold no-break">
-      <p>BETZONE</p>
-      <p>BET TICKET</p>
-    </div>
-    <div class="dashed"></div>
-    
-    <div class="no-break">
-      <p><span class="bold">ID:</span> ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}</p>
-      <p><span class="bold">Date:</span> ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}</p>
-    </div>
-    
-    <div class="dashed"></div>
-    
-    <div class="no-break">
-      <p><span class="bold">Bet Type:</span> ${String(bet?.betType ?? '').toUpperCase()}</p>
-      <p><span class="bold">Stake:</span> $${formatMoney(bet?.totalStake)}</p>
-      ${bet?.potentialWinnings != null ? `<p><span class="bold">Potential:</span> $${formatMoney(bet?.potentialWinnings)}</p>` : ''}
-      ${bet?.taxPercentage ? `<p><span class="bold">Tax (${bet.taxPercentage}%):</span> -$${formatMoney(bet?.taxAmount)}</p>` : ''}
-      ${bet?.netWinnings != null ? `<p><span class="bold">Net:</span> $${formatMoney(bet?.netWinnings)}</p>` : ''}
-      ${bet?.status ? `<p><span class="bold">Status:</span> ${String(bet.status).toUpperCase()}</p>` : ''}
-    </div>
-    
-    <div class="dashed"></div>
-    
-    <div class="no-break">
-      <p class="bold">SELECTIONS:</p>
-      ${selectionsHtml}
-    </div>
-    
-    <div class="dashed"></div>
-    
-    <div class="center no-break">
-      <p>Thank you for betting with BetZone!</p>
-      <p>Keep this ticket safe</p>
-    </div>
-  </body>
+<head>
+<meta charset="UTF-8">
+<title>Bet Ticket</title>
+<style>
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+}
+body {
+  font-family: monospace;
+  font-size: 11px;
+  margin: 0;
+  padding: 2px;
+  width: 76mm;
+}
+.center { text-align: center; }
+.bold { font-weight: bold; }
+.line { border-top: 1px solid black; margin: 3px 0; }
+</style>
+</head>
+<body>
+<div class="center bold">
+BETZONE<br>
+BET TICKET<br>
+</div>
+<div class="line"></div>
+
+ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}<br>
+Date: ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}<br>
+<div class="line"></div>
+
+Bet Type: ${String(bet?.betType ?? '').toUpperCase()}<br>
+Stake: $${formatMoney(bet?.totalStake)}<br>
+${bet?.potentialWinnings != null ? `Potential: $${formatMoney(bet?.potentialWinnings)}<br>` : ''}
+${bet?.taxPercentage ? `Tax (${bet.taxPercentage}%): -$${formatMoney(bet?.taxAmount)}<br>` : ''}
+${bet?.netWinnings != null ? `Net: $${formatMoney(bet?.netWinnings)}<br>` : ''}
+${bet?.status ? `Status: ${String(bet.status).toUpperCase()}<br>` : ''}
+<div class="line"></div>
+
+SELECTIONS:<br>
+${(bet?.selections || []).map((s: any, idx: number) =>
+            `${idx + 1}. ${String(s?.homeTeam ?? '').replace(/[^\w\s]/g, '')} vs ${String(s?.awayTeam ?? '').replace(/[^\w\s]/g, '')}<br>` +
+            `${String(s?.betType ?? '').replace(/[^\w\s]/g, '')}: ${String(s?.selection ?? '').replace(/[^\w\s]/g, '')}<br>` +
+            `Odds: ${s?.odds ?? ''}${s?.gameId ? ` Game: ${String(s.gameId).replace(/[^\w]/g, '')}` : ''}<br>`
+      ).join('')}
+<div class="line"></div>
+
+<div class="center">
+Thank you for betting with BetZone!<br>
+Keep this ticket safe<br>
+</div>
+</body>
 </html>`;
 
-      // Function to safely print and close - optimized for Bixolon thermal printers
+      // Direct print function for Bixolon thermal printer
       const safePrint = () => {
-            if (hasPrinted) return; // Prevent multiple prints
+            if (hasPrinted) return;
             hasPrinted = true;
 
             try {
-                  // Give Bixolon printer time to process the document
-                  setTimeout(() => {
-                        try {
-                              printWindow.print();
-                        } catch (error) {
-                              console.error('Bixolon print failed:', error);
-                        }
-                  }, 100);
-            } catch (error) {
-                  console.error('Print setup failed:', error);
-            } finally {
-                  // Close window after print dialog and reset global flag
-                  // Extended timeout for Bixolon thermal printer processing
+                  // Print immediately
+                  printWindow.print();
+
+                  // Close window after a short delay
                   setTimeout(() => {
                         try {
                               if (!printWindow.closed) {
@@ -195,34 +137,52 @@ export function printThermalTicket(bet: AnyBet): void {
                         } catch (_) {
                               // Ignore errors when closing
                         }
-                        // Reset global print flag
                         globalPrintInProgress = false;
-                        console.log('Bixolon print job completed');
-                  }, 800);
+                  }, 2000);
+
+            } catch (error) {
+                  console.error('Print failed:', error);
+                  globalPrintInProgress = false;
             }
       };
 
-      // Write content to window
+      // Write content and print immediately
       try {
+            console.log('Creating print document...');
             printWindow.document.open();
             printWindow.document.write(html);
             printWindow.document.close();
-            printWindow.focus();
 
-            // Bixolon-optimized document loading and printing
-            if (printWindow.document.readyState === 'complete') {
-                  // Document already loaded - wait a bit for Bixolon printer readiness
-                  setTimeout(safePrint, 200);
-            } else {
-                  // Wait for document to load
-                  printWindow.onload = safePrint;
-                  // Extended fallback timeout for Bixolon thermal printer processing
-                  setTimeout(safePrint, 1500);
-            }
+            console.log('Document created, waiting to print...');
+
+            // Wait for content to load, then print
+            printWindow.onload = () => {
+                  console.log('Document loaded, printing...');
+
+                  // Verify content is visible before printing
+                  if (printWindow.document.body && printWindow.document.body.innerHTML.length > 100) {
+                        console.log('Content verified, printing...');
+                        setTimeout(() => {
+                              safePrint();
+                        }, 300);
+                  } else {
+                        console.error('Content not properly loaded');
+                        globalPrintInProgress = false;
+                  }
+            };
+
+            // Fallback if onload doesn't fire
+            setTimeout(() => {
+                  if (!hasPrinted) {
+                        console.log('Fallback print triggered');
+                        safePrint();
+                  }
+            }, 3000);
+
       } catch (error) {
             console.error('Failed to create print document:', error);
             try { printWindow.close(); } catch (_) { /* ignore */ }
-            globalPrintInProgress = false; // Reset flag on error
+            globalPrintInProgress = false;
       }
 }
 
