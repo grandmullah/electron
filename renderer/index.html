@@ -11,23 +11,23 @@
         <!-- React app will be mounted here -->
     </div>
 
-    <!-- BIXOLON Web Print SDK Integration -->
-    <script type="text/javascript" src="js/bGateWebPrintAPI_WS.js"></script>
-    <script type="text/javascript" src="js/thermal-printer-simulator.js"></script>
+    <!-- BIXOLON Web Print SDK Integration - Simple Approach -->
+    <script type="text/javascript" src="js/bxlcommon.js"></script>
+    <script type="text/javascript" src="js/bxlpos.js"></script>
     
-    <!-- Ensure Bixolon API is available globally -->
+    <!-- Verify Bixolon functions are loaded -->
     <script type="text/javascript">
-        // Verify Bixolon API is loaded
         window.addEventListener('load', () => {
-            if (typeof window.BixolonWebPrintAPI !== 'undefined') {
-                console.log('✅ Bixolon Web Print API loaded successfully');
-                console.log('Available methods:', Object.keys(window.BixolonWebPrintAPI.prototype || {}));
+            if (typeof window.checkPrinterStatus !== 'undefined') {
+                console.log('✅ Bixolon printer functions loaded successfully');
+                console.log('Available functions:', Object.keys(window).filter(key => 
+                    key.includes('print') || 
+                    key.includes('check') || 
+                    key.includes('request') ||
+                    key.includes('getPosData')
+                ));
             } else {
-                console.error('❌ Bixolon Web Print API failed to load');
-            }
-            
-            if (typeof window.BixolonLogs !== 'undefined') {
-                console.log('✅ Bixolon enhanced logging available');
+                console.error('❌ Bixolon printer functions failed to load');
             }
         });
     </script>
