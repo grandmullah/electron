@@ -42,8 +42,14 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                   return;
             }
 
-            // Check printer status first
-            win.checkPrinterStatus();
+            // Check printer status first (with error handling)
+            try {
+                  win.checkPrinterStatus();
+                  console.log('✅ Printer status check successful');
+            } catch (statusError) {
+                  console.log('⚠️ Printer status check failed, continuing with print job...');
+                  // Continue with printing even if status check fails
+            }
 
             // Get printer name from settings (default to 'Printer1')
             const printerName = 'Printer1'; // You can make this configurable
@@ -102,8 +108,8 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             const ticketIdOld = `ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}\n`;
             const dateText = `Date: ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}\n\n`;
 
-            win.printText(ticketIdOld, 0, 0, false, false, false, 0, 0);
-            win.printText(dateText, 0, 0, false, false, false, 0, 0);
+            // win.printText(ticketIdOld, 0, 0, false, false, false, 0, 0);
+            // win.printText(dateText, 0, 0, false, false, false, 0, 0);
 
             // Print bet type and stake
             const betType = `Bet Type: ${String(bet?.betType ?? '').toUpperCase()}\n`;
@@ -136,7 +142,7 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                   win.printText(status, 0, 0, false, false, false, 0, 0);
             }
 
-            win.printText("\n", 0, 0, false, false, false, 0, 0);
+            win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
             // Print selections
             win.printText("SELECTIONS:\n", 0, 0, true, false, false, 0, 0);
@@ -162,10 +168,10 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                         const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
                         win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
 
-                        const betTypeText = `   ${betType}: ${sel}\n`;
+                        const betTypeText = `${betType}: ${sel}\n`;
                         win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
 
-                        const oddsText = `   Odds: ${odds}${gameId ? ` | Game: ${gameId}` : ''}\n\n`;
+                        const oddsText = `   Odds: ${odds}\n\n`;
                         win.printText(oddsText, 0, 0, false, false, false, 0, 0);
                   });
             }
