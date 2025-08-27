@@ -9,3 +9,6 @@ utils
 node_modules
 test*
 out*
+DEPLOYMENT_README.md
+dist-electron-builder*
+dist*
