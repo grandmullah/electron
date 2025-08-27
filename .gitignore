@@ -12,3 +12,4 @@ out*
 DEPLOYMENT_README.md
 dist-electron-builder*
 dist*
+*.md
