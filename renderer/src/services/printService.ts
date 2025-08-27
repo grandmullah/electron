@@ -42,14 +42,8 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                   return;
             }
 
-            // Check printer status first (with error handling)
-            try {
-                  win.checkPrinterStatus();
-                  console.log('✅ Printer status check successful');
-            } catch (statusError) {
-                  console.log('⚠️ Printer status check failed, continuing with print job...');
-                  // Continue with printing even if status check fails
-            }
+            // Check printer status first (original implementation - no actual checking)
+            win.checkPrinterStatus();
 
             // Get printer name from settings (default to 'Printer1')
             const printerName = 'Printer1'; // You can make this configurable
