@@ -55,16 +55,54 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             const headerText = `BETZONE\nBET TICKET\n\n`;
             win.printText(headerText, 0, 0, false, false, false, 0, 1);
 
+            // Print logo (if available)
+            try {
+                  // Try to print the logo as a bitmap
+                  win.printBitmap('resources/betzone-logo.svg', 0, 0, 0, 0);
+                  win.printText("\n", 0, 0, false, false, false, 0, 0);
+            } catch (logoError) {
+                  // If logo printing fails, just continue with text
+                  console.log('Logo printing not available, continuing with text header');
+            }
+
             // Print separator line
             const separatorLine = "----------------------------------------\n";
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
+            // Print cashier information
+            const cashierName = bet?.cashierName || 'Unknown Cashier';
+            win.printText("Cashier: ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+
+            // Print ticket ID
+            const ticketId = bet?.id || 'N/A';
+            win.printText("Ticket ID: ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText(`${ticketId}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+
+            // Print date and time
+            const currentDate = new Date().toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+            });
+            const currentTime = new Date().toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+            });
+            win.printText("Date: ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText(`${currentDate}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+            win.printText("Time: ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText(`${currentTime}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+
+            win.printText("\n", 0, 0, false, false, false, 0, 0);
+
             // Print ticket details
             const createdAt = bet?.createdAt ? new Date(bet.createdAt) : new Date();
-            const ticketId = `ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}\n`;
+            const ticketIdOld = `ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}\n`;
             const dateText = `Date: ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}\n\n`;
 
-            win.printText(ticketId, 0, 0, false, false, false, 0, 0);
+            win.printText(ticketIdOld, 0, 0, false, false, false, 0, 0);
             win.printText(dateText, 0, 0, false, false, false, 0, 0);
 
             // Print bet type and stake
