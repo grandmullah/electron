@@ -43,7 +43,7 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
             }
 
             // Check printer status first (original implementation - no actual checking)
-            win.checkPrinterStatus();
+            // win.checkPrinterStatus();
 
             // Get printer name from settings (default to 'Printer1')
             const printerName = 'Printer1'; // You can make this configurable
