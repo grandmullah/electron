@@ -123,7 +123,11 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
                         const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
                         const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
                         win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
+
+                        const betTypeText = `   ${betType}: ${sel}\n`;
                         win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
+
+                        const oddsText = `   Odds: ${odds}${gameId ? ` | Game: ${gameId}` : ''}\n\n`;
                         win.printText(oddsText, 0, 0, false, false, false, 0, 0);
                   });
             }
