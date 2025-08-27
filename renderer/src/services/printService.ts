@@ -50,91 +50,137 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
 
         // Create ticket content using simple Bixolon functions
         console.log('🖨️ Starting thermal ticket print...');
+      // Print header
+      const headerText = `BETZONE\nBET TICKET\n\n`;
+      win.printText(headerText, 0, 0, false, false, false, 0, 1);
 
-        // Print header
-        const headerText = `BETZONE\nBET TICKET\n\n`;
-        win.printText(headerText, 0, 0, false, false, false, 0, 1);
+      // Print logo (if available)
+      try {
+            // Try to print the logo as a bitmap
+            win.printBitmap('resources/betzone-logo.svg', 0, 0, 0, 0);
+            win.printText("\n", 0, 0, false, false, false, 0, 0);
+      } catch (logoError) {
+            // If logo printing fails, just continue with text
+            console.log('Logo printing not available, continuing with text header');
+      }
 
-        // Print separator line
-        const separatorLine = "----------------------------------------\n";
-        win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
+      // Print separator line
+      const separatorLine = "----------------------------------------\n";
+      win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
-        // Print ticket details
-        const createdAt = bet?.createdAt ? new Date(bet.createdAt) : new Date();
-        const ticketId = `ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}\n`;
-        const dateText = `Date: ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}\n\n`;
-        
-        win.printText(ticketId, 0, 0, false, false, false, 0, 0);
-        win.printText(dateText, 0, 0, false, false, false, 0, 0);
+      // Print cashier information
+      const cashierName = bet?.cashierName || 'Unknown Cashier';
+      win.printText("Cashier: ", 0, 0, true, false, false, 0, 0); // Bold label
+      win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
-        // Print bet type and stake
-        const betType = `Bet Type: ${String(bet?.betType ?? '').toUpperCase()}\n`;
-        const stake = `Stake: $${formatMoney(bet?.totalStake)}\n`;
-        
-        win.printText(betType, 0, 0, false, false, false, 0, 0);
-        win.printText(stake, 0, 0, false, false, false, 0, 0);
+      // Print ticket ID
+      const ticketId = bet?.id || 'N/A';
+      win.printText("Ticket ID: ", 0, 0, true, false, false, 0, 0); // Bold label
+      win.printText(`${ticketId}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
-        // Print potential winnings if available
-        if (bet?.potentialWinnings != null) {
+      // Print date and time
+      const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+      });
+      const currentTime = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+      });
+      win.printText("Date: ", 0, 0, true, false, false, 0, 0); // Bold label
+      win.printText(`${currentDate}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+      win.printText("Time: ", 0, 0, true, false, false, 0, 0); // Bold label
+      win.printText(`${currentTime}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+
+      win.printText("\n", 0, 0, false, false, false, 0, 0);
+
+      // Print ticket details
+      const createdAt = bet?.createdAt ? new Date(bet.createdAt) : new Date();
+      const ticketIdOld = `ID: ${String(bet?.id ?? '').replace(/[^\w\-]/g, '')}\n`;
+      const dateText = `Date: ${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}\n\n`;
+
+      // win.printText(ticketIdOld, 0, 0, false, false, false, 0, 0);
+      // win.printText(dateText, 0, 0, false, false, false, 0, 0);
+
+      // Print bet type and stake
+      const betType = `Bet Type: ${String(bet?.betType ?? '').toUpperCase()}\n`;
+      const stake = `Stake: $${formatMoney(bet?.totalStake)}\n`;
+
+      win.printText(betType, 0, 0, false, false, false, 0, 0);
+      win.printText(stake, 0, 0, false, false, false, 0, 0);
+
+      // Print potential winnings if available
+      if (bet?.potentialWinnings != null) {
             const potential = `Potential: $${formatMoney(bet?.potentialWinnings)}\n`;
             win.printText(potential, 0, 0, false, false, false, 0, 0);
-        }
+      }
 
-        // Print tax if available
-        if (bet?.taxPercentage) {
+      // Print tax if available
+      if (bet?.taxPercentage) {
             const tax = `Tax (${bet.taxPercentage}%): -$${formatMoney(bet?.taxAmount)}\n`;
             win.printText(tax, 0, 0, false, false, false, 0, 0);
-        }
+      }
 
-        // Print net winnings if available
-        if (bet?.netWinnings != null) {
+      // Print net winnings if available
+      if (bet?.netWinnings != null) {
             const net = `Net: $${formatMoney(bet?.netWinnings)}\n`;
             win.printText(net, 0, 0, false, false, false, 0, 0);
-        }
+      }
 
-        // Print status if available
-        if (bet?.status) {
+      // Print status if available
+      if (bet?.status) {
             const status = `Status: ${String(bet.status).toUpperCase()}\n`;
             win.printText(status, 0, 0, false, false, false, 0, 0);
-        }
+      }
 
-        win.printText("\n", 0, 0, false, false, false, 0, 0);
+      win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
-        // Print selections
-        win.printText("SELECTIONS:\n", 0, 0, true, false, false, 0, 0);
-        
-        if (bet?.selections && Array.isArray(bet.selections)) {
+      // Print selections
+      win.printText("SELECTIONS:\n", 0, 0, true, false, false, 0, 0);
+
+      if (bet?.selections && Array.isArray(bet.selections)) {
             bet.selections.forEach((selection: any, index: number) => {
-                const homeTeam = String(selection?.homeTeam ?? '').replace(/[^\w\s]/g, '');
-                const awayTeam = String(selection?.awayTeam ?? '').replace(/[^\w\s]/g, '');
-                const betType = String(selection?.betType ?? '').replace(/[^\w\s]/g, '');
-                const sel = String(selection?.selection ?? '').replace(/[^\w\s]/g, '');
-                const odds = selection?.odds ?? '';
-                const gameId = selection?.gameId ? String(selection.gameId).replace(/[^\w]/g, '') : '';
+                  const homeTeam = String(selection?.homeTeam ?? '').replace(/[^\w\s]/g, '');
+                  const awayTeam = String(selection?.awayTeam ?? '').replace(/[^\w\s]/g, '');
+                  const betType = String(selection?.betType ?? '').replace(/[^\w\s]/g, '');
+                  const sel = String(selection?.selection ?? '').replace(/[^\w\s]/g, '');
+                  const odds = selection?.odds ?? '';
+                  const gameId = selection?.gameId ? String(selection.gameId).replace(/[^\w]/g, '') : '';
 
-                const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}\n`;
-                const betTypeText = `   ${betType}: ${sel}\n`;
-                const oddsText = `   Odds: ${odds}${gameId ? ` Game: ${gameId}` : ''}\n\n`;
+                  // Add game start time and result type (FT/HT)
+                  const gameStartTime = selection?.gameStartTime ? new Date(selection.gameStartTime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                  }) : '';
+                  const resultType = selection?.resultType ? String(selection.resultType).toUpperCase() : 'FT'; // Default to FT if not specified
 
-                win.printText(selectionText, 0, 0, false, false, false, 0, 0);
-                win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
-                win.printText(oddsText, 0, 0, false, false, false, 0, 0);
+                  const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
+                  const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
+                  win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
+
+                  const betTypeText = `${betType}: ${sel}\n`;
+                  win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
+
+                  const oddsText = `   Odds: ${odds}\n\n`;
+                  win.printText(oddsText, 0, 0, false, false, false, 0, 0);
             });
-        }
+      }
 
-        // Print footer
-        win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
-        win.printText("\nThank you for betting with BetZone!\n", 0, 0, false, false, false, 0, 1);
-        win.printText("Keep this ticket safe\n\n", 0, 0, false, false, false, 0, 1);
+      // Print footer
+      win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
+      win.printText("\nThank you for betting with BetZone!\n", 0, 0, false, false, false, 0, 1);
+      win.printText("Keep this ticket safe\n\n", 0, 0, false, false, false, 0, 1);
 
-        // Print barcode (ticket ID)
-        const barcodeData = `BET${String(bet?.id ?? '').replace(/[^\w]/g, '')}`;
-        win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
+      // Print barcode (ticket ID)
+      const barcodeData = `BET${String(bet?.id ?? '').replace(/[^\w]/g, '')}`;
+      win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
 
-        // Add some spacing and cut paper
-        win.printText("\n\n", 0, 0, false, false, false, 0, 0);
-        win.cutPaper(1);
-
+      // Add some spacing and cut paper
+      win.printText("\n\n", 0, 0, false, false, false, 0, 0);
+      win.cutPaper(1);
         // Send to printer using the simple approach
         console.log('📤 Sending print job to Bixolon printer...');
         
