@@ -25,6 +25,13 @@ export interface Game {
             yes: number | null;
             no: number | null;
       };
+      spreads: {
+            homeSpread: number | null;
+            awaySpread: number | null;
+            homeSpreadOdds: number | null;
+            awaySpreadOdds: number | null;
+            spreadLine: number | null;
+      };
       hasValidOdds: boolean;
 }
 
@@ -145,6 +152,22 @@ class GamesService {
                               const bttsYes = bttsMarket?.outcomes?.find((o: any) => String(o.name || '').toLowerCase() === 'yes');
                               const bttsNo = bttsMarket?.outcomes?.find((o: any) => String(o.name || '').toLowerCase() === 'no');
 
+                              // DEBUG: Log details for Tottenham vs Bournemouth
+                              if (game.home_team?.toLowerCase().includes('tottenham') || game.away_team?.toLowerCase().includes('tottenham')) {
+                                    console.log('=== TOTTENHAM GAME DEBUG ===');
+                                    console.log('Game:', game.home_team, 'vs', game.away_team);
+                                    console.log('Total bookmakers:', bookmakers.length);
+                                    console.log('Available markets:', bookmakers.map((bm: any) => bm?.markets?.map((m: any) => m.key)).flat());
+                                    console.log('Double Chance market found:', dcMarket ? 'YES' : 'NO');
+                                    console.log('BTTS market found:', bttsMarket ? 'YES' : 'NO');
+                                    if (dcMarket) {
+                                          console.log('Double Chance outcomes:', dcMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.decimalOdds })));
+                                    }
+                                    if (bttsMarket) {
+                                          console.log('BTTS outcomes:', bttsMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.decimalOdds })));
+                                    }
+                              }
+
                               const hasValidOdds = Boolean(
                                     homeOutcome?.decimalOdds &&
                                     awayOutcome?.decimalOdds &&
@@ -174,6 +197,13 @@ class GamesService {
                                     bothTeamsToScore: {
                                           yes: bttsYes?.decimalOdds ?? null,
                                           no: bttsNo?.decimalOdds ?? null,
+                                    },
+                                    spreads: {
+                                          homeSpread: null,
+                                          awaySpread: null,
+                                          homeSpreadOdds: null,
+                                          awaySpreadOdds: null,
+                                          spreadLine: null,
                                     },
                                     hasValidOdds,
                               };

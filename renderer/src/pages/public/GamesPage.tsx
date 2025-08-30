@@ -35,6 +35,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [isAgentMode, setIsAgentMode] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [showRefreshNotification, setShowRefreshNotification] = useState(false);
 
   useEffect(() => {
     fetchGames();
@@ -48,6 +50,226 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       setSelectedUser(null);
     }
   }, [user, leagueKey]);
+
+  // Auto-refresh odds every 10 minutes (600,000 ms)
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      console.log("🔄 Auto-refreshing odds...");
+      fetchGames();
+      // Show notification for auto-refresh
+      setShowRefreshNotification(true);
+      setTimeout(() => setShowRefreshNotification(false), 3000); // Hide after 3 seconds
+    }, 600000); // 10 minutes
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, [leagueKey]);
+
+  // Manual refresh function for users
+  const handleManualRefresh = () => {
+    console.log("🔄 Manual odds refresh requested");
+    fetchGames();
+  };
+
+  // Print games function
+  const handlePrintGames = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to print games");
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>BetZone Games & Odds - ${new Date().toLocaleDateString()}</title>
+          <style>
+            @media print {
+              @page {
+                size: A4;
+                margin: 1cm;
+              }
+            }
+            
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+              margin: 0;
+              padding: 20px;
+            }
+            
+            .print-header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+            }
+            
+            .print-header h1 {
+              margin: 0 0 10px 0;
+              font-size: 24px;
+              color: #333;
+            }
+            
+            .print-header .subtitle {
+              font-size: 14px;
+              color: #666;
+              margin: 0;
+            }
+            
+            .print-header .timestamp {
+              font-size: 12px;
+              color: #999;
+              margin: 10px 0 0 0;
+            }
+            
+            .games-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            
+            .games-table th {
+              background-color: #f5f5f5;
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: center;
+              font-weight: bold;
+              font-size: 11px;
+            }
+            
+            .games-table td {
+              border: 1px solid #ddd;
+              padding: 6px;
+              text-align: center;
+              font-size: 10px;
+              vertical-align: middle;
+            }
+            
+            .team-names {
+              font-weight: bold;
+              text-align: left;
+              padding: 8px;
+            }
+            
+            .game-time {
+              font-size: 9px;
+              color: #666;
+            }
+            
+            .odds-cell {
+              font-weight: bold;
+              color: #2c5aa0;
+            }
+            
+            .market-header {
+              background-color: #e8f4fd;
+              font-weight: bold;
+              font-size: 10px;
+              text-align: center;
+              padding: 4px;
+            }
+            
+            .no-odds {
+              color: #999;
+              font-style: italic;
+            }
+            
+            .page-break {
+              page-break-before: always;
+            }
+            
+            @media print {
+              .no-print {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-header">
+            <h1>⚽ BetZone Games & Odds</h1>
+            <p class="subtitle">Premier League - ${new Date().toLocaleDateString()}</p>
+            <p class="timestamp">Last Updated: ${lastUpdated.toLocaleString()}</p>
+          </div>
+          
+          <table class="games-table">
+            <thead>
+              <tr>
+                <th style="width: 20%;">Match</th>
+                <th style="width: 8%;">Time</th>
+                <th style="width: 18%;">3 Way</th>
+                <th style="width: 18%;">Double Chance</th>
+                <th style="width: 18%;">Over/Under 2.5</th>
+                <th style="width: 18%;">Both Teams To Score</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th></th>
+                <th class="market-header">Home | Draw | Away</th>
+                <th class="market-header">1 or X | X or 2 | 1 or 2</th>
+                <th class="market-header">Over | Under</th>
+                <th class="market-header">Yes | No</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${games
+                .map(
+                  (game, index) => `
+                <tr>
+                  <td class="team-names">
+                    <strong>${game.homeTeam}</strong><br/>
+                    <strong>vs</strong><br/>
+                    <strong>${game.awayTeam}</strong>
+                  </td>
+                  <td class="game-time">
+                    ${new Date(game.matchTime).toLocaleDateString()}<br/>
+                    ${new Date(game.matchTime).toLocaleTimeString()}
+                  </td>
+                  <td>
+                    <div class="odds-cell">${game.homeOdds || "-"}</div>
+                    <div class="odds-cell">${game.drawOdds || "-"}</div>
+                    <div class="odds-cell">${game.awayOdds || "-"}</div>
+                  </td>
+                  <td>
+                    <div class="odds-cell">${game.doubleChance.homeOrDraw || "-"}</div>
+                    <div class="odds-cell">${game.doubleChance.drawOrAway || "-"}</div>
+                    <div class="odds-cell">${game.doubleChance.homeOrAway || "-"}</div>
+                  </td>
+                  <td>
+                    <div class="odds-cell">${game.overUnder.over25 || "-"}</div>
+                    <div class="odds-cell">${game.overUnder.under25 || "-"}</div>
+                  </td>
+                  <td>
+                    <div class="odds-cell">${game.bothTeamsToScore.yes || "-"}</div>
+                    <div class="odds-cell">${game.bothTeamsToScore.no || "-"}</div>
+                  </td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+          
+          <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+            <p>Generated by BetZone on ${new Date().toLocaleString()}</p>
+            <p>Total Games: ${games.length}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load then print
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+  };
 
   const loadManagedUsers = async () => {
     try {
@@ -64,6 +286,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       setError(null);
       const fetchedGames = await GamesService.fetchOdds(leagueKey);
       setGames(fetchedGames);
+      setLastUpdated(new Date()); // Update timestamp when odds are refreshed
     } catch (err) {
       console.error("Error fetching games:", err);
       setError("Failed to load games. Please try again later.");
@@ -173,8 +396,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       betType,
       selection,
       odds,
-      stake: 10,
-      potentialWinnings: 10 * odds,
+      stake: user?.bettingLimits?.minStake || 10, // Use user's minimum stake
+      potentialWinnings: (user?.bettingLimits?.minStake || 10) * odds,
       bookmaker: "BetZone",
       gameTime: game.matchTime,
       sportKey:
@@ -247,12 +470,21 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       <div className="games-page">
         <div className="games-header">
           <h1>⚽ Games & Odds</h1>
-          <button
-            className="btn btn-outline"
-            onClick={() => onNavigate("home")}
-          >
-            ← Back to Home
-          </button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => onNavigate("home")}
+            >
+              ← Back to Home
+            </button>
+            <button
+              onClick={handlePrintGames}
+              className="btn-print"
+              title="Print games and odds"
+            >
+              🖨️ Print Games
+            </button>
+          </div>
         </div>
         <div className="loading">
           <div className="spinner"></div>
@@ -272,396 +504,540 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       />
 
       <div className="games-content">
-        {/* League selector buttons */}
+        {/* League selector and refresh section */}
         <div className="league-selector" style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setLeagueKey("soccer_epl")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  background:
+                    leagueKey === "soccer_epl"
+                      ? "var(--color-primary)"
+                      : "var(--color-surface)",
+                  color:
+                    leagueKey === "soccer_epl" ? "white" : "var(--color-text)",
+                  border:
+                    leagueKey === "soccer_epl"
+                      ? "none"
+                      : "1px solid var(--color-border)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                EPL
+              </button>
+              {/* Future leagues can be added here */}
+            </div>
+
+            {/* Refresh Button */}
             <button
-              onClick={() => setLeagueKey("soccer_epl")}
+              onClick={handleManualRefresh}
               style={{
                 padding: "8px 16px",
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: "pointer",
-                background:
-                  leagueKey === "soccer_epl"
-                    ? "var(--color-primary)"
-                    : "var(--color-surface)",
-                color:
-                  leagueKey === "soccer_epl" ? "white" : "var(--color-text)",
-                border:
-                  leagueKey === "soccer_epl"
-                    ? "none"
-                    : "1px solid var(--color-border)",
+                background: "var(--color-success)",
+                color: "white",
+                border: "none",
                 transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              title="Refresh odds (auto-refresh every 10 minutes)"
+            >
+              🔄 Refresh Odds
+            </button>
+
+            {/* Print Button */}
+            <button
+              onClick={handlePrintGames}
+              className="btn-print"
+              title="Print games and odds"
+            >
+              🖨️ Print Games
+            </button>
+
+            {/* Last Updated Timestamp */}
+            <div
+              style={{
+                fontSize: "11px",
+                color: "var(--color-text-muted)",
+                textAlign: "center",
+                marginTop: "4px",
               }}
             >
-              EPL
-            </button>
-            {/* Future leagues can be added here */}
-          </div>
-        </div>
-        {/* Agent Mode Indicator */}
-        {isAgentMode && (
-          <div className="agent-mode-indicator">
-            <div className="agent-mode-content">
-              <span className="agent-mode-icon">👤</span>
-              <span className="agent-mode-text">Agent Mode</span>
-              {selectedUser && (
-                <div className="selected-user-display">
-                  <span className="selected-user-label">Placing bet for:</span>
-                  <span className="selected-user-name">
-                    {selectedUser.phone_number}
-                  </span>
-                  <span className="selected-user-balance">
-                    ${selectedUser.balance.toFixed(2)} {selectedUser.currency}
-                  </span>
-                  <button
-                    className="change-user-btn"
-                    onClick={() => setShowUserSelector(true)}
-                  >
-                    Change User
-                  </button>
-                </div>
-              )}
-              {!selectedUser && (
-                <button
-                  className="select-user-btn"
-                  onClick={() => setShowUserSelector(true)}
-                >
-                  Select User
-                </button>
-              )}
+              Last updated: {lastUpdated.toLocaleTimeString()}
             </div>
           </div>
-        )}
-        {/* <div className="games-header">
+          {/* Agent Mode Indicator */}
+          {isAgentMode && (
+            <div className="agent-mode-indicator">
+              <div className="agent-mode-content">
+                <span className="agent-mode-icon">👤</span>
+                <span className="agent-mode-text">Agent Mode</span>
+                {selectedUser && (
+                  <div className="selected-user-display">
+                    <span className="selected-user-label">
+                      Placing bet for:
+                    </span>
+                    <span className="selected-user-name">
+                      {selectedUser.phone_number}
+                    </span>
+                    <span className="selected-user-balance">
+                      ${selectedUser.balance.toFixed(2)} {selectedUser.currency}
+                    </span>
+                    <button
+                      className="change-user-btn"
+                      onClick={() => setShowUserSelector(true)}
+                    >
+                      Change User
+                    </button>
+                  </div>
+                )}
+                {!selectedUser && (
+                  <button
+                    className="select-user-btn"
+                    onClick={() => setShowUserSelector(true)}
+                  >
+                    Select User
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {/* <div className="games-header">
           <h1>⚽ Games & Odds</h1>
         </div> */}
 
-        {/* <div className="games-header">
+          {/* <div className="games-header">
         <button className="btn btn-outline" onClick={() => onNavigate("home")}>
           ← Back to Home
         </button>
       </div> */}
 
-        {error && (
-          <div className="error-message">
-            <p>{error}</p>
-            <button className="btn btn-primary" onClick={fetchGames}>
-              Retry
-            </button>
-          </div>
-        )}
-
-        <div className="games-grid">
-          {games.map((game) => (
-            <div
-              key={game.id}
-              className={`game-card ${
-                selectedGame?.id === game.id ? "selected" : ""
-              }`}
-              onClick={() => setSelectedGame(game)}
-            >
-              <div className="game-info">
-                <div className="game-teams">
-                  <div className="team home-team">
-                    <span className="team-name">{game.homeTeam}</span>
-                  </div>
-
-                  <div className="vs-divider">VS</div>
-
-                  <div className="team away-team">
-                    <span className="team-name">{game.awayTeam}</span>
-                  </div>
-                </div>
-
-                <div className="game-time">
-                  {new Date(game.matchTime).toLocaleDateString()} -{" "}
-                  {new Date(game.matchTime).toLocaleTimeString()}
-                </div>
-              </div>
-
-              {/* Main Odds Column */}
-              <div
-                className={`betting-option-column ${
-                  !game.hasValidOdds ? "disabled" : ""
-                }`}
-              >
-                <div className="betting-option-label">3 Way</div>
-                <div className="betting-option-sub-labels">
-                  <div className="betting-option-sub-label">Home</div>
-                  <div className="betting-option-sub-label">Draw</div>
-                  <div className="betting-option-sub-label">Away</div>
-                </div>
-                <div className="betting-option-values">
-                  <div
-                    id={`${game.id}-3 Way-Home`}
-                    className={`betting-option-value ${
-                      game.homeOdds ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "3 Way", "Home")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.homeOdds &&
-                      handleAddToBetSlip(game, "3 Way", "Home", game.homeOdds)
-                    }
-                  >
-                    {game.homeOdds || "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-3 Way-Draw`}
-                    className={`betting-option-value ${
-                      game.drawOdds ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "3 Way", "Draw")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.drawOdds &&
-                      handleAddToBetSlip(game, "3 Way", "Draw", game.drawOdds)
-                    }
-                  >
-                    {game.drawOdds || "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-3 Way-Away`}
-                    className={`betting-option-value ${
-                      game.awayOdds ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "3 Way", "Away")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.awayOdds &&
-                      handleAddToBetSlip(game, "3 Way", "Away", game.awayOdds)
-                    }
-                  >
-                    {game.awayOdds || "-"}
-                  </div>
-                </div>
-              </div>
-
-              {/* Double Chance Column */}
-              <div
-                className={`betting-option-column ${
-                  game.doubleChance.homeOrDraw ||
-                  game.doubleChance.drawOrAway ||
-                  game.doubleChance.homeOrAway
-                    ? ""
-                    : "disabled"
-                }`}
-              >
-                <div className="betting-option-label">Double Chance</div>
-                <div className="betting-option-sub-labels">
-                  <div className="betting-option-sub-label">1 or X</div>
-                  <div className="betting-option-sub-label">X or 2</div>
-                  <div className="betting-option-sub-label">1 or 2</div>
-                </div>
-                <div className="betting-option-values">
-                  <div
-                    id={`${game.id}-Double Chance-1 or X`}
-                    className={`betting-option-value ${
-                      game.doubleChance.homeOrDraw ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Double Chance", "1 or X")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.doubleChance.homeOrDraw &&
-                      handleAddToBetSlip(
-                        game,
-                        "Double Chance",
-                        "1 or X",
-                        game.doubleChance.homeOrDraw
-                      )
-                    }
-                  >
-                    {game.doubleChance.homeOrDraw ?? "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-Double Chance-X or 2`}
-                    className={`betting-option-value ${
-                      game.doubleChance.drawOrAway ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Double Chance", "X or 2")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.doubleChance.drawOrAway &&
-                      handleAddToBetSlip(
-                        game,
-                        "Double Chance",
-                        "X or 2",
-                        game.doubleChance.drawOrAway
-                      )
-                    }
-                  >
-                    {game.doubleChance.drawOrAway ?? "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-Double Chance-1 or 2`}
-                    className={`betting-option-value ${
-                      game.doubleChance.homeOrAway ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Double Chance", "1 or 2")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.doubleChance.homeOrAway &&
-                      handleAddToBetSlip(
-                        game,
-                        "Double Chance",
-                        "1 or 2",
-                        game.doubleChance.homeOrAway
-                      )
-                    }
-                  >
-                    {game.doubleChance.homeOrAway ?? "-"}
-                  </div>
-                </div>
-              </div>
-
-              {/* Over/Under Column */}
-              <div
-                className={`betting-option-column ${
-                  game.overUnder.over25 || game.overUnder.under25
-                    ? ""
-                    : "disabled"
-                }`}
-              >
-                <div className="betting-option-label">Over/Under 2.5</div>
-                <div className="betting-option-sub-labels">
-                  <div className="betting-option-sub-label">Over</div>
-                  <div className="betting-option-sub-label">Under</div>
-                </div>
-                <div className="betting-option-values">
-                  <div
-                    id={`${game.id}-Over/Under 2.5-Over`}
-                    className={`betting-option-value ${
-                      game.overUnder.over25 ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Over/Under 2.5", "Over")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.overUnder.over25 &&
-                      handleAddToBetSlip(
-                        game,
-                        "Over/Under 2.5",
-                        "Over",
-                        game.overUnder.over25
-                      )
-                    }
-                  >
-                    {game.overUnder.over25 ?? "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-Over/Under 2.5-Under`}
-                    className={`betting-option-value ${
-                      game.overUnder.under25 ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Over/Under 2.5", "Under")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.overUnder.under25 &&
-                      handleAddToBetSlip(
-                        game,
-                        "Over/Under 2.5",
-                        "Under",
-                        game.overUnder.under25
-                      )
-                    }
-                  >
-                    {game.overUnder.under25 ?? "-"}
-                  </div>
-                </div>
-              </div>
-
-              {/* Both Teams to Score Column */}
-              <div
-                className={`betting-option-column ${
-                  game.bothTeamsToScore.yes || game.bothTeamsToScore.no
-                    ? ""
-                    : "disabled"
-                }`}
-              >
-                <div className="betting-option-label">Both Teams To Score</div>
-                <div className="betting-option-sub-labels">
-                  <div className="betting-option-sub-label">Yes</div>
-                  <div className="betting-option-sub-label">No</div>
-                </div>
-                <div className="betting-option-values">
-                  <div
-                    id={`${game.id}-Both Teams To Score-Yes`}
-                    className={`betting-option-value ${
-                      game.bothTeamsToScore.yes ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(
-                        game.id,
-                        "Both Teams To Score",
-                        "Yes"
-                      )
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.bothTeamsToScore.yes &&
-                      handleAddToBetSlip(
-                        game,
-                        "Both Teams To Score",
-                        "Yes",
-                        game.bothTeamsToScore.yes
-                      )
-                    }
-                  >
-                    {game.bothTeamsToScore.yes ?? "-"}
-                  </div>
-                  <div
-                    id={`${game.id}-Both Teams To Score-No`}
-                    className={`betting-option-value ${
-                      game.bothTeamsToScore.no ? "clickable" : ""
-                    } ${
-                      isSelectionInBetSlip(game.id, "Both Teams To Score", "No")
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      game.bothTeamsToScore.no &&
-                      handleAddToBetSlip(
-                        game,
-                        "Both Teams To Score",
-                        "No",
-                        game.bothTeamsToScore.no
-                      )
-                    }
-                  >
-                    {game.bothTeamsToScore.no ?? "-"}
-                  </div>
-                </div>
-              </div>
-
-              {/* Expand Arrow */}
-              <div
-                className={`expand-arrow ${
-                  expandedGames.has(game.id) ? "expanded" : ""
-                }`}
-                onClick={(e) => toggleExpanded(game.id, e)}
-              >
-                ▼
-              </div>
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              <button className="btn btn-primary" onClick={fetchGames}>
+                Retry
+              </button>
             </div>
-          ))}
+          )}
+
+          {/* Auto-refresh notification */}
+          {showRefreshNotification && (
+            <div
+              style={{
+                background: "var(--color-success)",
+                color: "white",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                marginBottom: "16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                animation: "slideIn 0.3s ease-out",
+              }}
+            >
+              🔄 Odds automatically refreshed at{" "}
+              {new Date().toLocaleTimeString()}
+            </div>
+          )}
+
+          <div className="games-grid">
+            {games.map((game) => (
+              <div
+                key={game.id}
+                className={`game-card ${
+                  selectedGame?.id === game.id ? "selected" : ""
+                }`}
+                onClick={() => setSelectedGame(game)}
+              >
+                <div className="game-info">
+                  <div className="game-teams">
+                    <div className="team home-team">
+                      <span className="team-name">{game.homeTeam}</span>
+                    </div>
+
+                    <div className="vs-divider">VS</div>
+
+                    <div className="team away-team">
+                      <span className="team-name">{game.awayTeam}</span>
+                    </div>
+                  </div>
+
+                  <div className="game-time">
+                    {new Date(game.matchTime).toLocaleDateString()} -{" "}
+                    {new Date(game.matchTime).toLocaleTimeString()}
+                  </div>
+                </div>
+
+                {/* Main Odds Column */}
+                <div
+                  className={`betting-option-column ${
+                    !game.hasValidOdds ? "disabled" : ""
+                  }`}
+                >
+                  <div className="betting-option-label">3 Way</div>
+                  <div className="betting-option-sub-labels">
+                    <div className="betting-option-sub-label">Home</div>
+                    <div className="betting-option-sub-label">Draw</div>
+                    <div className="betting-option-sub-label">Away</div>
+                  </div>
+                  <div className="betting-option-values">
+                    <div
+                      id={`${game.id}-3 Way-Home`}
+                      className={`betting-option-value ${
+                        game.homeOdds ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "3 Way", "Home")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.homeOdds &&
+                        handleAddToBetSlip(game, "3 Way", "Home", game.homeOdds)
+                      }
+                    >
+                      {game.homeOdds || "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-3 Way-Draw`}
+                      className={`betting-option-value ${
+                        game.drawOdds ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "3 Way", "Draw")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.drawOdds &&
+                        handleAddToBetSlip(game, "3 Way", "Draw", game.drawOdds)
+                      }
+                    >
+                      {game.drawOdds || "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-3 Way-Away`}
+                      className={`betting-option-value ${
+                        game.awayOdds ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "3 Way", "Away")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.awayOdds &&
+                        handleAddToBetSlip(game, "3 Way", "Away", game.awayOdds)
+                      }
+                    >
+                      {game.awayOdds || "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Double Chance Column */}
+                <div
+                  className={`betting-option-column ${
+                    game.doubleChance.homeOrDraw ||
+                    game.doubleChance.drawOrAway ||
+                    game.doubleChance.homeOrAway
+                      ? ""
+                      : "disabled"
+                  }`}
+                >
+                  <div className="betting-option-label">Double Chance</div>
+                  <div className="betting-option-sub-labels">
+                    <div className="betting-option-sub-label">1 or X</div>
+                    <div className="betting-option-sub-label">X or 2</div>
+                    <div className="betting-option-sub-label">1 or 2</div>
+                  </div>
+                  <div className="betting-option-values">
+                    <div
+                      id={`${game.id}-Double Chance-1 or X`}
+                      className={`betting-option-value ${
+                        game.doubleChance.homeOrDraw ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Double Chance", "1 or X")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.doubleChance.homeOrDraw &&
+                        handleAddToBetSlip(
+                          game,
+                          "Double Chance",
+                          "1 or X",
+                          game.doubleChance.homeOrDraw
+                        )
+                      }
+                    >
+                      {game.doubleChance.homeOrDraw ?? "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-Double Chance-X or 2`}
+                      className={`betting-option-value ${
+                        game.doubleChance.drawOrAway ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Double Chance", "X or 2")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.doubleChance.drawOrAway &&
+                        handleAddToBetSlip(
+                          game,
+                          "Double Chance",
+                          "X or 2",
+                          game.doubleChance.drawOrAway
+                        )
+                      }
+                    >
+                      {game.doubleChance.drawOrAway ?? "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-Double Chance-1 or 2`}
+                      className={`betting-option-value ${
+                        game.doubleChance.homeOrAway ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Double Chance", "1 or 2")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.doubleChance.homeOrAway &&
+                        handleAddToBetSlip(
+                          game,
+                          "Double Chance",
+                          "1 or 2",
+                          game.doubleChance.homeOrAway
+                        )
+                      }
+                    >
+                      {game.doubleChance.homeOrAway ?? "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Over/Under Column */}
+                <div
+                  className={`betting-option-column ${
+                    game.overUnder.over25 || game.overUnder.under25
+                      ? ""
+                      : "disabled"
+                  }`}
+                >
+                  <div className="betting-option-label">Over/Under 2.5</div>
+                  <div className="betting-option-sub-labels">
+                    <div className="betting-option-sub-label">Over</div>
+                    <div className="betting-option-sub-label">Under</div>
+                  </div>
+                  <div className="betting-option-values">
+                    <div
+                      id={`${game.id}-Over/Under 2.5-Over`}
+                      className={`betting-option-value ${
+                        game.overUnder.over25 ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Over/Under 2.5", "Over")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.overUnder.over25 &&
+                        handleAddToBetSlip(
+                          game,
+                          "Over/Under 2.5",
+                          "Over",
+                          game.overUnder.over25
+                        )
+                      }
+                    >
+                      {game.overUnder.over25 ?? "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-Over/Under 2.5-Under`}
+                      className={`betting-option-value ${
+                        game.overUnder.under25 ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Over/Under 2.5", "Under")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.overUnder.under25 &&
+                        handleAddToBetSlip(
+                          game,
+                          "Over/Under 2.5",
+                          "Under",
+                          game.overUnder.under25
+                        )
+                      }
+                    >
+                      {game.overUnder.under25 ?? "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Both Teams to Score Column */}
+                <div
+                  className={`betting-option-column ${
+                    game.bothTeamsToScore.yes || game.bothTeamsToScore.no
+                      ? ""
+                      : "disabled"
+                  }`}
+                >
+                  <div className="betting-option-label">
+                    Both Teams To Score
+                  </div>
+                  <div className="betting-option-sub-labels">
+                    <div className="betting-option-sub-label">Yes</div>
+                    <div className="betting-option-sub-label">No</div>
+                  </div>
+                  <div className="betting-option-values">
+                    <div
+                      id={`${game.id}-Both Teams To Score-Yes`}
+                      className={`betting-option-value ${
+                        game.bothTeamsToScore.yes ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(
+                          game.id,
+                          "Both Teams To Score",
+                          "Yes"
+                        )
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.bothTeamsToScore.yes &&
+                        handleAddToBetSlip(
+                          game,
+                          "Both Teams To Score",
+                          "Yes",
+                          game.bothTeamsToScore.yes
+                        )
+                      }
+                    >
+                      {game.bothTeamsToScore.yes ?? "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-Both Teams To Score-No`}
+                      className={`betting-option-value ${
+                        game.bothTeamsToScore.no ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(
+                          game.id,
+                          "Both Teams To Score",
+                          "No"
+                        )
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.bothTeamsToScore.no &&
+                        handleAddToBetSlip(
+                          game,
+                          "Both Teams To Score",
+                          "No",
+                          game.bothTeamsToScore.no
+                        )
+                      }
+                    >
+                      {game.bothTeamsToScore.no ?? "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spreads Column */}
+                <div
+                  className={`betting-option-column ${
+                    game.spreads?.homeSpreadOdds || game.spreads?.awaySpreadOdds
+                      ? ""
+                      : "disabled"
+                  }`}
+                >
+                  <div className="betting-option-label">
+                    {game.spreads?.spreadLine
+                      ? `Spread ${game.spreads.spreadLine > 0 ? `+${game.spreads.spreadLine}` : game.spreads.spreadLine}`
+                      : "Spread"}
+                  </div>
+                  <div className="betting-option-sub-labels">
+                    <div className="betting-option-sub-label">Home</div>
+                    <div className="betting-option-sub-label">Away</div>
+                  </div>
+                  <div className="betting-option-values">
+                    <div
+                      id={`${game.id}-Spread-Home`}
+                      className={`betting-option-value ${
+                        game.spreads?.homeSpreadOdds ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Spread", "Home")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.spreads?.homeSpreadOdds &&
+                        handleAddToBetSlip(
+                          game,
+                          "Spread",
+                          "Home",
+                          game.spreads.homeSpreadOdds
+                        )
+                      }
+                    >
+                      {game.spreads?.homeSpreadOdds ?? "-"}
+                    </div>
+                    <div
+                      id={`${game.id}-Spread-Away`}
+                      className={`betting-option-value ${
+                        game.spreads?.awaySpreadOdds ? "clickable" : ""
+                      } ${
+                        isSelectionInBetSlip(game.id, "Spread", "Away")
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        game.spreads?.awaySpreadOdds &&
+                        handleAddToBetSlip(
+                          game,
+                          "Spread",
+                          "Away",
+                          game.spreads.awaySpreadOdds
+                        )
+                      }
+                    >
+                      {game.spreads?.awaySpreadOdds ?? "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expand Arrow */}
+                <div
+                  className={`expand-arrow ${
+                    expandedGames.has(game.id) ? "expanded" : ""
+                  }`}
+                  onClick={(e) => toggleExpanded(game.id, e)}
+                >
+                  ▼
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* {selectedGame && (

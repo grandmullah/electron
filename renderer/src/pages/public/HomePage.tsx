@@ -12,6 +12,7 @@ import AuthService, {
   RegisterRequest,
   LoginRequest,
 } from "../../services/authService";
+import ShopService, { Shop } from "../../services/shopService";
 import { convertAuthUserToUser } from "../../store/authSlice";
 import { getCountryCallingCode, getCountries } from "react-phone-number-input";
 
@@ -31,12 +32,53 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>("KE");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [availableShops, setAvailableShops] = useState<Shop[]>([]);
+  const [selectedShop, setSelectedShop] = useState<string>("");
+  const [shopError, setShopError] = useState<string>("");
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
+    country_code: "KE", // Default to US
     role: "user" as "user" | "agent" | "admin",
-    currency: "USD",
+    currency: "SSP", // Default to USD
+    shop_code: "",
   });
+
+  // Fetch available shops on component mount
+  useEffect(() => {
+    const fetchShops = async () => {
+      try {
+        const response = await ShopService.getActiveShops();
+        console.log("Shop response:", response);
+        if (response.success && (response.data || response.shops)) {
+          const shops = response.data || response.shops || [];
+          console.log("Available shops:", shops);
+          setAvailableShops(shops);
+          // Set default shop if available
+          if (shops.length > 0) {
+            const defaultShop =
+              shops.find((shop) => shop.shop_code === "MAIN001") || shops[0];
+            if (defaultShop) {
+              setSelectedShop(defaultShop.shop_code);
+              setFormData((prev) => ({
+                ...prev,
+                shop_code: defaultShop.shop_code,
+                currency: defaultShop.default_currency || "USD",
+              }));
+            }
+          }
+        } else {
+          console.error("Failed to fetch shops:", response);
+          setShopError("Failed to load shops. Please try again.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch shops:", error);
+        setShopError("Failed to load shops. Please try again.");
+      }
+    };
+
+    fetchShops();
+  }, []);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -72,6 +114,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     });
   };
 
+  const handleShopChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shopCode = e.target.value;
+    setSelectedShop(shopCode);
+    const selectedShopData = availableShops.find(
+      (shop) => shop.shop_code === shopCode
+    );
+    if (selectedShopData) {
+      setFormData((prev) => ({
+        ...prev,
+        shop_code: shopCode,
+        currency: selectedShopData.default_currency || "USD",
+      }));
+    }
+  };
+
   const getCountryFlag = (countryCode: string) => {
     const codePoints = countryCode
       .toUpperCase()
@@ -100,6 +157,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (!isLoginMode && !formData.shop_code) {
+      dispatch(loginFailure("Please select a shop"));
+      return;
+    }
+
     try {
       dispatch(loginStart());
 
@@ -125,14 +187,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         const registerData: RegisterRequest = {
           phone_number: fullPhoneNumber,
           password: formData.password,
+          country_code: formData.country_code,
           role: formData.role,
           currency: formData.currency,
+          shop_code: formData.shop_code || "",
         };
 
         console.log("Attempting registration with:", {
           phone_number: fullPhoneNumber,
           role: formData.role,
           currency: formData.currency,
+          shop_code: formData.shop_code,
         });
         response = await AuthService.register(registerData);
         console.log("Registration successful:", response);
@@ -140,15 +205,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
       // Only proceed if we have a successful response
       if (response && response.user && response.token) {
-        const user = convertAuthUserToUser(response.user);
-        dispatch(loginSuccess(user));
+        console.log("Response received:", response);
+        console.log("User data:", response.user);
 
-        // Show success message
-        console.log(
-          `${isLoginMode ? "Login" : "Registration"} successful! Welcome ${
-            user.name
-          }`
-        );
+        try {
+          const user = convertAuthUserToUser(response.user);
+          console.log("Converted user:", user);
+
+          dispatch(loginSuccess(user));
+
+          // Show success message
+          console.log(
+            `${isLoginMode ? "Login" : "Registration"} successful! Welcome ${
+              user.name
+            }`
+          );
+        } catch (conversionError: any) {
+          console.error("Error converting user data:", conversionError);
+          console.error("Raw user data:", response.user);
+          throw new Error(
+            `User data conversion failed: ${conversionError.message}`
+          );
+        }
 
         // Clear form and close modal only after successful authentication
         setShowAuthForm(false);
@@ -157,8 +235,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         setFormData({
           password: "",
           confirmPassword: "",
+          country_code: "US", // Reset to US
           role: "user",
-          currency: "USD",
+          currency: "USD", // Reset to USD
+          shop_code: "",
         });
       } else {
         throw new Error("Invalid response from server");
@@ -224,11 +304,45 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <div className="user-balance">
                 <span className="balance-label">Balance:</span>
                 <span className="balance-amount">
-                  ${user.balance.toFixed(2)} {user.currency}
+                  {user.currency} {user.balance.toFixed(2)}
                 </span>
               </div>
               <div className="user-role">
                 <span className="role-badge">{user.role}</span>
+              </div>
+              {user.shop && (
+                <div className="user-shop">
+                  <span className="shop-label">Shop:</span>
+                  <span className="shop-name">{user.shop.shop_name}</span>
+                </div>
+              )}
+              <div className="user-betting-limits">
+                <span className="limits-label">Betting Limits:</span>
+                <div className="limits-details">
+                  <div className="limit-item">
+                    <span className="limit-label">Stake Range:</span>
+                    <span className="limit-value">
+                      {user.currency}{" "}
+                      {user.bettingLimits.minStake.toLocaleString()} -{" "}
+                      {user.currency}{" "}
+                      {user.bettingLimits.maxStake.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="limit-item">
+                    <span className="limit-label">Daily Loss Limit:</span>
+                    <span className="limit-value">
+                      {user.currency}{" "}
+                      {user.bettingLimits.maxDailyLoss.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="limit-item">
+                    <span className="limit-label">Weekly Loss Limit:</span>
+                    <span className="limit-value">
+                      {user.currency}{" "}
+                      {user.bettingLimits.maxWeeklyLoss.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="hero-buttons">
@@ -382,6 +496,67 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                         />
                       </div>
                       <div className="form-group">
+                        <label htmlFor="shopSelect">Shop</label>
+                        {shopError && (
+                          <div
+                            className="error-message"
+                            style={{ marginBottom: "0.5rem" }}
+                          >
+                            <div className="error-icon">⚠️</div>
+                            <div className="error-content">
+                              <p>{shopError}</p>
+                            </div>
+                          </div>
+                        )}
+                        <select
+                          id="shopSelect"
+                          value={selectedShop}
+                          onChange={handleShopChange}
+                          className="form-input"
+                          required
+                        >
+                          <option value="">Select a shop</option>
+                          {availableShops.map((shop) => (
+                            <option key={shop.id} value={shop.shop_code}>
+                              {shop.shop_name} ({shop.shop_code})
+                            </option>
+                          ))}
+                        </select>
+                        {availableShops.length === 0 && !shopError && (
+                          <div
+                            className="loading-shops"
+                            style={{
+                              marginTop: "0.5rem",
+                              color: "var(--color-text-secondary)",
+                            }}
+                          >
+                            Loading shops...
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="country_code">Country Code</label>
+                        <select
+                          id="country_code"
+                          name="country_code"
+                          value={formData.country_code}
+                          onChange={handleInputChange}
+                          className="form-input"
+                          required
+                        >
+                          <option value="US">US - United States</option>
+                          <option value="KE">KE - Kenya</option>
+                          <option value="SS">SS - South Sudan</option>
+                          <option value="GB">GB - United Kingdom</option>
+                          <option value="DE">DE - Germany</option>
+                          <option value="FR">FR - France</option>
+                          <option value="CA">CA - Canada</option>
+                          <option value="AU">AU - Australia</option>
+                          <option value="NG">NG - Nigeria</option>
+                          <option value="ZA">ZA - South Africa</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
                         <label htmlFor="role">Role</label>
                         <select
                           id="role"
@@ -404,11 +579,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           onChange={handleInputChange}
                           className="form-input"
                         >
-                          <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="GBP">GBP</option>
-                          <option value="KES">KES</option>
+                          <option value="USD">
+                            ★ USD - US Dollars (System Default)
+                          </option>
+                          <option value="SSP">SSP - South Sudan Pounds</option>
+                          <option value="EUR">EUR - Euros</option>
+                          <option value="GBP">GBP - British Pounds</option>
+                          <option value="KES">KES - Kenyan Shillings</option>
                         </select>
+                        <div
+                          className="currency-info"
+                          style={{
+                            marginTop: "0.5rem",
+                            fontSize: "0.875rem",
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          <p>
+                            💡 <strong>Betting Limits:</strong> Min: $10 USD |
+                            Max: $100,000 USD
+                          </p>
+                        </div>
                       </div>
                     </>
                   )}
@@ -422,8 +613,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                       {isLoading
                         ? `${isLoginMode ? "Logging in" : "Registering"}...`
                         : isLoginMode
-                        ? "Login"
-                        : "Register"}
+                          ? "Login"
+                          : "Register"}
                     </button>
                     <button
                       type="button"
@@ -440,24 +631,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             </div>
           </div>
         )}
-
-        {/* <div className="features-grid">
-        <div className="feature-card">
-          <div className="feature-icon">⚡</div>
-          <h3>Fast & Reliable</h3>
-          <p>Lightning-fast performance with real-time updates</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🔒</div>
-          <h3>Secure</h3>
-          <p>Bank-level security for your betting activities</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">📊</div>
-          <h3>Analytics</h3>
-          <p>Advanced analytics and insights</p>
-        </div>
-      </div> */}
       </div>
     </div>
   );

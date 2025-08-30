@@ -5,8 +5,10 @@ import { API_BASE_URL } from './apiConfig';
 export interface RegisterRequest {
       phone_number: string;
       password: string;
+      country_code: string;
       role: 'user' | 'agent' | 'admin';
       currency: string;
+      shop_code: string;
 }
 
 export interface LoginRequest {
@@ -33,6 +35,17 @@ export interface UserPreferences {
       notifications: NotificationPreferences;
 }
 
+// Backend snake_case preferences format
+export interface BackendUserPreferences {
+      odds_format: 'decimal' | 'fractional' | 'american';
+      timezone: string;
+      notifications: {
+            bet_settled: boolean;
+            odds_changed: boolean;
+            new_games: boolean;
+      };
+}
+
 export interface AuthUser {
       id: string;
       phone_number: string;
@@ -40,11 +53,26 @@ export interface AuthUser {
       balance: number;
       currency: string;
       isActive: boolean;
+      shop_id?: string;
+      shop?: {
+            id: string;
+            shop_name: string;
+            shop_code: string;
+            shop_address?: string;
+            default_currency: string;
+            commission_rate: number;
+      };
       createdAt?: string;
       updatedAt?: string;
       lastLoginAt?: string;
-      bettingLimits: BettingLimits;
-      preferences: UserPreferences;
+      bettingLimits?: BettingLimits; // Optional for backward compatibility
+      betting_limits?: { // Backend snake_case format
+            min_stake: number;
+            max_stake: number;
+            max_daily_loss: number;
+            max_weekly_loss: number;
+      };
+      preferences?: UserPreferences | BackendUserPreferences;
 }
 
 export interface AuthResponse {
@@ -125,11 +153,25 @@ class AuthService {
                   }
 
                   const data: AuthResponse = await response.json();
+                  console.log('Raw registration response:', data);
 
                   // Validate response structure
-                  if (!data.success || !data.user || !data.token) {
-                        throw new Error('Invalid response from server');
+                  if (!data.success) {
+                        console.error('Registration failed - success is false:', data);
+                        throw new Error(data.message || 'Registration failed');
                   }
+
+                  if (!data.user) {
+                        console.error('Registration failed - no user data:', data);
+                        throw new Error('No user data received from server');
+                  }
+
+                  if (!data.token) {
+                        console.error('Registration failed - no token:', data);
+                        throw new Error('No authentication token received');
+                  }
+
+                  console.log('Registration response validation passed');
 
                   // Store the token
                   localStorage.setItem('authToken', data.token);

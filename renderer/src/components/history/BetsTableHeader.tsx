@@ -18,6 +18,7 @@ export const BetsTableHeader: React.FC<BetsTableHeaderProps> = ({
         Bet ID {getSortIndicator("id")}
       </div>
       <div className="table-col col-game">Game</div>
+      <div className="table-col col-selection">Selection</div>
       <div
         className="table-col col-stake sortable"
         onClick={() => onSort("totalStake")}
@@ -30,7 +31,6 @@ export const BetsTableHeader: React.FC<BetsTableHeaderProps> = ({
       >
         Potential {getSortIndicator("potentialWinnings")}
       </div>
-
       <div
         className="table-col col-status sortable"
         onClick={() => onSort("status")}

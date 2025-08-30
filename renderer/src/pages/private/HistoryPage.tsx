@@ -13,10 +13,10 @@ import {
   SingleBet,
   Multibet,
   BetHistoryFilters,
-  getBetStatistics,
   exportBetHistory,
 } from "../../services/betHistoryService";
 import { printThermalTicket as printTicket } from "../../services/printService";
+import { payoutService, PayoutRequest } from "../../services/payoutService";
 
 interface HistoryPageProps {
   onNavigate: (
@@ -24,21 +24,10 @@ interface HistoryPageProps {
   ) => void;
 }
 
-interface BetStatistics {
-  totalBets: number;
-  totalStake: number;
-  totalWinnings: number;
-  winRate: number;
-  averageOdds: number;
-}
-
 interface SortConfig {
   key: keyof any;
   direction: "asc" | "desc";
 }
-
-// Extended bet interface for display purposes
-// Moved to ../../types/history
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const { user } = useAppSelector((state) => state.auth);
@@ -58,7 +47,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   // Pagination and sorting
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "createdAt",
     direction: "desc",
@@ -73,16 +62,21 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [betToSettle, setBetToSettle] = useState<any>(null);
   const [settleResult, setSettleResult] = useState<"won" | "lost">("won");
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [betToPayout, setBetToPayout] = useState<any>(null);
+  const [payoutAmount, setPayoutAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash" | "mobile_money" | "bank_transfer" | "card" | "check"
+  >("cash");
+  const [payoutReference, setPayoutReference] = useState<string>("");
+  const [payoutNotes, setPayoutNotes] = useState<string>("");
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   // Data state
   const [singleBets, setSingleBets] = useState<DisplayBet[]>([]);
   const [multibets, setMultibets] = useState<DisplayBet[]>([]);
   const [isLoadingBets, setIsLoadingBets] = useState(false);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [betError, setBetError] = useState<string | null>(null);
-  const [betStatistics, setBetStatistics] = useState<BetStatistics | null>(
-    null
-  );
   const [isExporting, setIsExporting] = useState(false);
 
   // Debounce search term
@@ -106,7 +100,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     );
     if (activeTab === "bets") {
       loadBetHistory();
-      // loadBetStatistics();
     }
   }, [
     activeTab,
@@ -140,6 +133,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       if (dateTo) {
         filters.dateTo = dateTo;
       }
+      // Always include shop bets by default
+      filters.includeShopBets = true;
 
       // Add timeout to API call
       const timeoutPromise = new Promise((_, reject) =>
@@ -153,70 +148,112 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       ])) as any;
 
       if (response.success && response.data) {
-        // The API returns a single bets array with mixed bet types
-        const apiBets = response.data.bets || [];
+        // The API returns separate arrays for singleBets and multibets
+        const apiSingleBets = response.data.singleBets || [];
+        const apiMultibets = response.data.multibets || [];
 
-        // Process all bets and separate them by type
-        const processedSingleBets: DisplayBet[] = [];
-        const processedMultibets: DisplayBet[] = [];
+        console.log("Backend response data:", response.data);
+        console.log("Single bets from backend:", apiSingleBets);
+        console.log("Multibets from backend:", apiMultibets);
 
-        apiBets.forEach((bet: any) => {
-          if (bet.betType === "single") {
-            processedSingleBets.push({
-              id: bet.id,
-              betType: "single",
-              totalStake: bet.stake,
-              potentialWinnings: bet.potentialWinnings,
-              actualWinnings: 0, // Not provided in API
-              createdAt: bet.createdAt,
-              settledAt: "", // Not provided in API
-              status: bet.status,
-              selections: bet.selections.map((selection: any) => ({
-                gameId: selection.gameId,
-                homeTeam: selection.homeTeam,
-                awayTeam: selection.awayTeam,
-                betType: selection.marketType,
-                selection: selection.outcome,
-                odds: selection.odds?.decimal || bet.odds?.decimal,
+        // Process single bets
+        const processedSingleBets: DisplayBet[] = apiSingleBets.map(
+          (bet: any) => ({
+            id: bet.betId,
+            betType: "single",
+            totalStake: bet.stake,
+            potentialWinnings: bet.potentialWinnings,
+            actualWinnings: bet.actualWinnings || 0,
+            createdAt: bet.timestamp,
+            settledAt: bet.settledAt || "",
+            status: bet.status,
+            selections: [
+              {
+                gameId: bet.gameId,
+                homeTeam: bet.homeTeam,
+                awayTeam: bet.awayTeam,
+                betType: bet.betType,
+                selection: bet.selection,
+                odds: bet.odds,
                 stake: bet.stake,
                 potentialWinnings: bet.potentialWinnings,
-                result: bet.status,
-              })),
-              taxPercentage: bet.taxPercentage,
-              taxAmount: bet.taxAmount,
-              netWinnings: bet.netWinnings,
-            });
-          } else if (bet.betType === "multiple") {
-            processedMultibets.push({
-              id: bet.id,
-              betType: "multibet",
-              totalStake: bet.stake,
-              potentialWinnings: bet.potentialWinnings,
-              actualWinnings: 0, // Not provided in API
-              createdAt: bet.createdAt,
-              settledAt: "", // Not provided in API
-              status: bet.status,
-              selections: bet.selections.map((selection: any) => ({
-                gameId: selection.gameId,
-                homeTeam: selection.homeTeam,
-                awayTeam: selection.awayTeam,
-                betType: selection.marketType,
-                selection: selection.outcome,
-                odds: selection.odds?.decimal || bet.odds?.decimal,
-                stake: bet.stake / bet.selections.length, // Divide stake by number of selections
-                potentialWinnings: bet.potentialWinnings,
-                result: bet.status,
-              })),
-              taxPercentage: bet.taxPercentage,
-              taxAmount: bet.taxAmount,
-              netWinnings: bet.netWinnings,
-            });
-          }
-        });
+                result: bet.result || bet.status,
+              },
+            ],
+            taxPercentage: bet.taxPercentage,
+            taxAmount: bet.taxAmount,
+            netWinnings: bet.netWinnings,
+            shop: bet.shop || {
+              id: "",
+              shopName: "",
+              shopCode: "",
+              shopAddress: "",
+              shopPhone: "",
+              shopEmail: "",
+              contactPerson: "",
+            },
+            user: bet.user || {
+              id: "",
+              phoneNumber: "",
+              countryCode: "",
+              role: "",
+            },
+          })
+        );
+
+        // Process multibets
+        const processedMultibets: DisplayBet[] = apiMultibets.map(
+          (bet: any) => ({
+            id: bet.betId,
+            betType: "multibet",
+            totalStake: bet.totalStake,
+            potentialWinnings: bet.potentialWinnings,
+            actualWinnings: bet.actualWinnings || 0,
+            createdAt: bet.timestamp,
+            settledAt: bet.settledAt || "",
+            status: bet.status,
+            selections: bet.bets.map((selection: any) => ({
+              gameId: selection.gameId,
+              homeTeam: selection.homeTeam,
+              awayTeam: selection.awayTeam,
+              betType: selection.betType,
+              selection: selection.selection,
+              odds: selection.odds,
+              stake: selection.stake,
+              potentialWinnings: selection.potentialWinnings,
+              result: bet.result || bet.status,
+            })),
+            taxPercentage: bet.taxPercentage,
+            taxAmount: bet.taxAmount,
+            netWinnings: bet.netWinnings,
+            shop: bet.shop || {
+              id: "",
+              shopName: "",
+              shopCode: "",
+              shopAddress: "",
+              shopPhone: "",
+              shopEmail: "",
+              contactPerson: "",
+            },
+            user: bet.user || {
+              id: "",
+              phoneNumber: "",
+              countryCode: "",
+              role: "",
+            },
+          })
+        );
+
+        console.log("Processed single bets:", processedSingleBets);
+        console.log("Processed multibets:", processedMultibets);
 
         setSingleBets(processedSingleBets);
         setMultibets(processedMultibets);
       } else {
+        console.log(
+          "No data in response or response not successful:",
+          response
+        );
         setSingleBets([]);
         setMultibets([]);
       }
@@ -227,18 +264,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       setMultibets([]);
     } finally {
       setIsLoadingBets(false);
-    }
-  };
-
-  const loadBetStatistics = async () => {
-    setIsLoadingStats(true);
-    try {
-      const stats = await getBetStatistics();
-      setBetStatistics(stats);
-    } catch (error: any) {
-      console.error("Error loading bet statistics:", error);
-    } finally {
-      setIsLoadingStats(false);
     }
   };
 
@@ -265,12 +290,49 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       await BetHistoryService.settleBet(betToSettle.id, settleResult);
       setShowSettleModal(false);
       setBetToSettle(null);
-      setSettleResult("won");
       // Reload bet history to reflect changes
       loadBetHistory();
     } catch (error: any) {
       console.error("Error settling bet:", error);
       alert(`Failed to settle bet: ${error.message}`);
+    }
+  };
+
+  const openPayoutModal = (bet: any) => {
+    setBetToPayout(bet);
+    setPayoutAmount(bet.actualWinnings || bet.netWinnings || 0);
+    setShowPayoutModal(true);
+  };
+
+  const handlePayoutBet = async () => {
+    if (!betToPayout) return;
+
+    setIsProcessingPayout(true);
+    try {
+      const payoutRequest: PayoutRequest = {
+        ticketId: betToPayout.id, // Using betId as ticketId
+        betId: betToPayout.id,
+        amount: payoutAmount,
+        paymentMethod,
+        reference: payoutReference,
+        notes: payoutNotes,
+        userId: betToPayout.user?.id || "",
+      };
+
+      await payoutService.processPayout(payoutRequest);
+      setShowPayoutModal(false);
+      setBetToPayout(null);
+      setPayoutAmount(0);
+      setPaymentMethod("cash");
+      setPayoutReference("");
+      setPayoutNotes("");
+      // Reload bet history to reflect changes
+      loadBetHistory();
+    } catch (error: any) {
+      console.error("Error processing payout:", error);
+      alert(`Failed to process payout: ${error.message}`);
+    } finally {
+      setIsProcessingPayout(false);
     }
   };
 
@@ -290,6 +352,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       if (dateTo) {
         filters.dateTo = dateTo;
       }
+      // Always include shop bets in export
+      filters.includeShopBets = true;
 
       const blob = await exportBetHistory(filters);
       const url = window.URL.createObjectURL(blob);
@@ -445,98 +509,72 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       />
 
       <div className="history-container">
-        {/* <div className="page-header">
-          <h1>📚 Bet History</h1>
-          <p>Track your betting performance and manage your bets</p>
-        </div> */}
-
-        {/* Bet Statistics Dashboard */}
-        {/* {betStatistics && (
-          <div className="stats-dashboard">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">📊</div>
-                <div className="stat-content">
-                  <h3>Total Bets</h3>
-                  <p className="stat-value">{betStatistics.totalBets}</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">💰</div>
-                <div className="stat-content">
-                  <h3>Total Stake</h3>
-                  <p className="stat-value">
-                    ${betStatistics.totalStake.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">🏆</div>
-                <div className="stat-content">
-                  <h3>Total Winnings</h3>
-                  <p className="stat-value">
-                    ${betStatistics.totalWinnings.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">📈</div>
-                <div className="stat-content">
-                  <h3>Win Rate</h3>
-                  <p className="stat-value">
-                    {(betStatistics.winRate * 100).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">🎯</div>
-                <div className="stat-content">
-                  <h3>Avg Odds</h3>
-                  <p className="stat-value">
-                    {betStatistics.averageOdds.toFixed(2)}
-                  </p>
-                </div>
-              </div>
+        {/* Modern Page Header */}
+        <div className="page-header-modern">
+          <div className="header-content">
+            <div className="header-main">
+              <h1>📚 Bet History</h1>
+              <p>Track your betting performance and manage all shop bets</p>
             </div>
-          </div>
-        )} */}
-
-        <div className="bets-tab">
-          <div className="tab-header">
-            <h2>Bet History</h2>
-            <div className="tab-header-actions">
+            <div className="header-actions">
               <button
-                className="btn btn-secondary export-btn"
+                className="btn btn-primary export-btn-modern"
                 onClick={handleExportHistory}
                 disabled={isExporting}
               >
-                {isExporting ? "📥 Exporting..." : "📥 Export CSV"}
+                {isExporting ? (
+                  <>
+                    <span className="loading-spinner-small"></span>
+                    Exporting...
+                  </>
+                ) : (
+                  <>📥 Export CSV</>
+                )}
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Advanced Filters */}
-          <BetsFilters
-            betStatusFilter={betStatusFilter}
-            setBetStatusFilter={setBetStatusFilter}
-            betTypeFilter={betTypeFilter}
-            setBetTypeFilter={setBetTypeFilter}
-            dateFrom={dateFrom}
-            setDateFrom={setDateFrom}
-            dateTo={dateTo}
-            setDateTo={setDateTo}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
+        {/* Modern Bets Section */}
+        <div className="bets-section-modern">
+          <div className="section-header-modern">
+            <div className="header-left">
+              <h2>🎯 Bet History</h2>
+              <p className="subtitle">All bets including shop context</p>
+            </div>
+            <div className="header-right">
+              <div className="total-bets-badge">
+                <span className="badge-number">{filteredBets.length}</span>
+                <span className="badge-label">Total Bets</span>
+              </div>
+            </div>
+          </div>
 
+          {/* Enhanced Filters */}
+          <div className="filters-container-modern">
+            <BetsFilters
+              betStatusFilter={betStatusFilter}
+              setBetStatusFilter={setBetStatusFilter}
+              betTypeFilter={betTypeFilter}
+              setBetTypeFilter={setBetTypeFilter}
+              dateFrom={dateFrom}
+              setDateFrom={setDateFrom}
+              dateTo={dateTo}
+              setDateTo={setDateTo}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+            />
+          </div>
+
+          {/* Loading State */}
           {isLoadingBets ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
+            <div className="loading-state-modern">
+              <div className="loading-spinner-modern"></div>
               <p>Loading bet history...</p>
             </div>
           ) : betError ? (
-            <div className="error-state">
-              <div className="error-icon">⚠️</div>
+            <div className="error-state-modern">
+              <div className="error-icon-modern">⚠️</div>
               <h3>Error Loading Bets</h3>
               <p>{betError}</p>
               <button className="btn btn-primary" onClick={loadBetHistory}>
@@ -544,8 +582,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
               </button>
             </div>
           ) : filteredBets.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🎯</div>
+            <div className="empty-state-modern">
+              <div className="empty-icon-modern">🎯</div>
               <h3>No Bets Found</h3>
               <p>
                 {betStatusFilter === "all"
@@ -555,19 +593,23 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
             </div>
           ) : (
             <>
-              <HistoryInfo
-                totalFiltered={filteredBets.length}
-                searchTerm={debouncedSearchTerm}
-                betStatusFilter={betStatusFilter}
-                betTypeFilter={betTypeFilter}
-              />
+              {/* Enhanced History Info */}
+              <div className="history-info-modern">
+                <HistoryInfo
+                  totalFiltered={filteredBets.length}
+                  searchTerm={debouncedSearchTerm}
+                  betStatusFilter={betStatusFilter}
+                  betTypeFilter={betTypeFilter}
+                />
+              </div>
 
-              <div className="bets-table-container">
+              {/* Modern Bets Table */}
+              <div className="bets-table-container-modern">
                 <BetsTableHeader
                   onSort={handleSort}
                   getSortIndicator={getSortIndicator}
                 />
-                <div className="bets-table-body">
+                <div className="bets-table-body-modern">
                   {currentBets.map((bet) => (
                     <BetRow
                       key={bet.id}
@@ -585,6 +627,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
                         setBetToSettle(b);
                         setShowSettleModal(true);
                       }}
+                      onPayout={openPayoutModal}
                       getStatusColor={getStatusColor}
                       getStatusIcon={getStatusIcon}
                     />
@@ -592,20 +635,23 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <Pagination
-                startIndex={startIndex}
-                endIndex={Math.min(endIndex, filteredBets.length)}
-                total={filteredBets.length}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                setItemsPerPage={(n) => {
-                  setItemsPerPage(n);
-                  setCurrentPage(1);
-                }}
-                goToPrevPage={goToPrevPage}
-                goToNextPage={goToNextPage}
-              />
+              {/* Enhanced Pagination */}
+              <div className="pagination-container-modern">
+                <Pagination
+                  startIndex={startIndex}
+                  endIndex={Math.min(endIndex, filteredBets.length)}
+                  total={filteredBets.length}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  setItemsPerPage={(n) => {
+                    setItemsPerPage(n);
+                    setCurrentPage(1);
+                  }}
+                  goToPrevPage={goToPrevPage}
+                  goToNextPage={goToNextPage}
+                />
+              </div>
             </>
           )}
         </div>
@@ -646,9 +692,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
               <div className="bet-summary">
                 <strong>Bet ID:</strong> {betToCancel.id}
                 <br />
-                <strong>Stake:</strong> ${betToCancel.totalStake}
+                <strong>Stake:</strong> SSP{betToCancel.totalStake}
                 <br />
-                <strong>Potential Winnings:</strong> $
+                <strong>Potential Winnings:</strong> SSP
                 {betToCancel.potentialWinnings.toFixed(2)}
               </div>
               <div className="form-group">
@@ -698,9 +744,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
               <div className="bet-summary">
                 <strong>Bet ID:</strong> {betToSettle.id}
                 <br />
-                <strong>Stake:</strong> ${betToSettle.totalStake}
+                <strong>Stake:</strong> SSP{betToSettle.totalStake}
                 <br />
-                <strong>Potential Winnings:</strong> $
+                <strong>Potential Winnings:</strong> SSP
                 {betToSettle.potentialWinnings.toFixed(2)}
               </div>
               <div className="form-group">
@@ -720,12 +766,113 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
             <div className="modal-footer">
               <button
                 className="btn btn-secondary"
-                onClick={() => setShowSettleModal(false)}
+                onClick={() => setShowCancelModal(false)}
               >
                 Cancel
               </button>
               <button className="btn btn-success" onClick={handleSettleBet}>
                 Confirm Settlement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payout Modal */}
+      {showPayoutModal && betToPayout && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowPayoutModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💰 Process Payout</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowPayoutModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Process payout for winning bet:</p>
+              <div className="bet-summary">
+                <strong>Bet ID:</strong> {betToPayout.id}
+                <br />
+                <strong>Stake:</strong> SSP{betToPayout.totalStake}
+                <br />
+                <strong>Winnings:</strong> SSP
+                {betToPayout.actualWinnings || betToPayout.netWinnings || 0}
+                <br />
+                <strong>User:</strong>{" "}
+                {betToPayout.user?.phoneNumber || "Unknown"}
+              </div>
+
+              <div className="form-group">
+                <label>Payout Amount:</label>
+                <input
+                  type="number"
+                  value={payoutAmount}
+                  onChange={(e) =>
+                    setPayoutAmount(parseFloat(e.target.value) || 0)
+                  }
+                  className="form-input"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Payment Method:</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value as any)}
+                  className="form-input"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="card">Card</option>
+                  <option value="check">Check</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Reference:</label>
+                <input
+                  type="text"
+                  value={payoutReference}
+                  onChange={(e) => setPayoutReference(e.target.value)}
+                  className="form-input"
+                  placeholder="Payment reference or transaction ID"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Notes:</label>
+                <textarea
+                  value={payoutNotes}
+                  onChange={(e) => setPayoutNotes(e.target.value)}
+                  className="form-input"
+                  placeholder="Additional notes about the payout..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowPayoutModal(false)}
+                disabled={isProcessingPayout}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={handlePayoutBet}
+                disabled={isProcessingPayout}
+              >
+                {isProcessingPayout ? "Processing..." : "💰 Process Payout"}
               </button>
             </div>
           </div>

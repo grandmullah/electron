@@ -26,7 +26,7 @@ const initialState: BetSlipState = {
       items: [],
       isVisible: false,
       isMultibetMode: false,
-      multibetStake: 10,
+      multibetStake: 10, // Will be updated based on user limits
 };
 
 export const betslipSlice = createSlice({
@@ -60,7 +60,7 @@ export const betslipSlice = createSlice({
                   state.items = [];
                   state.isVisible = false;
                   state.isMultibetMode = false;
-                  state.multibetStake = 10;
+                  state.multibetStake = 10; // Will be updated by setMultibetStakeFromLimits
             },
             toggleBetSlipVisibility: (state) => {
                   state.isVisible = !state.isVisible;
@@ -80,6 +80,15 @@ export const betslipSlice = createSlice({
             setMultibetStake: (state, action: PayloadAction<number>) => {
                   state.multibetStake = action.payload;
             },
+            setMultibetStakeFromLimits: (state, action: PayloadAction<{ minStake: number; maxStake: number }>) => {
+                  // Set multibet stake to minimum stake or current value if it's within limits
+                  const { minStake, maxStake } = action.payload;
+                  if (state.multibetStake < minStake) {
+                        state.multibetStake = minStake;
+                  } else if (state.multibetStake > maxStake) {
+                        state.multibetStake = minStake; // Reset to minimum if over limit
+                  }
+            },
       },
 });
 
@@ -94,6 +103,7 @@ export const {
       toggleMultibetMode,
       enableMultibetMode,
       setMultibetStake,
+      setMultibetStakeFromLimits,
 } = betslipSlice.actions;
 
 export default betslipSlice.reducer; 

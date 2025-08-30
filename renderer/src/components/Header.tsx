@@ -11,6 +11,7 @@ import {
   toggleMultibetMode,
   enableMultibetMode,
   setMultibetStake,
+  setMultibetStakeFromLimits,
   BetSlipItem,
 } from "../store/betslipSlice";
 import { placeBets } from "../services/betslipService";
@@ -72,6 +73,14 @@ export const Header: React.FC<HeaderProps> = ({
       dispatch(enableMultibetMode());
     }
   }, [betSlipItems.length, isMultibetMode, dispatch]);
+
+  // Update multibet stake based on user betting limits
+  useEffect(() => {
+    if (user?.bettingLimits) {
+      const { minStake, maxStake } = user.bettingLimits;
+      dispatch(setMultibetStakeFromLimits({ minStake, maxStake }));
+    }
+  }, [user?.bettingLimits, dispatch]);
 
   // Fetch betslip data when selections change
   useEffect(() => {
@@ -136,19 +145,29 @@ export const Header: React.FC<HeaderProps> = ({
     return stake * combinedOdds;
   };
 
-  const validateMultibet = (
-    bets: BetSlipItem[]
-  ): { isValid: boolean; error?: string } => {
-    if (bets.length < 2) {
-      return {
-        isValid: false,
-        error: "Multibet requires at least 2 selections",
-      };
+  // Tax calculation functions
+  const TAX_RATE = 0.2; // 20% tax rate
+
+  const calculateTaxAmount = (potentialWinnings: number): number => {
+    return potentialWinnings * TAX_RATE;
+  };
+
+  const calculateNetWinnings = (potentialWinnings: number): number => {
+    return potentialWinnings - calculateTaxAmount(potentialWinnings);
+  };
+
+  // Enhanced validation function that uses user's betting limits
+  const validateBetslipWithLimits = (
+    bets: BetSlipItem[],
+    isMultibet: boolean,
+    stake: number
+  ) => {
+    if (bets.length === 0) {
+      return { isValid: false, error: "No bets in slip" };
     }
 
     // Check for conflicting bets (same game, different outcomes)
     const gameSelections = new Map<string, Set<string>>();
-
     for (const bet of bets) {
       if (!gameSelections.has(bet.gameId)) {
         gameSelections.set(bet.gameId, new Set());
@@ -158,16 +177,83 @@ export const Header: React.FC<HeaderProps> = ({
 
     for (const [gameId, selections] of gameSelections) {
       if (selections.size > 1) {
+        const game = bets.find((b) => b.gameId === gameId);
         return {
           isValid: false,
-          error: `Conflicting selections for ${
-            bets.find((b) => b.gameId === gameId)?.homeTeam
-          } vs ${bets.find((b) => b.gameId === gameId)?.awayTeam}`,
+          error: `Conflicting selections for ${game?.homeTeam} vs ${game?.awayTeam}`,
         };
       }
     }
 
-    return { isValid: true };
+    // Multibet specific validation
+    if (isMultibet) {
+      if (bets.length < 2) {
+        return {
+          isValid: false,
+          error: "Multibet requires at least 2 selections",
+        };
+      }
+      if (bets.length > 20) {
+        return {
+          isValid: false,
+          error: "Multibet cannot exceed 20 selections",
+        };
+      }
+    }
+
+    // Validate stakes against user limits
+    if (user?.bettingLimits) {
+      const { minStake, maxStake } = user.bettingLimits;
+      const currency = user.currency;
+
+      if (isMultibet) {
+        // For multibet, validate total stake
+        if (stake < minStake) {
+          return {
+            isValid: false,
+            error: `Minimum stake is ${currency} ${minStake.toFixed(2)}`,
+          };
+        }
+        if (stake > maxStake) {
+          return {
+            isValid: false,
+            error: `Maximum stake is ${currency} ${maxStake.toFixed(2)}`,
+          };
+        }
+      } else {
+        // For single bets, validate individual stakes
+        for (const bet of bets) {
+          if (bet.stake < minStake) {
+            return {
+              isValid: false,
+              error: `Bet on ${bet.homeTeam} vs ${bet.awayTeam}: Minimum stake is ${currency} ${minStake.toFixed(2)}`,
+            };
+          }
+          if (bet.stake > maxStake) {
+            return {
+              isValid: false,
+              error: `Bet on ${bet.homeTeam} vs ${bet.awayTeam}: Maximum stake is ${currency} ${maxStake.toFixed(2)}`,
+            };
+          }
+        }
+      }
+    }
+
+    return { isValid: true, error: "" };
+  };
+
+  // Legacy validation function for backward compatibility
+  const validateMultibet = (bets: BetSlipItem[]) => {
+    if (bets.length < 2) {
+      return {
+        isValid: false,
+        error: "Multibet requires at least 2 selections",
+      };
+    }
+    if (bets.length > 20) {
+      return { isValid: false, error: "Multibet cannot exceed 20 selections" };
+    }
+    return { isValid: true, error: "" };
   };
 
   const handlePlaceBets = async () => {
@@ -210,17 +296,29 @@ export const Header: React.FC<HeaderProps> = ({
             // Add the bet to the Redux store
             dispatch(addAgentBet(agentBet));
 
-            alert(
-              `Successfully placed multibet for ${
-                selectedUser.phone_number
-              }! Stake: $${multibetStake}${
-                betSlipData
-                  ? `\nTax: ${
-                      betSlipData.taxPercentage
-                    }% ($${betSlipData.taxAmount?.toFixed(2)})`
-                  : ""
-              }`
-            );
+            const combinedOdds = calculateCombinedOdds(betSlipItems);
+            const potentialWinnings = multibetStake * combinedOdds;
+            const selections = betSlipItems
+              .map(
+                (bet, index) =>
+                  `${index + 1}. ${bet.homeTeam} vs ${bet.awayTeam} (${bet.betType}: ${bet.selection}) @ ${bet.odds}`
+              )
+              .join("\n");
+
+            const taxAmount = calculateTaxAmount(potentialWinnings);
+            const netWinnings = calculateNetWinnings(potentialWinnings);
+            const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
+Net Winnings: $${netWinnings.toFixed(2)}`;
+
+            alert(`🎯 SUCCESSFULLY PLACED MULTIBET FOR AGENT USER! 🎯
+
+User: ${selectedUser.phone_number}
+Stake: $${multibetStake.toFixed(2)}
+Combined Odds: ${combinedOdds.toFixed(2)}
+Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}
+
+Selections:
+${selections}`);
           } catch (error: any) {
             console.error(`Failed to place multibet:`, error);
             throw new Error(`Failed to place multibet: ${error.message}`);
@@ -252,17 +350,20 @@ export const Header: React.FC<HeaderProps> = ({
                 // Add the bet to the Redux store
                 dispatch(addAgentBet(agentBet));
 
-                alert(
-                  `Successfully placed single bet for ${
-                    selectedUser.phone_number
-                  }! Stake: $${bet.stake}${
-                    betSlipData
-                      ? `\nTax: ${
-                          betSlipData.taxPercentage
-                        }% ($${betSlipData.taxAmount?.toFixed(2)})`
-                      : ""
-                  }`
-                );
+                const potentialWinnings = bet.stake * bet.odds;
+                const taxAmount = calculateTaxAmount(potentialWinnings);
+                const netWinnings = calculateNetWinnings(potentialWinnings);
+                const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
+                  Net Winnings: $${netWinnings.toFixed(2)}`;
+
+                alert(`🎯 SUCCESSFULLY PLACED SINGLE BET FOR AGENT USER! 🎯
+
+                  User: ${selectedUser.phone_number}
+                  Game: ${bet.homeTeam} vs ${bet.awayTeam}
+                  Market: ${bet.betType} | Outcome: ${bet.selection}
+                  Stake: $${bet.stake.toFixed(2)}
+                  Odds: ${bet.odds}
+                  Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}`);
               } catch (error: any) {
                 console.error(`Failed to place bet:`, error);
                 throw new Error(`Failed to place bet: ${error.message}`);
@@ -284,31 +385,76 @@ export const Header: React.FC<HeaderProps> = ({
           betSlipItems,
           betSlipItems.length > 1, // Automatically use multibet for multiple selections
           multibetStake,
-          user.id
+          user.id,
+          user.bettingLimits
         );
 
         if (Array.isArray(result)) {
           // Single bets
-          const taxInfo = betSlipData
-            ? `\nTax: ${
-                betSlipData.taxPercentage
-              }% ($${betSlipData.taxAmount?.toFixed(2)})`
-            : "";
-          alert(`Successfully placed ${result.length} single bets!${taxInfo}`);
+          const betDetails = result
+            .map((bet, index) => {
+                  const selection = betSlipItems[index];
+                  return `\n${index + 1}. ${selection?.homeTeam} vs ${selection?.awayTeam}
+                  Market: ${selection?.betType} | Outcome: ${selection?.selection}
+                  Odds: ${selection?.odds || 0} | Stake: $${selection?.stake || 0}
+                  Potential Winnings: $${((selection?.stake || 0) * (selection?.odds || 1)).toFixed(2)}
+                  Bet ID: ${bet.betId} | Status: ${bet.status}`;
+            })
+            .join("\n");
+
+          const totalStake = betSlipItems.reduce(
+            (sum, bet) => sum + bet.stake,
+            0
+          );
+          const totalPotentialWinnings = betSlipItems.reduce(
+            (sum, bet) => sum + bet.stake * bet.odds,
+            0
+          );
+
+          const taxAmount = calculateTaxAmount(totalPotentialWinnings);
+          const netWinnings = calculateNetWinnings(totalPotentialWinnings);
+          const taxInfo = `\n\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
+Net Winnings: $${netWinnings.toFixed(2)}`;
+
+          alert(`🎉 SUCCESSFULLY PLACED ${result.length} SINGLE BETS! 🎉
+
+Total Stake: $${totalStake.toFixed(2)}
+Total Potential Winnings: $${totalPotentialWinnings.toFixed(2)}${taxInfo}
+
+Bet Details:${betDetails}`);
+
           result.forEach((bet) => {
             console.log("Bet ID:", bet.betId, "Status:", bet.status);
           });
         } else {
           // Multibet
-          const taxInfo = betSlipData
-            ? `\nTax: ${
-                betSlipData.taxPercentage
-              }% ($${betSlipData.taxAmount?.toFixed(2)})`
-            : "";
-          alert(
-            `Successfully placed multibet! Bet ID: ${result.betId}${taxInfo}`
-          );
-          console.log("Multibet Status:", result.status);
+          const combinedOdds = calculateCombinedOdds(betSlipItems);
+          const potentialWinnings = multibetStake * combinedOdds;
+
+          const selections = betSlipItems
+            .map(
+              (bet, index) =>
+                `${index + 1}. ${bet.homeTeam} vs ${bet.awayTeam} (${bet.betType}: ${bet.selection}) @ ${bet.odds}`
+            )
+            .join("\n");
+
+          const taxAmount = calculateTaxAmount(potentialWinnings);
+          const netWinnings = calculateNetWinnings(potentialWinnings);
+          const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
+Net Winnings: $${netWinnings.toFixed(2)}`;
+
+          alert(`🎯 SUCCESSFULLY PLACED MULTIBET! 🎯
+
+Bet ID: ${result.betId}
+Status: ${result.status}
+Stake: $${multibetStake.toFixed(2)}
+Combined Odds: ${combinedOdds.toFixed(2)}
+Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}
+
+Selections:
+${selections}`);
+
+          console.log("Multibet ID:", result.betId, "Status:", result.status);
         }
 
         // Clear betslip after successful placement
@@ -391,6 +537,19 @@ export const Header: React.FC<HeaderProps> = ({
 
           {user && (
             <div className="user-section" ref={dropdownRef}>
+              <div className="user-info-display">
+                <div className="user-name-role">
+                  <span className="user-name">{user.name}</span>
+                  <span className="user-role-badge">{user.role}</span>
+                </div>
+                <div className="user-balance-display">
+                  <span className="balance-label">Balance:</span>
+                  <span className="balance-amount">
+                    {user.currency} {user.balance.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
               <div
                 className="user-avatar-container"
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -421,16 +580,202 @@ export const Header: React.FC<HeaderProps> = ({
 
                   <div className="dropdown-divider"></div>
 
+                  {/* Basic User Info */}
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">User ID</span>
+                    <span className="dropdown-value">{user.id}</span>
+                  </div>
+
                   <div className="dropdown-item">
                     <span className="dropdown-label">Phone Number</span>
                     <span className="dropdown-value">{user.phoneNumber}</span>
                   </div>
 
                   <div className="dropdown-item">
+                    <span className="dropdown-label">Status</span>
+                    <span
+                      className={`dropdown-value status-badge ${user.isActive ? "active" : "inactive"}`}
+                    >
+                      {user.isActive ? "🟢 Active" : "🔴 Inactive"}
+                    </span>
+                  </div>
+
+                  <div className="dropdown-item">
                     <span className="dropdown-label">Balance</span>
                     <span className="dropdown-value balance-value">
-                      ${user.balance.toFixed(2)}
+                      {user.currency} {user.balance.toFixed(2)}
                     </span>
+                  </div>
+
+                  {/* Shop Information */}
+                  {user.shop && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <div className="dropdown-section-header">
+                        Shop Information
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Shop Name</span>
+                        <span className="dropdown-value">
+                          {user.shop.shop_name}
+                        </span>
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Shop Code</span>
+                        <span className="dropdown-value">
+                          {user.shop.shop_code}
+                        </span>
+                      </div>
+
+                      {user.shop.shop_address && (
+                        <div className="dropdown-item">
+                          <span className="dropdown-label">Shop Address</span>
+                          <span className="dropdown-value">
+                            {user.shop.shop_address}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Default Currency</span>
+                        <span className="dropdown-value">
+                          {user.shop.default_currency}
+                        </span>
+                      </div>
+
+                      {user.role === "agent" && (
+                        <div className="dropdown-item">
+                          <span className="dropdown-label">
+                            Commission Rate
+                          </span>
+                          <span className="dropdown-value">
+                            {user.shop.commission_rate}%
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Agent Information */}
+                  {user.role === "agent" && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <div className="dropdown-section-header">
+                        Agent Information
+                      </div>
+
+                      {user.commission && (
+                        <div className="dropdown-item">
+                          <span className="dropdown-label">Commission</span>
+                          <span className="dropdown-value">
+                            {user.commission}%
+                          </span>
+                        </div>
+                      )}
+
+                      {user.managedUsers && user.managedUsers.length > 0 && (
+                        <div className="dropdown-item">
+                          <span className="dropdown-label">Managed Users</span>
+                          <span className="dropdown-value">
+                            {user.managedUsers.length} users
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Betting Limits */}
+                  {user.bettingLimits && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <div className="dropdown-section-header">
+                        Betting Limits
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Min Stake</span>
+                        <span className="dropdown-value">
+                          {user.currency}{" "}
+                          {user.bettingLimits.minStake.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Max Stake</span>
+                        <span className="dropdown-value">
+                          {user.currency}{" "}
+                          {user.bettingLimits.maxStake.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Max Daily Loss</span>
+                        <span className="dropdown-value">
+                          {user.currency}{" "}
+                          {user.bettingLimits.maxDailyLoss.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Max Weekly Loss</span>
+                        <span className="dropdown-value">
+                          {user.currency}{" "}
+                          {user.bettingLimits.maxWeeklyLoss.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* User Preferences */}
+                  {user.preferences && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <div className="dropdown-section-header">Preferences</div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Odds Format</span>
+                        <span className="dropdown-value">
+                          {user.preferences.oddsFormat}
+                        </span>
+                      </div>
+
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Timezone</span>
+                        <span className="dropdown-value">
+                          {user.preferences.timezone}
+                        </span>
+                      </div>
+
+                      {/* Notification Preferences */}
+                      <div className="dropdown-item">
+                        <span className="dropdown-label">Notifications</span>
+                        <span className="dropdown-value">
+                          {user.preferences.notifications.betSettled
+                            ? "✅"
+                            : "❌"}{" "}
+                          Bet Settled
+                          {user.preferences.notifications.oddsChanged
+                            ? " ✅"
+                            : " ❌"}{" "}
+                          Odds Changed
+                          {user.preferences.notifications.newGames
+                            ? " ✅"
+                            : " ❌"}{" "}
+                          New Games
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Account Details */}
+                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-section-header">Account Details</div>
+
+                  <div className="dropdown-item">
+                    <span className="dropdown-label">User ID</span>
+                    <span className="dropdown-value">{user.id}</span>
                   </div>
 
                   <div className="dropdown-divider"></div>
@@ -544,40 +889,70 @@ export const Header: React.FC<HeaderProps> = ({
                           </div>
                         </div>
                         <div className="multibet-stake-input">
-                          <label htmlFor="multibetStake">Stake ($)</label>
+                          <label htmlFor="multibetStake">
+                            Stake ({user?.currency || "$"})
+                            {user?.bettingLimits && (
+                              <span className="stake-limits">
+                                Min: {user.currency}{" "}
+                                {user.bettingLimits.minStake.toFixed(2)} | Max:{" "}
+                                {user.currency}{" "}
+                                {user.bettingLimits.maxStake.toFixed(2)}
+                              </span>
+                            )}
+                          </label>
                           <input
                             type="number"
                             id="multibetStake"
                             value={multibetStake}
-                            onChange={(e) =>
-                              dispatch(setMultibetStake(Number(e.target.value)))
-                            }
-                            min="1"
-                            max="1000"
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (user?.bettingLimits) {
+                                const { minStake, maxStake } =
+                                  user.bettingLimits;
+                                if (value >= minStake && value <= maxStake) {
+                                  dispatch(setMultibetStake(value));
+                                }
+                              } else {
+                                dispatch(setMultibetStake(value));
+                              }
+                            }}
+                            min={user?.bettingLimits?.minStake || 1}
+                            max={user?.bettingLimits?.maxStake || 1000}
+                            step="0.01"
                             className="stake-input"
+                            placeholder={`${user?.bettingLimits?.minStake || 1} - ${user?.bettingLimits?.maxStake || 1000}`}
                           />
                         </div>
                       </div>
                     )}
 
-                  {/* Validation Message - Show automatically for multiple selections */}
-                  {(betSlipItems.length > 1 || isMultibetMode) &&
-                    betSlipItems.length > 0 && (
-                      <div className="validation-message">
-                        {(() => {
-                          const validation = validateMultibet(betSlipItems);
-                          return validation.isValid ? (
-                            <div className="valid-message">
-                              ✅ Valid multibet selections
-                            </div>
-                          ) : (
-                            <div className="invalid-message">
-                              ❌ {validation.error}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
+                  {/* Enhanced Validation Message - Show for all bet types */}
+                  {betSlipItems.length > 0 && (
+                    <div className="validation-message">
+                      {(() => {
+                        const isMultibet =
+                          betSlipItems.length > 1 || isMultibetMode;
+                        const stake = isMultibet
+                          ? multibetStake
+                          : betSlipItems[0]?.stake || 0;
+                        const validation = validateBetslipWithLimits(
+                          betSlipItems,
+                          isMultibet,
+                          stake
+                        );
+
+                        return validation.isValid ? (
+                          <div className="valid-message">
+                            ✅ Valid bet selections
+                          </div>
+                        ) : (
+                          <div className="invalid-message">
+                            ❌ {validation.error}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
 
                   <div className="betslip-items">
                     {betSlipItems.map((bet) => (
@@ -595,17 +970,33 @@ export const Header: React.FC<HeaderProps> = ({
                             <input
                               type="number"
                               value={bet.stake}
-                              onChange={(e) =>
-                                dispatch(
-                                  updateBetSlipStake({
-                                    id: bet.id,
-                                    stake: Number(e.target.value),
-                                  })
-                                )
-                              }
-                              min="1"
-                              max="1000"
+                              onChange={(e) => {
+                                const value = Number(e.target.value);
+                                if (user?.bettingLimits) {
+                                  const { minStake, maxStake } =
+                                    user.bettingLimits;
+                                  if (value >= minStake && value <= maxStake) {
+                                    dispatch(
+                                      updateBetSlipStake({
+                                        id: bet.id,
+                                        stake: value,
+                                      })
+                                    );
+                                  }
+                                } else {
+                                  dispatch(
+                                    updateBetSlipStake({
+                                      id: bet.id,
+                                      stake: value,
+                                    })
+                                  );
+                                }
+                              }}
+                              min={user?.bettingLimits?.minStake || 1}
+                              max={user?.bettingLimits?.maxStake || 1000}
+                              step="0.01"
                               className="stake-input"
+                              placeholder={`${user?.bettingLimits?.minStake || 1} - ${user?.bettingLimits?.maxStake || 1000}`}
                             />
                           </div>
                         )}
@@ -627,56 +1018,101 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="betslip-footer">
                     {/* Use BetSlipSummary component for consistent tax display */}
                     {betSlipItems.length > 0 && (
-                      <BetSlipSummary
-                        slip={
-                          betSlipData || {
-                            id: "temp-slip",
-                            userId: user?.id || "",
-                            selections: betSlipItems.map((bet) => ({
-                              gameId: bet.gameId,
-                              homeTeam: bet.homeTeam,
-                              awayTeam: bet.awayTeam,
-                              marketType: bet.betType,
-                              outcome: bet.selection,
+                      <>
+                        {/* Debug info */}
+                        {process.env["NODE_ENV"] === "development" && (
+                          <div
+                            style={{
+                              background: "#f0f0f0",
+                              padding: "10px",
+                              margin: "10px 0",
+                              fontSize: "12px",
+                            }}
+                          >
+                            <strong>Debug Info:</strong>
+                            <br />
+                            betSlipData:{" "}
+                            {betSlipData ? "Available" : "Not Available"}
+                            <br />
+                            User Currency: {user?.currency}
+                            <br />
+                            betSlipItems length: {betSlipItems.length}
+                            <br />
+                            multibetStake: {multibetStake}
+                          </div>
+                        )}
+                        <BetSlipSummary
+                          slip={
+                            betSlipData || {
+                              id: "temp-slip",
+                              userId: user?.id || "",
+                              selections: betSlipItems.map((bet) => ({
+                                gameId: bet.gameId,
+                                homeTeam: bet.homeTeam,
+                                awayTeam: bet.awayTeam,
+                                marketType: bet.betType,
+                                outcome: bet.selection,
+                                odds: {
+                                  decimal: bet.odds,
+                                  american: 0,
+                                  multiplier: 0,
+                                },
+                                bookmaker: bet.bookmaker,
+                                gameTime: bet.gameTime,
+                                sportKey: bet.sportKey,
+                              })),
+                              stake:
+                                betSlipItems.length > 1
+                                  ? multibetStake
+                                  : betSlipItems[0]?.stake || 0,
+                              potentialWinnings:
+                                betSlipItems.length > 1
+                                  ? calculateMultibetWinnings(
+                                      betSlipItems,
+                                      multibetStake
+                                    )
+                                  : (betSlipItems[0]?.stake || 0) *
+                                    (betSlipItems[0]?.odds || 1),
+                              taxPercentage: 0, // No tax in fallback
+                              taxAmount: 0, // No tax in fallback
+                              netWinnings: (() => {
+                                // Calculate net winnings safely
+                                const stake =
+                                  betSlipItems.length > 1
+                                    ? multibetStake
+                                    : betSlipItems[0]?.stake || 0;
+                                const odds =
+                                  betSlipItems.length > 1
+                                    ? calculateCombinedOdds(betSlipItems)
+                                    : betSlipItems[0]?.odds || 1;
+                                const potentialWinnings = stake * odds;
+                                return potentialWinnings;
+                              })(),
                               odds: {
-                                decimal: bet.odds,
+                                decimal: calculateCombinedOdds(betSlipItems),
                                 american: 0,
                                 multiplier: 0,
                               },
-                              bookmaker: bet.bookmaker,
-                              gameTime: bet.gameTime,
-                              sportKey: bet.sportKey,
-                            })),
-                            stake:
-                              betSlipItems.length > 1
-                                ? multibetStake
-                                : betSlipItems[0]?.stake || 0,
-                            potentialWinnings:
-                              betSlipItems.length > 1
-                                ? calculateMultibetWinnings(
-                                    betSlipItems,
-                                    multibetStake
-                                  )
-                                : (betSlipItems[0]?.stake || 0) *
-                                  (betSlipItems[0]?.odds || 1),
-                            taxPercentage: 5, // Default tax percentage - should come from API
-                            taxAmount: 0, // Will be calculated
-                            netWinnings: 0, // Will be calculated
-                            odds: {
-                              decimal: calculateCombinedOdds(betSlipItems),
-                              american: 0,
-                              multiplier: 0,
-                            },
-                            createdAt: new Date().toISOString(),
-                            expiresAt: new Date(
-                              Date.now() + 24 * 60 * 60 * 1000
-                            ).toISOString(),
+                              createdAt: new Date().toISOString(),
+                              expiresAt: new Date(
+                                Date.now() + 24 * 60 * 60 * 1000
+                              ).toISOString(),
+                            }
                           }
-                        }
-                        currency={user?.currency || "USD"}
-                        isMultibet={betSlipItems.length > 1}
-                        isLoading={!betSlipData}
-                      />
+                          currency={user?.currency || "USD"}
+                          isMultibet={betSlipItems.length > 1}
+                          isLoading={!betSlipData}
+                          betSlipResponse={
+                            betSlipData
+                              ? {
+                                  success: true,
+                                  message: "",
+                                  data: betSlipData,
+                                }
+                              : undefined
+                          }
+                        />
+                      </>
                     )}
 
                     <button
@@ -684,15 +1120,26 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={handlePlaceBets}
                       disabled={
                         isPlacingBets ||
-                        (betSlipItems.length > 1 &&
-                          !validateMultibet(betSlipItems).isValid)
+                        (() => {
+                          const isMultibet =
+                            betSlipItems.length > 1 || isMultibetMode;
+                          const stake = isMultibet
+                            ? multibetStake
+                            : betSlipItems[0]?.stake || 0;
+                          const validation = validateBetslipWithLimits(
+                            betSlipItems,
+                            isMultibet,
+                            stake
+                          );
+                          return !validation.isValid;
+                        })()
                       }
                     >
                       {isPlacingBets
                         ? "Placing Bets..."
                         : betSlipItems.length > 1
-                        ? "Place Multibet"
-                        : "Place Bet"}
+                          ? "Place Multibet"
+                          : "Place Bet"}
                     </button>
                   </div>
                 </>

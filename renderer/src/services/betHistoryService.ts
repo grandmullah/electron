@@ -1,8 +1,15 @@
 import axios from 'axios';
 import { API_BASE_URL } from './apiConfig';
 import AuthService from './authService';
+import {
+      DisplayBet,
+      ShopInfo,
+      UserInfo,
+      ShopSummary,
+      EnhancedUserBetsResponse
+} from '../types/history';
 
-// Types for bet history API
+// Types for bet history API (keeping for backward compatibility)
 export interface SingleBet {
       betId: string;
       gameId: string;
@@ -17,6 +24,8 @@ export interface SingleBet {
       taxAmount?: number;
       netWinnings?: number;
       userId: string;
+      userInfo: UserInfo;
+      shopId: string;
       timestamp: string;
       status: 'pending' | 'accepted' | 'rejected' | 'settled' | 'cancelled';
       betCategory: 'single';
@@ -46,6 +55,8 @@ export interface Multibet {
       taxAmount?: number;
       netWinnings?: number;
       userId: string;
+      userInfo: UserInfo;
+      shopId: string;
       timestamp: string;
       status: 'pending' | 'accepted' | 'rejected' | 'settled' | 'cancelled';
       betType: 'multibet';
@@ -61,6 +72,7 @@ export interface UserBetsResponse {
             singleBets: SingleBet[];
             multibets: Multibet[];
             total: number;
+            shopSummary?: ShopSummary;
       };
 }
 
@@ -71,6 +83,7 @@ export interface BetHistoryFilters {
       dateTo?: string;
       limit?: number;
       offset?: number;
+      includeShopBets?: boolean;
 }
 
 export interface BetActionResponse {
@@ -122,6 +135,9 @@ export class BetHistoryService {
                   if (filters?.offset) {
                         queryParams.append('offset', filters.offset.toString());
                   }
+                  if (filters?.includeShopBets) {
+                        queryParams.append('includeShopBets', 'true');
+                  }
 
                   const url = `${API_BASE_URL}/bets/history/${userId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
@@ -139,10 +155,17 @@ export class BetHistoryService {
             } catch (error: any) {
                   console.error('Error fetching user bets:', error);
 
-                  // Return mock data for development
+                  // Return empty response for development/offline mode
                   if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error') || error.code === 'ECONNABORTED') {
-                        console.log('Development mode: returning mock bet history');
-                        return this.getMockBetHistory(filters);
+                        console.log('Development mode: returning empty bet history');
+                        return {
+                              success: true,
+                              data: {
+                                    singleBets: [],
+                                    multibets: [],
+                                    total: 0
+                              }
+                        };
                   }
 
                   throw this.handleError(error);
@@ -191,10 +214,17 @@ export class BetHistoryService {
             } catch (error: any) {
                   console.error('Error fetching active bets:', error);
 
-                  // Return mock data for development
+                  // Return empty response for development/offline mode
                   if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error') || error.code === 'ECONNABORTED') {
-                        console.log('Development mode: returning mock active bets');
-                        return this.getMockActiveBets();
+                        console.log('Development mode: returning empty active bets');
+                        return {
+                              success: true,
+                              data: {
+                                    singleBets: [],
+                                    multibets: [],
+                                    total: 0
+                              }
+                        };
                   }
 
                   throw this.handleError(error);
@@ -369,171 +399,10 @@ export class BetHistoryService {
             }
       }
 
-      // Mock data for active bets
-      private static getMockActiveBets(): UserBetsResponse {
-            const mockActiveBets: SingleBet[] = [
-                  {
-                        betId: 'bet_1705123456789_active1',
-                        gameId: 'GAME001',
-                        homeTeam: 'Manchester United',
-                        awayTeam: 'Liverpool',
-                        betType: 'Match Winner',
-                        selection: 'Manchester United',
-                        odds: 3.0,
-                        stake: 25.0,
-                        potentialWinnings: 75.0,
-                        taxPercentage: 20.0,
-                        taxAmount: 15.0,
-                        netWinnings: 60.0,
-                        userId: 'user123',
-                        timestamp: '2024-01-13T20:15:00Z',
-                        status: 'pending',
-                        betCategory: 'single'
-                  },
-                  {
-                        betId: 'bet_1705123456790_active2',
-                        gameId: 'GAME002',
-                        homeTeam: 'Arsenal',
-                        awayTeam: 'Chelsea',
-                        betType: 'Match Winner',
-                        selection: 'Arsenal',
-                        odds: 2.5,
-                        stake: 30.0,
-                        potentialWinnings: 75.0,
-                        taxPercentage: 20.0,
-                        taxAmount: 15.0,
-                        netWinnings: 60.0,
-                        userId: 'user123',
-                        timestamp: '2024-01-13T21:00:00Z',
-                        status: 'pending',
-                        betCategory: 'single'
-                  }
-            ];
 
-            return {
-                  success: true,
-                  data: {
-                        singleBets: mockActiveBets,
-                        multibets: [],
-                        total: mockActiveBets.length
-                  }
-            };
-      }
 
-      // Mock data for development
-      private static getMockBetHistory(filters?: BetHistoryFilters): UserBetsResponse {
-            const mockSingleBets: SingleBet[] = [
-                  {
-                        betId: 'bet_1705123456789_abc123',
-                        gameId: 'GAME001',
-                        homeTeam: 'Manchester United',
-                        awayTeam: 'Liverpool',
-                        betType: 'Match Winner',
-                        selection: 'Manchester United',
-                        odds: 3.0,
-                        stake: 25.0,
-                        potentialWinnings: 75.0,
-                        taxPercentage: 20.0,
-                        taxAmount: 15.0,
-                        netWinnings: 60.0,
-                        userId: 'user123',
-                        timestamp: '2024-01-13T20:15:00Z',
-                        status: 'settled',
-                        betCategory: 'single',
-                        settledAt: '2024-01-14T22:00:00Z',
-                        result: 'won',
-                        actualWinnings: 75.0,
-                  },
-                  {
-                        betId: 'bet_1705123456790_def456',
-                        gameId: 'GAME002',
-                        homeTeam: 'Arsenal',
-                        awayTeam: 'Chelsea',
-                        betType: 'Match Winner',
-                        selection: 'Arsenal',
-                        odds: 2.5,
-                        stake: 30.0,
-                        potentialWinnings: 75.0,
-                        taxPercentage: 20.0,
-                        taxAmount: 15.0,
-                        netWinnings: 60.0,
-                        userId: 'user123',
-                        timestamp: '2024-01-15T14:20:00Z',
-                        status: 'pending',
-                        betCategory: 'single',
-                        result: 'pending',
-                  },
-            ];
 
-            const mockMultibets: Multibet[] = [
-                  {
-                        betId: 'multibet_1705123456791_ghi789',
-                        bets: [
-                              {
-                                    betId: 'bet_1705123456792_jkl012',
-                                    gameId: 'GAME003',
-                                    homeTeam: 'Barcelona',
-                                    awayTeam: 'Real Madrid',
-                                    betType: 'Match Winner',
-                                    selection: 'Barcelona',
-                                    odds: 2.4,
-                                    stake: 50.0,
-                                    potentialWinnings: 120.0,
-                              },
-                              {
-                                    betId: 'bet_1705123456793_mno345',
-                                    gameId: 'GAME004',
-                                    homeTeam: 'Bayern Munich',
-                                    awayTeam: 'Borussia Dortmund',
-                                    betType: 'Match Winner',
-                                    selection: 'Bayern Munich',
-                                    odds: 2.5,
-                                    stake: 50.0,
-                                    potentialWinnings: 125.0,
-                              },
-                        ],
-                        totalStake: 50.0,
-                        combinedOdds: 6.0,
-                        potentialWinnings: 300.0,
-                        taxPercentage: 20.0,
-                        taxAmount: 60.0,
-                        netWinnings: 240.0,
-                        userId: 'user123',
-                        timestamp: '2024-01-12T19:30:00Z',
-                        status: 'settled',
-                        betType: 'multibet',
-                        settledAt: '2024-01-13T21:45:00Z',
-                        result: 'lost',
-                        actualWinnings: 0.0,
-                  },
-            ];
 
-            // Apply filters if provided
-            let filteredSingleBets = mockSingleBets;
-            let filteredMultibets = mockMultibets;
-
-            if (filters?.status) {
-                  filteredSingleBets = mockSingleBets.filter(bet => bet.status === filters.status);
-                  filteredMultibets = mockMultibets.filter(bet => bet.status === filters.status);
-            }
-
-            if (filters?.betType) {
-                  if (filters.betType === 'single') {
-                        filteredMultibets = [];
-                  } else if (filters.betType === 'multibet') {
-                        filteredSingleBets = [];
-                  }
-            }
-
-            return {
-                  success: true,
-                  data: {
-                        singleBets: filteredSingleBets,
-                        multibets: filteredMultibets,
-                        total: filteredSingleBets.length + filteredMultibets.length,
-                  },
-            };
-      }
 
       // Error handling
       private static handleError(error: any): Error {

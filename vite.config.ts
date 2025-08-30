@@ -24,18 +24,7 @@ export default defineConfig(({ mode }) => ({
             // Copy JavaScript files to build output
             copyPublicDir: true,
             // Ensure js files are included in build
-            assetsInclude: ['**/*.js', '**/*.html'],
-            // Copy additional directories
-            rollupOptions: {
-                  input: {
-                        main: resolve(__dirname, 'renderer/src/main.tsx'),
-                  },
-                  output: {
-                        entryFileNames: 'src/[name].js',
-                        chunkFileNames: 'src/[name].js',
-                        assetFileNames: 'assets/[name].[ext]'
-                  }
-            }
+            assetsInclude: ['**/*.js', '**/*.html']
       },
       // Copy additional files during build
       publicDir: 'renderer',
