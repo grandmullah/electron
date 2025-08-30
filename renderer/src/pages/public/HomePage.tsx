@@ -56,8 +56,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           setAvailableShops(shops);
           // Set default shop if available
           if (shops.length > 0) {
-            const defaultShop =
-              shops.find((shop) => shop.shop_code === "MAIN001") || shops[0];
+            const defaultShop = shops.find(shop => shop.shop_code === "jebel") || shops[0]; // Prefer jebel shop
             if (defaultShop) {
               setSelectedShop(defaultShop.shop_code);
               setFormData((prev) => ({
@@ -65,6 +64,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 shop_code: defaultShop.shop_code,
                 currency: "SSP", // Always use SSP currency
               }));
+              console.log("Default shop set:", defaultShop.shop_code);
             }
           }
         } else {
@@ -198,6 +198,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           role: formData.role,
           currency: formData.currency,
           shop_code: formData.shop_code,
+          selectedShop: selectedShop,
+          availableShops: availableShops.map(s => s.shop_code),
         });
         response = await AuthService.register(registerData);
         console.log("Registration successful:", response);
@@ -238,7 +240,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           country_code: "SS", // Reset to South Sudan
           role: "user",
           currency: "SSP", // Reset to SSP
-          shop_code: "",
+          shop_code: selectedShop, // Keep the selected shop
         });
       } else {
         throw new Error("Invalid response from server");
