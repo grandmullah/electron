@@ -85,7 +85,7 @@
         "executableName": "Betzone",
         "appCopyright": "Copyright © 2025 Betzone",
         "appVersion": "1.0.0",
-        "icon": "resources/icon-256.png",
+        "icon": "resources/favicon.ico",
         "extraResource": [
           "resources"
         ],
@@ -111,7 +111,7 @@
             "darwin"
           ],
           "config": {
-            "icon": "resources/icon-256.png"
+            "icon": "resources/favicon.ico"
           }
         },
         {
@@ -121,7 +121,7 @@
             "win32"
           ],
           "config": {
-            "icon": "resources/icon-256.png"
+            "icon": "resources/favicon.ico"
           }
         },
         {
@@ -130,8 +130,8 @@
             "win32"
           ],
           "config": {
-            "icon": "resources/icon-256.png",
-            "setupIcon": "resources/icon-256.png"
+            "icon": "resources/favicon.ico",
+            "setupIcon": "resources/favicon.ico"
           }
         },
         {
@@ -140,7 +140,7 @@
             "linux"
           ],
           "config": {
-            "icon": "resources/icon-256.png"
+            "icon": "resources/favicon.ico"
           }
         },
         {
@@ -149,7 +149,7 @@
             "linux"
           ],
           "config": {
-            "icon": "resources/icon-256.png"
+            "icon": "resources/favicon.ico"
           }
         }
       ]
