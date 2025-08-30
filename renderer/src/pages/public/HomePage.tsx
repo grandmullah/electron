@@ -30,7 +30,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [showAuthForm, setShowAuthForm] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>("KE");
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>("SS");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [availableShops, setAvailableShops] = useState<Shop[]>([]);
   const [selectedShop, setSelectedShop] = useState<string>("");
@@ -38,9 +38,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
-    country_code: "KE", // Default to US
+    country_code: "SS", // Default to South Sudan
     role: "user" as "user" | "agent" | "admin",
-    currency: "SSP", // Default to USD
+    currency: "SSP", // Default to SSP
     shop_code: "",
   });
 
@@ -63,7 +63,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               setFormData((prev) => ({
                 ...prev,
                 shop_code: defaultShop.shop_code,
-                currency: defaultShop.default_currency || "USD",
+                currency: "SSP", // Always use SSP currency
               }));
             }
           }
@@ -124,7 +124,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       setFormData((prev) => ({
         ...prev,
         shop_code: shopCode,
-        currency: selectedShopData.default_currency || "USD",
+        currency: "SSP", // Always use SSP currency
       }));
     }
   };
@@ -231,13 +231,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         // Clear form and close modal only after successful authentication
         setShowAuthForm(false);
         setPhoneNumber("");
-        setSelectedCountry("US");
+        setSelectedCountry("SS");
         setFormData({
           password: "",
           confirmPassword: "",
-          country_code: "US", // Reset to US
+          country_code: "SS", // Reset to South Sudan
           role: "user",
-          currency: "USD", // Reset to USD
+          currency: "SSP", // Reset to SSP
           shop_code: "",
         });
       } else {
@@ -544,9 +544,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           className="form-input"
                           required
                         >
+                          <option value="SS">SS - South Sudan</option>
                           <option value="US">US - United States</option>
                           <option value="KE">KE - Kenya</option>
-                          <option value="SS">SS - South Sudan</option>
                           <option value="GB">GB - United Kingdom</option>
                           <option value="DE">DE - Germany</option>
                           <option value="FR">FR - France</option>
@@ -556,7 +556,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           <option value="ZA">ZA - South Africa</option>
                         </select>
                       </div>
-                      <div className="form-group">
+                      {/* <div className="form-group">
                         <label htmlFor="role">Role</label>
                         <select
                           id="role"
@@ -569,8 +569,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           <option value="agent">Agent</option>
                           <option value="admin">Admin</option>
                         </select>
-                      </div>
-                      <div className="form-group">
+                      </div> */}
+                      {/* <div className="form-group">
                         <label htmlFor="currency">Currency</label>
                         <select
                           id="currency"
@@ -600,7 +600,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                             Max: $100,000 USD
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                     </>
                   )}
                   <div className="form-actions">
