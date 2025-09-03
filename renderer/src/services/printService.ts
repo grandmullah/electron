@@ -36,6 +36,10 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
       console.log('🖨️ Starting bet ticket print with data:', bet);
       console.log('🖨️ Combined odds parameter received:', combinedOdds);
       console.log('🖨️ Printer name parameter received:', printerName);
+      console.log('🖨️ Bet object keys:', Object.keys(bet || {}));
+      console.log('🖨️ Bet.combinedOdds value:', bet?.combinedOdds);
+      console.log('🖨️ Bet.totalStake value:', bet?.totalStake);
+      console.log('🖨️ Bet.potentialWinnings value:', bet?.potentialWinnings);
 
       try {
             // Check if Bixolon printer functions are available
@@ -111,7 +115,25 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
             const stake = `Stake: SSP ${formatMoney(bet?.totalStake || bet?.stake || 0)}\n`;
 
             // Print total odds (use parameter or actual bet data from API)
-            const totalOdds = combinedOdds || bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
+            let totalOdds = combinedOdds || bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
+
+            // Additional fallback: check if bet has bets array and calculate from there
+            if (totalOdds === 0 && bet?.bets && Array.isArray(bet.bets) && bet.bets.length > 0) {
+                  totalOdds = bet.bets.reduce((total: number, betItem: any) => {
+                        const odds = betItem?.odds || 0;
+                        return total * odds;
+                  }, 1);
+                  console.log('🖨️ Calculated combined odds from bets array:', totalOdds);
+            }
+
+            // Fallback: calculate combined odds from selections if still 0
+            if (totalOdds === 0 && bet?.selections && Array.isArray(bet.selections) && bet.selections.length > 0) {
+                  totalOdds = bet.selections.reduce((total: number, selection: any) => {
+                        const odds = selection?.odds || 0;
+                        return total * odds;
+                  }, 1);
+                  console.log('🖨️ Calculated combined odds from selections:', totalOdds);
+            }
             console.log('🖨️ Odds calculation:', {
                   combinedOddsParam: combinedOdds,
                   betCombinedOdds: bet?.combinedOdds,
@@ -205,7 +227,7 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
 
             // Print "Bet Responsibly" message with enhanced formatting
             win.printText("\n", 0, 0, false, false, false, 0, 0);
-            win.printText("BET RESPONSIBLY", 0, 0, true, true, true, 0, 1); // Bold + Double width + Underline
+            win.printText("BET RESPONSIBLY", 0, 0, true, false, false, 0, 1); // Bold + Double width + Underline
             win.printText("\n", 0, 0, false, false, false, 0, 0);
 
             // Print barcode (ticket ID) - use actual bet ID from API, remove dashes

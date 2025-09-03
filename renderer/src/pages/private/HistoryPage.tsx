@@ -462,12 +462,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     return sortConfig.direction === "asc" ? "↑" : "↓";
   };
 
-  const printThermalTicket = (bet: any) => {
+  const printThermalTicket = (bet: any, combinedOdds?: number) => {
+    const calculatedOdds = combinedOdds || bet.combinedOdds;
     console.log("📋 HistoryPage calling printTicket with:", {
       bet,
-      combinedOdds: bet.combinedOdds,
+      combinedOdds: calculatedOdds,
+      betKeys: Object.keys(bet),
+      allOddsFields: {
+        combinedOdds: bet.combinedOdds,
+        totalOdds: bet.totalOdds,
+        odds: bet.odds,
+        selections: bet.selections,
+      },
     });
-    printTicket(bet, bet.combinedOdds);
+    printTicket(bet, calculatedOdds);
   };
 
   const getStatusColor = (status: string) => {
@@ -667,7 +675,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           bet={selectedBetTicket}
           onClose={() => setShowBetTicket(false)}
           onPrint={(b) => {
-            printThermalTicket(b);
+            console.log("📋 HistoryPage modal calling printTicket with:", {
+              bet: b,
+              combinedOdds: b["combinedOdds"],
+            });
+            printThermalTicket(b, b["combinedOdds"]);
             setShowBetTicket(false);
           }}
           getStatusColor={getStatusColor}

@@ -83,19 +83,27 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
     });
   };
 
-  const printThermalTicket = (bet: AgentBet) => {
+  const printThermalTicket = (bet: AgentBet, combinedOdds?: number) => {
     // Calculate combined odds from selections if not available
-    const combinedOdds =
+    const calculatedOdds =
+      combinedOdds ||
       (bet as any).combinedOdds ||
       (bet.selections?.length > 0
         ? bet.selections.reduce((total, selection) => total * selection.odds, 1)
         : undefined);
     console.log("👨‍💼 AgentPage calling printTicket with:", {
       bet,
-      combinedOdds,
+      combinedOdds: calculatedOdds,
       selections: bet.selections,
+      betKeys: Object.keys(bet),
+      allOddsFields: {
+        combinedOdds: (bet as any).combinedOdds,
+        totalOdds: (bet as any).totalOdds,
+        odds: (bet as any).odds,
+        selections: bet.selections,
+      },
     });
-    printTicket(bet, combinedOdds);
+    printTicket(bet, calculatedOdds);
   };
   const [newUser, setNewUser] = useState({
     phone_number: "",
@@ -681,7 +689,16 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                               className="action-btn print-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                printThermalTicket(bet);
+                                const combinedOdds =
+                                  (bet as any).combinedOdds ||
+                                  (bet.selections?.length > 0
+                                    ? bet.selections.reduce(
+                                        (total, selection) =>
+                                          total * selection.odds,
+                                        1
+                                      )
+                                    : undefined);
+                                printThermalTicket(bet, combinedOdds);
                               }}
                               title="Print Thermal Ticket"
                             >
@@ -1206,7 +1223,17 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
               </button>
               <button
                 className="btn btn-primary"
-                onClick={() => printThermalTicket(selectedBetTicket)}
+                onClick={() => {
+                  const combinedOdds =
+                    (selectedBetTicket as any).combinedOdds ||
+                    (selectedBetTicket.selections?.length > 0
+                      ? selectedBetTicket.selections.reduce(
+                          (total, selection) => total * selection.odds,
+                          1
+                        )
+                      : undefined);
+                  printThermalTicket(selectedBetTicket, combinedOdds);
+                }}
               >
                 🖨️ Print Thermal Ticket
               </button>
