@@ -271,10 +271,10 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
 
       try {
             console.log('🖨️ Testing printer...');
-            
+
             // Check printer status
             win.checkPrinterStatus();
-            
+
             // Print test content - following working version pattern
             win.printText("BETZONE\n\n", 0, 0, false, false, false, 0, 1);
             win.printText("--- TEST PRINT SUCCESSFUL ---\n\n\n", 0, 0, false, false, false, 0, 1);
@@ -284,20 +284,20 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
             win.printText(`${new Date().toLocaleTimeString()}\n`, 0, 0, false, false, false, 0, 0);
             win.printText("\nThis is a test print from betzone\n", 0, 0, false, false, false, 0, 0);
             win.printText("If you can see this, the printer is working!\n\n", 0, 0, false, false, false, 0, 0);
-            
+
             // Cut paper
             win.cutPaper(1);
-            
+
             // Send to printer - following working version pattern
             const textToPrint = win.getPosData();
             win.requestPrint(printerName, textToPrint, function (result: any) {
                   console.log('🖨️ Test print result:', result);
-                  
+
                   if (!result) {
                         console.log('❌ No print result received');
                         return;
                   }
-                  
+
                   // Handle different result types (following 1nl-client-master pattern)
                   if (result === "No printers") {
                         window.alert("Error Printing\n\nThere were no printers found.");
@@ -308,7 +308,7 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
                         );
                         return;
                   }
-                  
+
                   // Parse result (format: [randomId]:[error|success])
                   var res = String(result).split(":");
                   if (Array.isArray(res) && res[1] === "error") {
@@ -317,12 +317,12 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
                         );
                         return;
                   }
-                  
+
                   // Success!
                   console.log('✅ Test print successful!');
                   window.alert("Test print successful! Check your printer.");
             });
-            
+
       } catch (error) {
             console.error('❌ Test print error:', error);
             window.alert(`Print Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
