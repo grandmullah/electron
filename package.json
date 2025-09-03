@@ -1,7 +1,7 @@
 {
-  "name": "betzone-electron",
-  "version": "1.0.3",
-  "description": "betzone desktop app",
+  "name": "Betzone",
+  "version": "1.0.4",
+  "description": "Betzone desktop app",
   "main": "dist/main/index.js",
   "author": "grandmullah",
   "license": "MIT",
