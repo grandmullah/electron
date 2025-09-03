@@ -7,13 +7,12 @@
   - Compatible with Bixolon SRP series thermal printers
 */
 
+import settingsService from './settingsService';
+
 type AnyBet = any;
 
 // Global flag to prevent multiple simultaneous print operations
 let globalPrintInProgress = false;
-
-// Default printer name - can be configured
-const DEFAULT_PRINTER_NAME = 'Printer1';
 
 function formatMoney(value: unknown): string {
       const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
@@ -25,7 +24,7 @@ function formatMoney(value: unknown): string {
  * Print thermal ticket using simple Bixolon functions
  * Following the proven 1nl-client-master pattern
  */
-export async function printThermalTicket(bet: AnyBet, printerName: string = DEFAULT_PRINTER_NAME): Promise<void> {
+export async function printThermalTicket(bet: AnyBet, printerName?: string): Promise<void> {
       // Prevent multiple simultaneous print operations
       if (globalPrintInProgress) {
             console.warn('Print operation already in progress. Please wait.');
@@ -47,6 +46,9 @@ export async function printThermalTicket(bet: AnyBet, printerName: string = DEFA
 
             // Check printer status first
             win.checkPrinterStatus();
+
+            // Get printer name from settings if not provided
+            const actualPrinterName = printerName || settingsService.getPrinterLogicalName();
 
             // Create ticket content using simple Bixolon functions
             console.log('🖨️ Starting thermal ticket print...');
@@ -201,7 +203,7 @@ export async function printThermalTicket(bet: AnyBet, printerName: string = DEFA
 
             const textToPrint = win.getPosData();
 
-            win.requestPrint(printerName, textToPrint, function (result: any) {
+            win.requestPrint(actualPrinterName, textToPrint, function (result: any) {
                   globalPrintInProgress = false;
 
                   if (!result) {
@@ -261,7 +263,7 @@ export function testBixolonPrinter(): void {
 }
 
 // Export a test print function to verify printer is working
-export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
+export function testPrint(printerName?: string): void {
       const win: any = window;
 
       if (!win.checkPrinterStatus) {
@@ -274,6 +276,9 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
 
             // Check printer status
             win.checkPrinterStatus();
+
+            // Get printer name from settings if not provided
+            const actualPrinterName = printerName || settingsService.getPrinterLogicalName();
 
             // Print test content - following working version pattern
             win.printText("BETZONE\n\n", 0, 0, false, false, false, 0, 1);
@@ -290,7 +295,7 @@ export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
 
             // Send to printer - following working version pattern
             const textToPrint = win.getPosData();
-            win.requestPrint(printerName, textToPrint, function (result: any) {
+            win.requestPrint(actualPrinterName, textToPrint, function (result: any) {
                   console.log('🖨️ Test print result:', result);
 
                   if (!result) {

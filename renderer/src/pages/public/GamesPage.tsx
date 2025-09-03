@@ -6,6 +6,7 @@ import { ManagedUser } from "../../store/agentSlice";
 import AgentService from "../../services/agentService";
 import GamesService, { Game } from "../../services/gamesService";
 import { testPrint, testBixolonPrinter } from "../../services/printService";
+import settingsService from "../../services/settingsService";
 
 interface GamesPageProps {
   onNavigate: (
@@ -679,7 +680,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => {
                 testBixolonPrinter();
-                testPrint();
+                testPrint(settingsService.getPrinterLogicalName());
               }}
               className="btn-test"
               title="Test printer functionality"

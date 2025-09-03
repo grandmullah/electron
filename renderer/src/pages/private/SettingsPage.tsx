@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "../../components/Header";
+import settingsService from "../../services/settingsService";
+import { testPrint } from "../../services/printService";
 
 interface SettingsPageProps {
   onNavigate: (
@@ -16,6 +18,7 @@ interface Settings {
   riskLevel: string;
   username: string;
   email: string;
+  printerLogicalName: string;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
@@ -28,6 +31,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
     riskLevel: "medium",
     username: "betzone_user",
     email: "user@betzone.com",
+    printerLogicalName: "Printer1",
   });
 
   const [saveStatus, setSaveStatus] = useState<{
@@ -39,8 +43,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   });
 
   useEffect(() => {
-    // Load saved settings from localStorage or API
-    console.log("Loading settings...");
+    // Load saved settings from settings service
+    const savedSettings = settingsService.getSettings();
+    setSettings(savedSettings);
+    console.log("Loading settings...", savedSettings);
   }, []);
 
   const handleSettingChange = (key: keyof Settings, value: any) => {
@@ -48,7 +54,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   };
 
   const saveSettings = () => {
-    // Save settings to localStorage or API
+    // Save settings using settings service
+    settingsService.updateSettings(settings);
     console.log("Settings saved!", settings);
 
     setSaveStatus({ text: "Saved! ✓", disabled: true });
@@ -145,6 +152,37 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <h3>Printer Settings</h3>
+          <div className="setting-item">
+            <label htmlFor="printer-logical-name">Printer Logical Name</label>
+            <input
+              type="text"
+              id="printer-logical-name"
+              value={settings.printerLogicalName}
+              onChange={(e) =>
+                handleSettingChange("printerLogicalName", e.target.value)
+              }
+              placeholder="e.g., Printer1, SRP-350plusIII"
+            />
+            <small className="setting-help">
+              Enter the logical name of your Bixolon thermal printer as
+              configured in the Bixolon Web Print SDK.
+            </small>
+          </div>
+          <div className="setting-item">
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                // Test printer functionality using the configured printer name
+                testPrint(settings.printerLogicalName);
+              }}
+            >
+              🧪 Test Printer
+            </button>
           </div>
         </div>
 
