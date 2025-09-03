@@ -84,7 +84,18 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
   };
 
   const printThermalTicket = (bet: AgentBet) => {
-    printTicket(bet);
+    // Calculate combined odds from selections if not available
+    const combinedOdds =
+      (bet as any).combinedOdds ||
+      (bet.selections?.length > 0
+        ? bet.selections.reduce((total, selection) => total * selection.odds, 1)
+        : undefined);
+    console.log("👨‍💼 AgentPage calling printTicket with:", {
+      bet,
+      combinedOdds,
+      selections: bet.selections,
+    });
+    printTicket(bet, combinedOdds);
   };
   const [newUser, setNewUser] = useState({
     phone_number: "",

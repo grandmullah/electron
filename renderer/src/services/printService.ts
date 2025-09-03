@@ -24,7 +24,7 @@ function formatMoney(value: unknown): string {
  * Print thermal ticket using simple Bixolon functions
  * Following the proven 1nl-client-master pattern
  */
-export async function printThermalTicket(bet: AnyBet, printerName?: string): Promise<void> {
+export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, printerName?: string,): Promise<void> {
       // Prevent multiple simultaneous print operations
       if (globalPrintInProgress) {
             console.warn('Print operation already in progress. Please wait.');
@@ -34,6 +34,8 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
       globalPrintInProgress = true;
 
       console.log('🖨️ Starting bet ticket print with data:', bet);
+      console.log('🖨️ Combined odds parameter received:', combinedOdds);
+      console.log('🖨️ Printer name parameter received:', printerName);
 
       try {
             // Check if Bixolon printer functions are available
@@ -69,7 +71,7 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             // Format cashier name as "Cashier {last 3 digits}"
             const phoneNumber = bet?.user?.phoneNumber || bet?.userInfo?.phoneNumber || '';
             const cashierName = phoneNumber ? `Cashier ${phoneNumber.slice(-3)}` : 'Unknown Cashier';
-            win.printText("Cashier: ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText("Teller: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
             // Print ticket ID (replace dashes with spaces to avoid printer issues)
@@ -108,8 +110,15 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             const betType = `Bet Type: ${String(bet?.betType ?? 'SINGLE').toUpperCase()}\n`;
             const stake = `Stake: SSP ${formatMoney(bet?.totalStake || bet?.stake || 0)}\n`;
 
-            // Print total odds (use actual bet data from API)
-            const totalOdds = bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
+            // Print total odds (use parameter or actual bet data from API)
+            const totalOdds = combinedOdds || bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
+            console.log('🖨️ Odds calculation:', {
+                  combinedOddsParam: combinedOdds,
+                  betCombinedOdds: bet?.combinedOdds,
+                  betTotalOdds: bet?.totalOdds,
+                  betOdds: bet?.odds,
+                  finalTotalOdds: totalOdds
+            });
             const oddsText = `Total Odds: ${totalOdds > 0 ? totalOdds.toFixed(2) : 'N/A'}\n`;
 
             win.printText(betType, 0, 0, false, false, false, 0, 0);
@@ -192,7 +201,12 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             // Print footer
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
             win.printText("\nThank you for betting with Betzone!\n", 0, 0, false, false, false, 0, 1);
-            win.printText("Keep this ticket safe\n\n", 0, 0, false, false, false, 0, 1);
+            win.printText("Keep this ticket safe\n", 0, 0, false, false, false, 0, 1);
+
+            // Print "Bet Responsibly" message with enhanced formatting
+            win.printText("\n", 0, 0, false, false, false, 0, 0);
+            win.printText("BET RESPONSIBLY", 0, 0, true, true, true, 0, 1); // Bold + Double width + Underline
+            win.printText("\n", 0, 0, false, false, false, 0, 0);
 
             // Print barcode (ticket ID) - use actual bet ID from API, remove dashes
             const rawBarcodeId = bet?.id ?? bet?.betId ?? '';

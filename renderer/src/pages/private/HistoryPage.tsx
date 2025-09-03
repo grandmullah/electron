@@ -463,7 +463,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   };
 
   const printThermalTicket = (bet: any) => {
-    printTicket(bet);
+    console.log("📋 HistoryPage calling printTicket with:", {
+      bet,
+      combinedOdds: bet.combinedOdds,
+    });
+    printTicket(bet, bet.combinedOdds);
   };
 
   const getStatusColor = (status: string) => {
