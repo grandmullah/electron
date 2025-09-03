@@ -157,7 +157,7 @@
   },
   "build": {
     "appId": "com.betzone.desktop",
-    "productName": "Betzone",
+    "productName": "betzone",
     "asar": false,
     "directories": {
       "output": "dist-installer"
