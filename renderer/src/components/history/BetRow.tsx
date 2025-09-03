@@ -104,7 +104,7 @@ export const BetRow: React.FC<BetRowProps> = ({
           >
             👁️
           </button>
-          {bet.status === "pending" && onCancel && (
+          {/* {bet.status === "pending" && onCancel && (
             <button
               className="action-btn cancel-btn"
               onClick={() => onCancel(bet)}
@@ -112,8 +112,8 @@ export const BetRow: React.FC<BetRowProps> = ({
             >
               🚫
             </button>
-          )}
-          {bet.status === "accepted" && onSettle && (
+          )} */}
+          {/* {bet.status === "accepted" && onSettle && (
             <button
               className="action-btn settle-btn"
               onClick={() => onSettle(bet)}
@@ -121,7 +121,7 @@ export const BetRow: React.FC<BetRowProps> = ({
             >
               🏆
             </button>
-          )}
+          )} */}
           {isEligibleForPayout && onPayout && (
             <button
               className="action-btn payout-btn"

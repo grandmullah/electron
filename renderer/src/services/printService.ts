@@ -70,8 +70,9 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             win.printText("Cashier: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
-            // Print ticket ID
-            const ticketId = bet?.id || 'N/A';
+            // Print ticket ID (replace dashes with spaces to avoid printer issues)
+            const rawTicketId = bet?.id || 'N/A';
+            const ticketId = rawTicketId.replace(/-/g, ' '); // Replace dashes with spaces
             win.printText("Ticket ID: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${ticketId}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
@@ -172,10 +173,10 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
                         }
 
                         // Add potential winnings for each selection if available
-                        if (selection?.potentialWinnings) {
-                              const potentialText = `   Potential: SSP ${formatMoney(selection.potentialWinnings)}\n`;
-                              win.printText(potentialText, 0, 0, false, false, false, 0, 0);
-                        }
+                        // if (selection?.potentialWinnings) {
+                        //       const potentialText = `   Potential: SSP ${formatMoney(selection.potentialWinnings)}\n`;
+                        //       win.printText(potentialText, 0, 0, false, false, false, 0, 0);
+                        // }
 
                         win.printText("\n", 0, 0, false, false, false, 0, 0);
                   });
@@ -186,8 +187,9 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             win.printText("\nThank you for betting with Betzone!\n", 0, 0, false, false, false, 0, 1);
             win.printText("Keep this ticket safe\n\n", 0, 0, false, false, false, 0, 1);
 
-            // Print barcode (ticket ID) - use actual bet ID from API
-            const barcodeData = `BET${String(bet?.id ?? bet?.betId ?? '').replace(/[^\w]/g, '')}`;
+            // Print barcode (ticket ID) - use actual bet ID from API, remove dashes
+            const rawBarcodeId = bet?.id ?? bet?.betId ?? '';
+            const barcodeData = `BET${String(rawBarcodeId).replace(/-/g, '')}`;
             win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
 
             // Add some spacing and cut paper
