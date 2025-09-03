@@ -33,6 +33,8 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
 
       globalPrintInProgress = true;
 
+      console.log('🖨️ Starting bet ticket print with data:', bet);
+
       try {
             // Check if Bixolon printer functions are available
             const win: any = window;
@@ -56,15 +58,8 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             const headerText = `BETZONE\nBET TICKET\n\n`;
             win.printText(headerText, 0, 0, false, false, false, 0, 1);
 
-            // Print logo (if available)
-            try {
-                  // Try to print the logo as a bitmap
-                  win.printBitmap('resources/betzone-logo.svg', 0, 0, 0, 0);
-                  win.printText("\n", 0, 0, false, false, false, 0, 0);
-            } catch (logoError) {
-                  // If logo printing fails, just continue with text
-                  console.log('Logo printing not available, continuing with text header');
-            }
+            // Skip logo printing for now to avoid potential issues
+            // Logo printing can be added later if needed
 
             // Print separator line
             const separatorLine = "----------------------------------------\n";
@@ -200,8 +195,10 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             win.cutPaper(1);
             // Send to printer using the simple approach
             console.log('📤 Sending print job to Bixolon printer...');
+            console.log('📤 Using printer name:', actualPrinterName);
 
             const textToPrint = win.getPosData();
+            console.log('📤 Print data prepared, sending to printer...');
 
             win.requestPrint(actualPrinterName, textToPrint, function (result: any) {
                   globalPrintInProgress = false;
