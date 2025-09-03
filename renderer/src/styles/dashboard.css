@@ -25,13 +25,13 @@
   gap: 1.5rem !important;
   margin-bottom: 2rem !important;
   padding: 2rem !important;
-  background: #ffff00 !important;
-  border: 5px solid #ff0000 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 10px !important;
-  color: #000000 !important;
-  font-size: 24px !important;
-  font-weight: bold !important;
-  text-align: center !important;
+  color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-weight: normal !important;
+  text-align: left !important;
 }
 
 /* FORCE STAT CARDS TO BE VISIBLE */
@@ -42,15 +42,15 @@
   min-width: 200px !important;
   max-width: 200px !important;
   flex-shrink: 0 !important;
-  background: #ff00ff !important;
-  border: 3px solid #000000 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 10px !important;
   padding: 1.5rem !important;
   margin: 0 !important;
-  color: white !important;
-  font-weight: bold !important;
+  color: var(--color-text-primary) !important;
+  font-weight: normal !important;
   text-align: center !important;
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.8) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
 }
 
 .dashboard-page .section-header-modern {
@@ -319,18 +319,18 @@
   justify-content: flex-start !important;
   width: 100% !important;
   max-width: 100% !important;
-  border: 5px solid #ff0000 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--border-radius-lg) !important;
   padding: 2rem !important;
-  background: #ff0000 !important;
-  color: white !important;
-  font-size: 20px !important;
-  font-weight: bold !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-weight: normal !important;
 }
 
 .main-stat-card {
-  background: #ff6600 !important;
-  border: 3px solid #ff0000 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--border-radius-xl) !important;
   padding: 2rem !important;
   min-width: 200px !important;
@@ -342,8 +342,8 @@
   overflow: hidden !important;
   backdrop-filter: blur(10px) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-  color: white !important;
-  font-weight: bold !important;
+  color: var(--color-text-primary) !important;
+  font-weight: normal !important;
 }
 
 .main-stat-card::before {
@@ -406,13 +406,13 @@
   justify-content: flex-start !important;
   width: 100% !important;
   max-width: 100% !important;
-  border: 5px solid #00ff00 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--border-radius-lg) !important;
   padding: 2rem !important;
-  background: #00ff00 !important;
-  color: black !important;
-  font-size: 20px !important;
-  font-weight: bold !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-weight: normal !important;
 }
 
 .secondary-stat-card {
@@ -550,13 +550,13 @@
   justify-content: flex-start !important;
   width: 100% !important;
   max-width: 100% !important;
-  border: 5px solid #0000ff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--border-radius-lg) !important;
   padding: 2rem !important;
-  background: #0000ff !important;
-  color: white !important;
-  font-size: 20px !important;
-  font-weight: bold !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  color: var(--color-text-primary) !important;
+  font-size: inherit !important;
+  font-weight: normal !important;
 }
 
 .shop-stat-card {

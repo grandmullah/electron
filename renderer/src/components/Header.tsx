@@ -307,15 +307,15 @@ export const Header: React.FC<HeaderProps> = ({
 
             const taxAmount = calculateTaxAmount(potentialWinnings);
             const netWinnings = calculateNetWinnings(potentialWinnings);
-            const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
-Net Winnings: $${netWinnings.toFixed(2)}`;
+            const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% (SSP ${taxAmount.toFixed(2)})
+Net Winnings: SSP ${netWinnings.toFixed(2)}`;
 
             alert(`🎯 SUCCESSFULLY PLACED MULTIBET FOR AGENT USER! 🎯
 
 User: ${selectedUser.phone_number}
-Stake: $${multibetStake.toFixed(2)}
+Stake: SSP ${multibetStake.toFixed(2)}
 Combined Odds: ${combinedOdds.toFixed(2)}
-Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}
+Potential Winnings: SSP ${potentialWinnings.toFixed(2)}${taxInfo}
 
 Selections:
 ${selections}`);
@@ -353,17 +353,17 @@ ${selections}`);
                 const potentialWinnings = bet.stake * bet.odds;
                 const taxAmount = calculateTaxAmount(potentialWinnings);
                 const netWinnings = calculateNetWinnings(potentialWinnings);
-                const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
-                  Net Winnings: $${netWinnings.toFixed(2)}`;
+                const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% (SSP ${taxAmount.toFixed(2)})
+                  Net Winnings: SSP ${netWinnings.toFixed(2)}`;
 
                 alert(`🎯 SUCCESSFULLY PLACED SINGLE BET FOR AGENT USER! 🎯
 
                   User: ${selectedUser.phone_number}
                   Game: ${bet.homeTeam} vs ${bet.awayTeam}
                   Market: ${bet.betType} | Outcome: ${bet.selection}
-                  Stake: $${bet.stake.toFixed(2)}
+                  Stake: SSP ${bet.stake.toFixed(2)}
                   Odds: ${bet.odds}
-                  Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}`);
+                  Potential Winnings: SSP ${potentialWinnings.toFixed(2)}${taxInfo}`);
               } catch (error: any) {
                 console.error(`Failed to place bet:`, error);
                 throw new Error(`Failed to place bet: ${error.message}`);
@@ -393,11 +393,11 @@ ${selections}`);
           // Single bets
           const betDetails = result
             .map((bet, index) => {
-                  const selection = betSlipItems[index];
-                  return `\n${index + 1}. ${selection?.homeTeam} vs ${selection?.awayTeam}
+              const selection = betSlipItems[index];
+              return `\n${index + 1}. ${selection?.homeTeam} vs ${selection?.awayTeam}
                   Market: ${selection?.betType} | Outcome: ${selection?.selection}
-                  Odds: ${selection?.odds || 0} | Stake: $${selection?.stake || 0}
-                  Potential Winnings: $${((selection?.stake || 0) * (selection?.odds || 1)).toFixed(2)}
+                  Odds: ${selection?.odds || 0} | Stake: SSP ${selection?.stake || 0}
+                  Potential Winnings: SSP ${((selection?.stake || 0) * (selection?.odds || 1)).toFixed(2)}
                   Bet ID: ${bet.betId} | Status: ${bet.status}`;
             })
             .join("\n");
@@ -413,13 +413,13 @@ ${selections}`);
 
           const taxAmount = calculateTaxAmount(totalPotentialWinnings);
           const netWinnings = calculateNetWinnings(totalPotentialWinnings);
-          const taxInfo = `\n\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
-Net Winnings: $${netWinnings.toFixed(2)}`;
+          const taxInfo = `\n\nTax: ${(TAX_RATE * 100).toFixed(0)}% (SSP ${taxAmount.toFixed(2)})
+Net Winnings: SSP ${netWinnings.toFixed(2)}`;
 
           alert(`🎉 SUCCESSFULLY PLACED ${result.length} SINGLE BETS! 🎉
 
-Total Stake: $${totalStake.toFixed(2)}
-Total Potential Winnings: $${totalPotentialWinnings.toFixed(2)}${taxInfo}
+Total Stake: SSP ${totalStake.toFixed(2)}
+Total Potential Winnings: SSP ${totalPotentialWinnings.toFixed(2)}${taxInfo}
 
 Bet Details:${betDetails}`);
 
@@ -440,16 +440,16 @@ Bet Details:${betDetails}`);
 
           const taxAmount = calculateTaxAmount(potentialWinnings);
           const netWinnings = calculateNetWinnings(potentialWinnings);
-          const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% ($${taxAmount.toFixed(2)})
-Net Winnings: $${netWinnings.toFixed(2)}`;
+          const taxInfo = `\nTax: ${(TAX_RATE * 100).toFixed(0)}% (SSP ${taxAmount.toFixed(2)})
+Net Winnings: SSP ${netWinnings.toFixed(2)}`;
 
           alert(`🎯 SUCCESSFULLY PLACED MULTIBET! 🎯
 
 Bet ID: ${result.betId}
 Status: ${result.status}
-Stake: $${multibetStake.toFixed(2)}
+Stake: SSP ${multibetStake.toFixed(2)}
 Combined Odds: ${combinedOdds.toFixed(2)}
-Potential Winnings: $${potentialWinnings.toFixed(2)}${taxInfo}
+Potential Winnings: SSP ${potentialWinnings.toFixed(2)}${taxInfo}
 
 Selections:
 ${selections}`);
@@ -890,7 +890,7 @@ ${selections}`);
                         </div>
                         <div className="multibet-stake-input">
                           <label htmlFor="multibetStake">
-                            Stake ({user?.currency || "$"})
+                            Stake ({user?.currency || "SSP"})
                             {user?.bettingLimits && (
                               <span className="stake-limits">
                                 Min: {user.currency}{" "}

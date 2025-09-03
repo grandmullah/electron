@@ -59,7 +59,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div >
+    <div>
       <Header onNavigate={onNavigate} currentPage="settings" />
 
       <div className="settings-content">
@@ -109,7 +109,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         <div className="settings-section">
           <h3>Betting Preferences</h3>
           <div className="setting-item">
-            <label htmlFor="default-stake">Default Stake ($)</label>
+            <label htmlFor="default-stake">Default Stake (SSP)</label>
             <input
               type="number"
               id="default-stake"

@@ -41,6 +41,9 @@ export const betslipSlice = createSlice({
                         // Remove if already in bet slip (toggle behavior)
                         state.items = state.items.filter((item) => item.id !== action.payload.id);
                   } else {
+                        // Remove any existing selections from the same game before adding the new one
+                        state.items = state.items.filter((item) => item.gameId !== action.payload.gameId);
+                        // Add the new selection
                         state.items.push(action.payload);
                   }
                   // Don't automatically show betslip - only show when user clicks the button

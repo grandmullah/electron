@@ -725,10 +725,11 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                                 Type: {bet.betType}
                               </span>
                               <span className="bet-stake">
-                                Stake: ${bet.totalStake}
+                                Stake: SSP ${bet.totalStake}
                               </span>
                               <span className="bet-potential">
-                                Potential: ${bet.potentialWinnings.toFixed(2)}
+                                Potential: SSP $
+                                {bet.potentialWinnings.toFixed(2)}
                               </span>
                               {bet.betType === "multibet" && (
                                 <span className="combined-odds">
@@ -946,7 +947,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                   <div className="activity-item">
                     <span className="activity-icon">💰</span>
                     <span className="activity-text">
-                      Commission earned $25.50
+                      Commission earned SSP 25.50
                     </span>
                     <span className="activity-time">4h ago</span>
                   </div>
@@ -1075,7 +1076,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
             </div>
             <div className="bet-ticket">
               <div className="ticket-header">
-                <div className="ticket-logo">🎯 BetZone</div>
+                <div className="ticket-logo">🎯 Betzone</div>
                 <div className="ticket-id">
                   <strong>Bet ID:</strong> {selectedBetTicket.id}
                 </div>
@@ -1139,7 +1140,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                     <div className="selection-stake">
-                      Stake: ${selection.stake} → Potential: $
+                      Stake: SSP ${selection.stake} → Potential: SSP
                       {selection.potentialWinnings}
                     </div>
                   </div>

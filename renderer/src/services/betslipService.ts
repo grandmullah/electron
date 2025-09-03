@@ -285,7 +285,7 @@ export class BetSlipService {
                                           american: this.decimalToAmerican(bet.odds),
                                           multiplier: bet.odds
                                     },
-                                    bookmaker: 'BetZone',
+                                    bookmaker: 'Betzone',
                                     gameTime: bet.gameTime || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
                                     sportKey: bet.sportKey || 'soccer_epl'
                               };
@@ -574,11 +574,11 @@ export class BetSlipService {
                   console.log('No user betting limits provided, using defaults');
                   // Fallback to default limits
                   if (totalStake < 1) {
-                        errors.push('Minimum stake is $1');
+                        errors.push('Minimum stake is SSP 1');
                   }
 
                   if (totalStake > 10000) {
-                        errors.push('Maximum stake is $10,000');
+                        errors.push('Maximum stake is SSP 10,000');
                   }
             }
 
@@ -659,11 +659,11 @@ export class BetSlipService {
                   console.log('No user betting limits for multibet, using defaults');
                   // Fallback to default limits
                   if (totalStake < 1) {
-                        errors.push('Multibet minimum stake is $1');
+                        errors.push('Multibet minimum stake is SSP 1');
                   }
 
                   if (totalStake > 10000) {
-                        errors.push('Multibet maximum stake is $10,000');
+                        errors.push('Multibet maximum stake is SSP 10,000');
                   }
             }
 

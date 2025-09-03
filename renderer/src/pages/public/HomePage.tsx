@@ -56,7 +56,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           setAvailableShops(shops);
           // Set default shop if available
           if (shops.length > 0) {
-            const defaultShop = shops.find(shop => shop.shop_code === "jebel") || shops[0]; // Prefer jebel shop
+            const defaultShop =
+              shops.find((shop) => shop.shop_code === "jebel") || shops[0]; // Prefer jebel shop
             if (defaultShop) {
               setSelectedShop(defaultShop.shop_code);
               setFormData((prev) => ({
@@ -199,7 +200,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           currency: formData.currency,
           shop_code: formData.shop_code,
           selectedShop: selectedShop,
-          availableShops: availableShops.map(s => s.shop_code),
+          availableShops: availableShops.map((s) => s.shop_code),
         });
         response = await AuthService.register(registerData);
         console.log("Registration successful:", response);
@@ -370,7 +371,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         ) : (
           // Guest user view
           <div className="hero-section">
-            <h1 className="hero-title">🚀 Welcome to BetZone</h1>
+            <h1 className="hero-title">🚀 Welcome to Betzone</h1>
             <p className="hero-subtitle">Your Ultimate Betting Experience</p>
             <div className="hero-buttons">
               <button
@@ -598,8 +599,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           }}
                         >
                           <p>
-                            💡 <strong>Betting Limits:</strong> Min: $10 USD |
-                            Max: $100,000 USD
+                            💡 <strong>Betting Limits:</strong> Min: SSP 10 |
+                            Max: SSP 100,000
                           </p>
                         </div>
                       </div> */}

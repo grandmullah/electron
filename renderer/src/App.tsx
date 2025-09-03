@@ -112,7 +112,7 @@ const AppContent: React.FC = () => {
       <div className="app">
         <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading BetZone...</p>
+          <p>Loading Betzone...</p>
         </div>
       </div>
     );

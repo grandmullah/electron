@@ -31,7 +31,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
         <div className="modal-body">
           <div className="bet-ticket-content">
             <div className="ticket-header">
-              <h4>BetZone</h4>
+              <h4>Betzone</h4>
               <p>Bet Ticket</p>
             </div>
             <div className="ticket-info">
