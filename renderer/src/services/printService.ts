@@ -66,7 +66,9 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
             // Print cashier information (use actual user data from API)
-            const cashierName = bet?.user?.phoneNumber || bet?.userInfo?.phoneNumber || 'Unknown Cashier';
+            // Format cashier name as "Cashier {last 3 digits}"
+            const phoneNumber = bet?.user?.phoneNumber || bet?.userInfo?.phoneNumber || '';
+            const cashierName = phoneNumber ? `Cashier ${phoneNumber.slice(-3)}` : 'Unknown Cashier';
             win.printText("Cashier: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
@@ -106,8 +108,13 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
             const betType = `Bet Type: ${String(bet?.betType ?? 'SINGLE').toUpperCase()}\n`;
             const stake = `Stake: SSP ${formatMoney(bet?.totalStake || bet?.stake || 0)}\n`;
 
+            // Print total odds (use actual bet data from API)
+            const totalOdds = bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
+            const oddsText = `Total Odds: ${totalOdds > 0 ? totalOdds.toFixed(2) : 'N/A'}\n`;
+
             win.printText(betType, 0, 0, false, false, false, 0, 0);
             win.printText(stake, 0, 0, false, false, false, 0, 0);
+            win.printText(oddsText, 0, 0, false, false, false, 0, 0);
 
             // Print potential winnings if available (use actual bet data from API)
             const potentialWinnings = bet?.potentialWinnings || bet?.actualWinnings || 0;
