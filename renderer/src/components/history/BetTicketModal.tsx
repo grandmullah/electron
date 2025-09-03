@@ -45,12 +45,12 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
               </div>
               <div className="info-row">
                 <span className="info-label">Stake:</span>
-                <span className="info-value">${bet.totalStake}</span>
+                <span className="info-value">SSP {bet.totalStake}</span>
               </div>
               <div className="info-row">
                 <span className="info-label">Potential Winnings:</span>
                 <span className="info-value">
-                  ${bet.potentialWinnings.toFixed(2)}
+                  SSP {bet.potentialWinnings.toFixed(2)}
                 </span>
               </div>
               {bet.taxPercentage && bet.taxPercentage > 0 && (
@@ -60,13 +60,13 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                       Tax ({bet.taxPercentage}%):
                     </span>
                     <span className="info-value tax-amount">
-                      -${bet.taxAmount?.toFixed(2) || "0.00"}
+                      -SSP {bet.taxAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Net Winnings:</span>
                     <span className="info-value net-winnings">
-                      ${bet.netWinnings?.toFixed(2) || "0.00"}
+                      SSP {bet.netWinnings?.toFixed(2) || "0.00"}
                     </span>
                   </div>
                 </>

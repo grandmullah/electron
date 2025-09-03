@@ -12,6 +12,9 @@ type AnyBet = any;
 // Global flag to prevent multiple simultaneous print operations
 let globalPrintInProgress = false;
 
+// Default printer name - can be configured
+const DEFAULT_PRINTER_NAME = 'Printer1';
+
 function formatMoney(value: unknown): string {
       const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
       if (!isFinite(num)) return '0.00';
@@ -22,7 +25,7 @@ function formatMoney(value: unknown): string {
  * Print thermal ticket using simple Bixolon functions
  * Following the proven 1nl-client-master pattern
  */
-export async function printThermalTicket(bet: AnyBet): Promise<void> {
+export async function printThermalTicket(bet: AnyBet, printerName: string = DEFAULT_PRINTER_NAME): Promise<void> {
       // Prevent multiple simultaneous print operations
       if (globalPrintInProgress) {
             console.warn('Print operation already in progress. Please wait.');
@@ -44,9 +47,6 @@ export async function printThermalTicket(bet: AnyBet): Promise<void> {
 
             // Check printer status first
             win.checkPrinterStatus();
-
-            // Get printer name from settings (default to 'Printer1')
-            const printerName = 'Printer1'; // You can make this configurable
 
             // Create ticket content using simple Bixolon functions
             console.log('🖨️ Starting thermal ticket print...');
@@ -261,7 +261,7 @@ export function testBixolonPrinter(): void {
 }
 
 // Export a test print function to verify printer is working
-export function testPrint(): void {
+export function testPrint(printerName: string = DEFAULT_PRINTER_NAME): void {
       const win: any = window;
 
       if (!win.checkPrinterStatus) {
@@ -271,53 +271,60 @@ export function testPrint(): void {
 
       try {
             console.log('🖨️ Testing printer...');
-
+            
             // Check printer status
             win.checkPrinterStatus();
-
-            // Print test content
-            win.printText("BETZONE TEST PRINT\n", 0, 0, false, false, false, 0, 1);
-            win.printText("----------------------------------------\n", 0, 0, false, false, false, 0, 0);
+            
+            // Print test content - following working version pattern
+            win.printText("BETZONE\n\n", 0, 0, false, false, false, 0, 1);
+            win.printText("--- TEST PRINT SUCCESSFUL ---\n\n\n", 0, 0, false, false, false, 0, 1);
             win.printText("Test Date: ", 0, 0, true, false, false, 0, 0);
             win.printText(`${new Date().toLocaleDateString()}\n`, 0, 0, false, false, false, 0, 0);
             win.printText("Test Time: ", 0, 0, true, false, false, 0, 0);
             win.printText(`${new Date().toLocaleTimeString()}\n`, 0, 0, false, false, false, 0, 0);
-            win.printText("----------------------------------------\n", 0, 0, false, false, false, 0, 0);
-            win.printText("This is a test print from betzone\n", 0, 0, false, false, false, 0, 0);
+            win.printText("\nThis is a test print from betzone\n", 0, 0, false, false, false, 0, 0);
             win.printText("If you can see this, the printer is working!\n\n", 0, 0, false, false, false, 0, 0);
-
+            
             // Cut paper
             win.cutPaper(1);
-
-            // Send to printer
+            
+            // Send to printer - following working version pattern
             const textToPrint = win.getPosData();
-            win.requestPrint('Printer1', textToPrint, function (result: any) {
+            win.requestPrint(printerName, textToPrint, function (result: any) {
                   console.log('🖨️ Test print result:', result);
-
+                  
                   if (!result) {
                         console.log('❌ No print result received');
                         return;
                   }
-
+                  
+                  // Handle different result types (following 1nl-client-master pattern)
                   if (result === "No printers") {
-                        console.error('❌ No printers found');
+                        window.alert("Error Printing\n\nThere were no printers found.");
                         return;
                   } else if (result === "Cannot connect to server") {
-                        console.error('❌ Cannot connect to print server');
+                        window.alert(
+                              "Error Printing\n\nCannot connect to the print server. Make sure the Bixolon Web Print SDK program is running and the receipt printer is added and listening on port 18080."
+                        );
                         return;
                   }
-
-                  // Parse result
+                  
+                  // Parse result (format: [randomId]:[error|success])
                   var res = String(result).split(":");
                   if (Array.isArray(res) && res[1] === "error") {
-                        console.error('❌ Print error:', result);
+                        window.alert(
+                              "Error Printing\n\nThere was a problem printing. Please check the printer is connected and on."
+                        );
                         return;
                   }
-
+                  
+                  // Success!
                   console.log('✅ Test print successful!');
+                  window.alert("Test print successful! Check your printer.");
             });
-
+            
       } catch (error) {
             console.error('❌ Test print error:', error);
+            window.alert(`Print Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
       }
 }

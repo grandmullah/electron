@@ -5,6 +5,7 @@ import { addToBetSlip, BetSlipItem } from "../../store/betslipSlice";
 import { ManagedUser } from "../../store/agentSlice";
 import AgentService from "../../services/agentService";
 import GamesService, { Game } from "../../services/gamesService";
+import { testPrint, testBixolonPrinter } from "../../services/printService";
 
 interface GamesPageProps {
   onNavigate: (
@@ -101,98 +102,228 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               }
             }
             
+            * {
+              box-sizing: border-box;
+            }
+            
             body {
-              font-family: Arial, sans-serif;
-              font-size: 12px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: 14px;
               line-height: 1.4;
               margin: 0;
               padding: 20px;
+              background: #f8f9fa;
+              color: #333;
             }
             
             .print-header {
               text-align: center;
               margin-bottom: 30px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 20px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px;
+              border-radius: 12px;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             }
             
             .print-header h1 {
               margin: 0 0 10px 0;
-              font-size: 24px;
-              color: #333;
+              font-size: 28px;
+              font-weight: 700;
             }
             
             .print-header .subtitle {
-              font-size: 14px;
-              color: #666;
+              font-size: 16px;
               margin: 0;
+              opacity: 0.9;
             }
             
             .print-header .timestamp {
               font-size: 12px;
-              color: #999;
               margin: 10px 0 0 0;
+              opacity: 0.8;
             }
             
-            .games-table {
-              width: 100%;
-              border-collapse: collapse;
+            .games-grid {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 20px;
               margin-top: 20px;
             }
             
-            .games-table th {
-              background-color: #f5f5f5;
-              border: 1px solid #ddd;
-              padding: 8px;
-              text-align: center;
-              font-weight: bold;
-              font-size: 11px;
+            .game-card {
+              background: white;
+              border-radius: 12px;
+              padding: 20px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              border: 1px solid #e9ecef;
+              transition: all 0.3s ease;
             }
             
-            .games-table td {
-              border: 1px solid #ddd;
-              padding: 6px;
-              text-align: center;
-              font-size: 10px;
-              vertical-align: middle;
+            .game-info {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              margin-bottom: 20px;
+              padding-bottom: 15px;
+              border-bottom: 2px solid #f1f3f4;
             }
             
-            .team-names {
-              font-weight: bold;
-              text-align: left;
-              padding: 8px;
+            .game-teams {
+              display: flex;
+              align-items: center;
+              gap: 15px;
+              margin-bottom: 10px;
+            }
+            
+            .team {
+              text-align: center;
+              flex: 1;
+            }
+            
+            .team-name {
+              font-size: 16px;
+              font-weight: 600;
+              color: #2c3e50;
+            }
+            
+            .vs-divider {
+              font-size: 14px;
+              font-weight: 700;
+              color: #6c757d;
+              background: #f8f9fa;
+              padding: 8px 12px;
+              border-radius: 50%;
+              border: 2px solid #dee2e6;
             }
             
             .game-time {
-              font-size: 9px;
-              color: #666;
-            }
-            
-            .odds-cell {
-              font-weight: bold;
-              color: #2c5aa0;
-            }
-            
-            .market-header {
-              background-color: #e8f4fd;
-              font-weight: bold;
-              font-size: 10px;
+              font-size: 12px;
+              color: #6c757d;
               text-align: center;
-              padding: 4px;
             }
             
-            .no-odds {
+            .betting-options {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+              gap: 15px;
+            }
+            
+            .betting-option-column {
+              background: #f8f9fa;
+              border-radius: 8px;
+              padding: 12px;
+              border: 1px solid #e9ecef;
+            }
+            
+            .betting-option-column.disabled {
+              opacity: 0.5;
+              background: #f1f3f4;
+            }
+            
+            .betting-option-label {
+              font-size: 12px;
+              font-weight: 600;
+              color: #495057;
+              text-align: center;
+              margin-bottom: 8px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            
+            .betting-option-sub-labels {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 4px;
+              margin-bottom: 8px;
+            }
+            
+            .betting-option-sub-label {
+              font-size: 10px;
+              color: #6c757d;
+              text-align: center;
+              font-weight: 500;
+            }
+            
+            .betting-option-values {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 4px;
+            }
+            
+            .betting-option-value {
+              background: white;
+              border: 1px solid #dee2e6;
+              border-radius: 6px;
+              padding: 8px 4px;
+              text-align: center;
+              font-size: 12px;
+              font-weight: 600;
+              color: #2c5aa0;
+              min-height: 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .betting-option-value.clickable {
+              background: #e3f2fd;
+              border-color: #2196f3;
+              cursor: pointer;
+            }
+            
+            .betting-option-value.selected {
+              background: #4caf50;
+              color: white;
+              border-color: #4caf50;
+            }
+            
+            .betting-option-value:not(.clickable) {
+              background: #f5f5f5;
               color: #999;
-              font-style: italic;
+              border-color: #ddd;
             }
             
-            .page-break {
-              page-break-before: always;
+            /* Over/Under and Both Teams to Score have only 2 options */
+            .betting-option-column:nth-child(3) .betting-option-sub-labels,
+            .betting-option-column:nth-child(4) .betting-option-sub-labels {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .betting-option-column:nth-child(3) .betting-option-values,
+            .betting-option-column:nth-child(4) .betting-option-values {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .print-footer {
+              margin-top: 40px;
+              text-align: center;
+              padding: 20px;
+              background: #f8f9fa;
+              border-radius: 8px;
+              border: 1px solid #e9ecef;
+            }
+            
+            .print-footer p {
+              margin: 5px 0;
+              font-size: 12px;
+              color: #6c757d;
             }
             
             @media print {
-              .no-print {
-                display: none;
+              body {
+                background: white;
+                padding: 10px;
+              }
+              
+              .game-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ddd;
+              }
+              
+              .games-grid {
+                gap: 15px;
               }
             }
           </style>
@@ -204,67 +335,113 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             <p class="timestamp">Last Updated: ${lastUpdated.toLocaleString()}</p>
           </div>
           
-          <table class="games-table">
-            <thead>
-              <tr>
-                <th style="width: 20%;">Match</th>
-                <th style="width: 8%;">Time</th>
-                <th style="width: 18%;">3 Way</th>
-                <th style="width: 18%;">Double Chance</th>
-                <th style="width: 18%;">Over/Under 2.5</th>
-                <th style="width: 18%;">Both Teams To Score</th>
-              </tr>
-              <tr>
-                <th></th>
-                <th></th>
-                <th class="market-header">Home | Draw | Away</th>
-                <th class="market-header">1 or X | X or 2 | 1 or 2</th>
-                <th class="market-header">Over | Under</th>
-                <th class="market-header">Yes | No</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${games
-                .map(
-                  (game, index) => `
-                <tr>
-                  <td class="team-names">
-                    <strong>${game.homeTeam}</strong><br/>
-                    <strong>vs</strong><br/>
-                    <strong>${game.awayTeam}</strong>
-                  </td>
-                  <td class="game-time">
-                    ${new Date(game.matchTime).toLocaleDateString()}<br/>
-                    ${new Date(game.matchTime).toLocaleTimeString()}
-                  </td>
-                  <td>
-                    <div class="odds-cell">${applyOddsReduction(game.homeOdds) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.drawOdds) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.awayOdds) || "-"}</div>
-                  </td>
-                  <td>
-                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.homeOrDraw) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.drawOrAway) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.homeOrAway) || "-"}</div>
-                  </td>
-                  <td>
-                    <div class="odds-cell">${applyOddsReduction(game.overUnder.over25) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.overUnder.under25) || "-"}</div>
-                  </td>
-                  <td>
-                    <div class="odds-cell">${applyOddsReduction(game.bothTeamsToScore.yes) || "-"}</div>
-                    <div class="odds-cell">${applyOddsReduction(game.bothTeamsToScore.no) || "-"}</div>
-                  </td>
-                </tr>
-              `
-                )
-                .join("")}
-            </tbody>
-          </table>
+          <div class="games-grid">
+            ${games
+              .map(
+                (game) => `
+              <div class="game-card">
+                <div class="game-info">
+                  <div class="game-teams">
+                    <div class="team">
+                      <div class="team-name">${game.homeTeam}</div>
+                    </div>
+                    <div class="vs-divider">VS</div>
+                    <div class="team">
+                      <div class="team-name">${game.awayTeam}</div>
+                    </div>
+                  </div>
+                  <div class="game-time">
+                    ${new Date(game.matchTime).toLocaleDateString()} - ${new Date(game.matchTime).toLocaleTimeString()}
+                  </div>
+                </div>
+                
+                <div class="betting-options">
+                  <!-- 3 Way Column -->
+                  <div class="betting-option-column ${!game.hasValidOdds ? "disabled" : ""}">
+                    <div class="betting-option-label">3 Way</div>
+                    <div class="betting-option-sub-labels">
+                      <div class="betting-option-sub-label">Home</div>
+                      <div class="betting-option-sub-label">Draw</div>
+                      <div class="betting-option-sub-label">Away</div>
+                    </div>
+                    <div class="betting-option-values">
+                      <div class="betting-option-value ${game.homeOdds ? "clickable" : ""}">
+                        ${applyOddsReduction(game.homeOdds) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.drawOdds ? "clickable" : ""}">
+                        ${applyOddsReduction(game.drawOdds) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.awayOdds ? "clickable" : ""}">
+                        ${applyOddsReduction(game.awayOdds) || "-"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Double Chance Column -->
+                  <div class="betting-option-column ${game.doubleChance.homeOrDraw || game.doubleChance.drawOrAway || game.doubleChance.homeOrAway ? "" : "disabled"}">
+                    <div class="betting-option-label">Double Chance</div>
+                    <div class="betting-option-sub-labels">
+                      <div class="betting-option-sub-label">1 or X</div>
+                      <div class="betting-option-sub-label">X or 2</div>
+                      <div class="betting-option-sub-label">1 or 2</div>
+                    </div>
+                    <div class="betting-option-values">
+                      <div class="betting-option-value ${game.doubleChance.homeOrDraw ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance.homeOrDraw) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.doubleChance.drawOrAway ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance.drawOrAway) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.doubleChance.homeOrAway ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance.homeOrAway) || "-"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Over/Under Column -->
+                  <div class="betting-option-column ${game.overUnder.over25 || game.overUnder.under25 ? "" : "disabled"}">
+                    <div class="betting-option-label">Over/Under 2.5</div>
+                    <div class="betting-option-sub-labels">
+                      <div class="betting-option-sub-label">Over</div>
+                      <div class="betting-option-sub-label">Under</div>
+                    </div>
+                    <div class="betting-option-values">
+                      <div class="betting-option-value ${game.overUnder.over25 ? "clickable" : ""}">
+                        ${applyOddsReduction(game.overUnder.over25) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.overUnder.under25 ? "clickable" : ""}">
+                        ${applyOddsReduction(game.overUnder.under25) || "-"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Both Teams to Score Column -->
+                  <div class="betting-option-column ${game.bothTeamsToScore.yes || game.bothTeamsToScore.no ? "" : "disabled"}">
+                    <div class="betting-option-label">Both Teams To Score</div>
+                    <div class="betting-option-sub-labels">
+                      <div class="betting-option-sub-label">Yes</div>
+                      <div class="betting-option-sub-label">No</div>
+                    </div>
+                    <div class="betting-option-values">
+                      <div class="betting-option-value ${game.bothTeamsToScore.yes ? "clickable" : ""}">
+                        ${applyOddsReduction(game.bothTeamsToScore.yes) || "-"}
+                      </div>
+                      <div class="betting-option-value ${game.bothTeamsToScore.no ? "clickable" : ""}">
+                        ${applyOddsReduction(game.bothTeamsToScore.no) || "-"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
           
-          <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+          <div class="print-footer">
             <p>Generated by Betzone on ${new Date().toLocaleString()}</p>
             <p>Total Games: ${games.length}</p>
+            <p>All odds include 4% reduction</p>
           </div>
         </body>
       </html>
@@ -497,6 +674,28 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               title="Print games and odds"
             >
               🖨️ Print Games
+            </button>
+
+            <button
+              onClick={() => {
+                testBixolonPrinter();
+                testPrint();
+              }}
+              className="btn-test"
+              title="Test printer functionality"
+              style={{
+                background: "var(--color-warning)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                marginLeft: "8px",
+              }}
+            >
+              🧪 Test Printer
             </button>
           </div>
         </div>
@@ -1097,7 +1296,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="bet-amount">
-            <label htmlFor="betAmount">Bet Amount ($)</label>
+            <label htmlFor="betAmount">Bet Amount (SSP)</label>
             <input
               type="number"
               id="betAmount"

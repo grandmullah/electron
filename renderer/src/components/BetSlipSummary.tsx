@@ -63,7 +63,7 @@ interface BetSlipSummaryProps {
 
 export default function BetSlipSummary({
   slip,
-  currency = "USD",
+  currency = "SSP",
   isMultibet = false,
   stake,
   isLoading = false,
