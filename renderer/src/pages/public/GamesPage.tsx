@@ -30,6 +30,15 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
   const [leagueKey, setLeagueKey] = useState<string>("soccer_epl");
 
+  // Function to apply 4% reduction to odds
+  const applyOddsReduction = (
+    odds: number | null | undefined
+  ): number | null | undefined => {
+    if (!odds || odds <= 0) return odds;
+    // Apply 4% reduction: multiply by 0.96
+    return Math.round(odds * 0.96 * 100) / 100; // Round to 2 decimal places
+  };
+
   // Agent-specific state
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
@@ -229,22 +238,22 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     ${new Date(game.matchTime).toLocaleTimeString()}
                   </td>
                   <td>
-                    <div class="odds-cell">${game.homeOdds || "-"}</div>
-                    <div class="odds-cell">${game.drawOdds || "-"}</div>
-                    <div class="odds-cell">${game.awayOdds || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.homeOdds) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.drawOdds) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.awayOdds) || "-"}</div>
                   </td>
                   <td>
-                    <div class="odds-cell">${game.doubleChance.homeOrDraw || "-"}</div>
-                    <div class="odds-cell">${game.doubleChance.drawOrAway || "-"}</div>
-                    <div class="odds-cell">${game.doubleChance.homeOrAway || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.homeOrDraw) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.drawOrAway) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.doubleChance.homeOrAway) || "-"}</div>
                   </td>
                   <td>
-                    <div class="odds-cell">${game.overUnder.over25 || "-"}</div>
-                    <div class="odds-cell">${game.overUnder.under25 || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.overUnder.over25) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.overUnder.under25) || "-"}</div>
                   </td>
                   <td>
-                    <div class="odds-cell">${game.bothTeamsToScore.yes || "-"}</div>
-                    <div class="odds-cell">${game.bothTeamsToScore.no || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.bothTeamsToScore.yes) || "-"}</div>
+                    <div class="odds-cell">${applyOddsReduction(game.bothTeamsToScore.no) || "-"}</div>
                   </td>
                 </tr>
               `
@@ -304,10 +313,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
     const odds =
       selectedBet === "home"
-        ? selectedGame.homeOdds
+        ? applyOddsReduction(selectedGame.homeOdds)
         : selectedBet === "draw"
-          ? selectedGame.drawOdds
-          : selectedGame.awayOdds;
+          ? applyOddsReduction(selectedGame.drawOdds)
+          : applyOddsReduction(selectedGame.awayOdds);
 
     if (!odds) {
       alert("Odds not available for this bet");
@@ -381,6 +390,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     selection: string,
     odds: number
   ) => {
+    // Apply 4% reduction to odds before adding to bet slip
+    const reducedOdds = applyOddsReduction(odds) || odds;
     // If agent mode and no user selected, show user selector
     if (isAgentMode && !selectedUser) {
       setShowUserSelector(true);
@@ -395,9 +406,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       awayTeam: game.awayTeam,
       betType,
       selection,
-      odds,
+      odds: reducedOdds,
       stake: user?.bettingLimits?.minStake || 10, // Use user's minimum stake
-      potentialWinnings: (user?.bettingLimits?.minStake || 10) * odds,
+      potentialWinnings: (user?.bettingLimits?.minStake || 10) * reducedOdds,
       bookmaker: "Betzone",
       gameTime: game.matchTime,
       sportKey:
@@ -432,6 +443,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    // Apply 4% reduction to odds before placing bet
+    const reducedOdds = applyOddsReduction(odds) || odds;
+
     try {
       const bet = await AgentService.placeBetForUser({
         userId: selectedUser.id,
@@ -444,7 +458,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             awayTeam: game.awayTeam,
             betType: betType,
             selection: selection,
-            odds: odds,
+            odds: reducedOdds,
             bookmaker: "betzone",
             gameTime: game.matchTime,
             sportKey:
@@ -715,7 +729,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         handleAddToBetSlip(game, "3 Way", "Home", game.homeOdds)
                       }
                     >
-                      {game.homeOdds || "-"}
+                      {applyOddsReduction(game.homeOdds) || "-"}
                     </div>
                     <div
                       id={`${game.id}-3 Way-Draw`}
@@ -731,7 +745,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         handleAddToBetSlip(game, "3 Way", "Draw", game.drawOdds)
                       }
                     >
-                      {game.drawOdds || "-"}
+                      {applyOddsReduction(game.drawOdds) || "-"}
                     </div>
                     <div
                       id={`${game.id}-3 Way-Away`}
@@ -747,7 +761,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         handleAddToBetSlip(game, "3 Way", "Away", game.awayOdds)
                       }
                     >
-                      {game.awayOdds || "-"}
+                      {applyOddsReduction(game.awayOdds) || "-"}
                     </div>
                   </div>
                 </div>
@@ -788,7 +802,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.doubleChance.homeOrDraw ?? "-"}
+                      {applyOddsReduction(game.doubleChance.homeOrDraw) ?? "-"}
                     </div>
                     <div
                       id={`${game.id}-Double Chance-X or 2`}
@@ -809,7 +823,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.doubleChance.drawOrAway ?? "-"}
+                      {applyOddsReduction(game.doubleChance.drawOrAway) ?? "-"}
                     </div>
                     <div
                       id={`${game.id}-Double Chance-1 or 2`}
@@ -830,7 +844,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.doubleChance.homeOrAway ?? "-"}
+                      {applyOddsReduction(game.doubleChance.homeOrAway) ?? "-"}
                     </div>
                   </div>
                 </div>
@@ -868,7 +882,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.overUnder.over25 ?? "-"}
+                      {applyOddsReduction(game.overUnder.over25) ?? "-"}
                     </div>
                     <div
                       id={`${game.id}-Over/Under 2.5-Under`}
@@ -889,7 +903,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.overUnder.under25 ?? "-"}
+                      {applyOddsReduction(game.overUnder.under25) ?? "-"}
                     </div>
                   </div>
                 </div>
@@ -933,7 +947,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.bothTeamsToScore.yes ?? "-"}
+                      {applyOddsReduction(game.bothTeamsToScore.yes) ?? "-"}
                     </div>
                     <div
                       id={`${game.id}-Both Teams To Score-No`}
@@ -958,7 +972,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         )
                       }
                     >
-                      {game.bothTeamsToScore.no ?? "-"}
+                      {applyOddsReduction(game.bothTeamsToScore.no) ?? "-"}
                     </div>
                   </div>
                 </div>
@@ -1058,7 +1072,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               onClick={() => setSelectedBet("home")}
             >
               <span>{selectedGame.homeTeam}</span>
-              <span className="odds">{selectedGame.homeOdds}</span>
+              <span className="odds">{applyOddsReduction(selectedGame.homeOdds)}</span>
             </button>
 
             <button
@@ -1068,7 +1082,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               onClick={() => setSelectedBet("draw")}
             >
               <span>Draw</span>
-              <span className="odds">{selectedGame.drawOdds}</span>
+              <span className="odds">{applyOddsReduction(selectedGame.drawOdds)}</span>
             </button>
 
             <button
@@ -1078,7 +1092,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               onClick={() => setSelectedBet("away")}
             >
               <span>{selectedGame.awayTeam}</span>
-              <span className="odds">{selectedGame.awayOdds}</span>
+              <span className="odds">{applyOddsReduction(selectedGame.awayOdds)}</span>
             </button>
           </div>
 
@@ -1101,10 +1115,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 {(() => {
                   const odds =
                     selectedBet === "home"
-                      ? selectedGame.homeOdds
+                      ? applyOddsReduction(selectedGame.homeOdds)
                       : selectedBet === "draw"
-                      ? selectedGame.drawOdds
-                      : selectedGame.awayOdds;
+                      ? applyOddsReduction(selectedGame.drawOdds)
+                      : applyOddsReduction(selectedGame.awayOdds);
                   return odds ? (betAmount * odds).toFixed(2) : "N/A";
                 })()}
               </p>
