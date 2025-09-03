@@ -160,17 +160,17 @@ export async function printThermalTicket(bet: AnyBet, printerName?: string): Pro
                         const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
                         win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
 
-                        const betTypeText = `${betType}: ${sel}\n`;
+                        const betTypeText = `   ${betType}: ${sel}\n`;
                         win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
 
                         const oddsText = `   Odds: ${odds}\n`;
                         win.printText(oddsText, 0, 0, false, false, false, 0, 0);
 
                         // Add stake for each selection if available
-                        if (selection?.stake) {
-                              const stakeText = `   Stake: SSP ${formatMoney(selection.stake)}\n`;
-                              win.printText(stakeText, 0, 0, false, false, false, 0, 0);
-                        }
+                        // if (selection?.stake) {
+                        //       const stakeText = `   Stake: SSP ${formatMoney(selection.stake)}\n`;
+                        //       win.printText(stakeText, 0, 0, false, false, false, 0, 0);
+                        // }
 
                         // Add potential winnings for each selection if available
                         // if (selection?.potentialWinnings) {
