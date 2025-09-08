@@ -11,6 +11,9 @@ import { HistoryPage } from "./pages/private/HistoryPage";
 import AuthService from "./services/authService";
 import { loginSuccess, loginStart, loginFailure } from "./store/authSlice";
 import { convertAuthUserToUser } from "./store/authSlice";
+import { SWRProvider } from "./providers/SWRProvider";
+import { MUIProviderWrapper } from "./providers/MUIProvider";
+import "./styles/index.css";
 
 type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history";
 
@@ -124,7 +127,11 @@ const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <AppContent />
+      <MUIProviderWrapper>
+        <SWRProvider>
+          <AppContent />
+        </SWRProvider>
+      </MUIProviderWrapper>
     </Provider>
   );
 };

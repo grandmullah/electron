@@ -1,0 +1,67 @@
+/* MUI Table Component Styles */
+.bet-table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+}
+
+.bet-table-header {
+  background: #f8fafc;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+
+.bet-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.bet-table-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.status-badge {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bet-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0.5rem 0;
+}
+
+.action-button {
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  transform: scale(1.1);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .bet-table-container {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+  
+  .bet-table-header {
+    background: #2d2d2d;
+  }
+  
+  .bet-table-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .bet-card {
+    background: #2d2d2d;
+    color: #ffffff;
+  }
+}

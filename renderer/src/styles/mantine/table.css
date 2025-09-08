@@ -1,0 +1,242 @@
+/* Mantine Table Custom Styles */
+.bet-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mantine-color-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.bet-table-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 2px solid var(--mantine-color-gray-2);
+}
+
+.bet-table-header th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mantine-color-gray-7);
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+}
+
+.bet-table-body {
+  background: var(--mantine-color-white);
+}
+
+.bet-table-row {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.bet-table-row:hover {
+  background: var(--mantine-color-gray-0);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bet-table-row td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.bet-table-row:last-child td {
+  border-bottom: none;
+}
+
+/* Column Specific Styles */
+.bet-id-column {
+  width: 140px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: var(--mantine-color-gray-6);
+}
+
+.game-column {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.selection-column {
+  min-width: 180px;
+  max-width: 250px;
+}
+
+.stake-column {
+  width: 120px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--mantine-color-gray-9);
+}
+
+.potential-column {
+  width: 120px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--mantine-color-success-6);
+}
+
+.status-column {
+  width: 100px;
+  text-align: center;
+}
+
+.date-column {
+  width: 100px;
+  font-size: 0.875rem;
+  color: var(--mantine-color-gray-6);
+}
+
+.actions-column {
+  width: 120px;
+  text-align: center;
+}
+
+/* Status Badge Styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.status-badge.won {
+  background: var(--mantine-color-success-1);
+  color: var(--mantine-color-success-9);
+  border-color: var(--mantine-color-success-3);
+}
+
+.status-badge.lost {
+  background: var(--mantine-color-error-1);
+  color: var(--mantine-color-error-9);
+  border-color: var(--mantine-color-error-3);
+}
+
+.status-badge.pending {
+  background: var(--mantine-color-warning-1);
+  color: var(--mantine-color-warning-9);
+  border-color: var(--mantine-color-warning-3);
+}
+
+.status-badge.cancelled {
+  background: var(--mantine-color-gray-1);
+  color: var(--mantine-color-gray-9);
+  border-color: var(--mantine-color-gray-3);
+}
+
+/* Action Button Styles */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-white);
+  color: var(--mantine-color-gray-7);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background: var(--mantine-color-gray-1);
+  border-color: var(--mantine-color-gray-4);
+  color: var(--mantine-color-gray-9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button.primary {
+  background: var(--mantine-color-blue-6);
+  color: white;
+  border-color: var(--mantine-color-blue-6);
+}
+
+.action-button.primary:hover {
+  background: var(--mantine-color-blue-7);
+  border-color: var(--mantine-color-blue-7);
+}
+
+.action-button.success {
+  background: var(--mantine-color-success-6);
+  color: white;
+  border-color: var(--mantine-color-success-6);
+}
+
+.action-button.success:hover {
+  background: var(--mantine-color-success-7);
+  border-color: var(--mantine-color-success-7);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .bet-table-header th,
+  .bet-table-row td {
+    padding: 0.75rem 1rem;
+  }
+  
+  .bet-id-column {
+    width: 120px;
+  }
+  
+  .game-column {
+    min-width: 150px;
+    max-width: 200px;
+  }
+  
+  .selection-column {
+    min-width: 120px;
+    max-width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bet-table {
+    font-size: 0.875rem;
+  }
+  
+  .bet-table-header th,
+  .bet-table-row td {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .bet-id-column {
+    width: 100px;
+  }
+  
+  .game-column {
+    min-width: 120px;
+    max-width: 150px;
+  }
+  
+  .selection-column {
+    min-width: 100px;
+    max-width: 120px;
+  }
+  
+  .stake-column,
+  .potential-column {
+    width: 100px;
+  }
+  
+  .status-column,
+  .date-column {
+    width: 80px;
+  }
+  
+  .actions-column {
+    width: 100px;
+  }
+}

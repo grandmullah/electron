@@ -41,9 +41,12 @@ class GamesService {
                   // Map known league keys to backend endpoints
                   const leaguePathMap: Record<string, string> = {
                         soccer_epl: '/epl/odds',
+                        soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
                   };
 
                   const path = leaguePathMap[leagueKey] || `/epl/odds`; // default to EPL if unknown for now
+
+                  // Make the API call
                   const response = await axios.get(`${API_BASE_URL}${path}`);
 
                   const games: Game[] = (response.data?.data || [])
@@ -214,7 +217,18 @@ class GamesService {
 
                   return games;
             } catch (error: any) {
-                  // Basic error normalization
+                  // If UEFA endpoint is not available, provide helpful message
+                  if (leagueKey === 'soccer_uefa_world_cup_qualifiers') {
+                        console.log('UEFA World Cup Qualifiers endpoint not available yet');
+                        console.log('Expected endpoint: /api/uefa-world-cup-qualifiers/odds');
+                        console.log('Please ensure the backend server implements this endpoint');
+
+                        // Return empty array instead of throwing error
+                        // This allows the UI to show "No games available" instead of crashing
+                        return [];
+                  }
+
+                  // Basic error normalization for other leagues
                   const message = error?.response?.data?.message || error.message || 'Failed to load games';
                   throw new Error(message);
             }
@@ -222,6 +236,10 @@ class GamesService {
 
       static async fetchEplOdds(): Promise<Game[]> {
             return this.fetchOdds('soccer_epl');
+      }
+
+      static async fetchUefaWorldCupQualifiersOdds(): Promise<Game[]> {
+            return this.fetchOdds('soccer_uefa_world_cup_qualifiers');
       }
 }
 

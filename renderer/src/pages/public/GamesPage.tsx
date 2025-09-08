@@ -7,6 +7,7 @@ import AgentService from "../../services/agentService";
 import GamesService, { Game } from "../../services/gamesService";
 import { testPrint, testBixolonPrinter } from "../../services/printService";
 import settingsService from "../../services/settingsService";
+import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 
 interface GamesPageProps {
   onNavigate: (
@@ -20,9 +21,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const dispatch = useAppDispatch();
   const { items: betSlipItems } = useAppSelector((state) => state.betslip);
   const { user } = useAppSelector((state) => state.auth);
-  const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [betAmount, setBetAmount] = useState<number>(10);
   const [selectedBet, setSelectedBet] = useState<
@@ -31,6 +29,11 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
   const [leagueKey, setLeagueKey] = useState<string>("soccer_epl");
+
+  // Use SWR for odds fetching
+  const { games, isLoading, error, mutate, isError, isEmpty } =
+    useOdds(leagueKey);
+  const { refresh } = useRefreshOdds();
 
   // Function to apply 4% reduction to odds
   const applyOddsReduction = (
@@ -49,9 +52,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
 
+  // Check if user is an agent and load managed users
   useEffect(() => {
-    fetchGames();
-    // Check if user is an agent and load managed users
     if (user && user.role === "agent") {
       setIsAgentMode(true);
       loadManagedUsers();
@@ -60,26 +62,20 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       setManagedUsers([]);
       setSelectedUser(null);
     }
-  }, [user, leagueKey]);
+  }, [user]);
 
-  // Auto-refresh odds every 10 minutes (600,000 ms)
+  // Show refresh notification when data is revalidated
   useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      console.log("🔄 Auto-refreshing odds...");
-      fetchGames();
-      // Show notification for auto-refresh
+    if (!isLoading && games.length > 0) {
       setShowRefreshNotification(true);
-      setTimeout(() => setShowRefreshNotification(false), 3000); // Hide after 3 seconds
-    }, 600000); // 10 minutes
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(refreshInterval);
-  }, [leagueKey]);
+      setTimeout(() => setShowRefreshNotification(false), 3000);
+    }
+  }, [games, isLoading]);
 
   // Manual refresh function for users
   const handleManualRefresh = () => {
     console.log("🔄 Manual odds refresh requested");
-    fetchGames();
+    mutate(); // Trigger SWR revalidation
   };
 
   // Print games function
@@ -356,7 +352,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         <body>
           <div class="print-header">
             <h1>⚽ Betzone Games & Odds</h1>
-            <p class="subtitle">Premier League - ${new Date().toLocaleDateString()}</p>
+            <p class="subtitle">${leagueKey === "soccer_uefa_world_cup_qualifiers" ? "UEFA World Cup Qualifiers" : "Premier League"} - ${new Date().toLocaleDateString()}</p>
             <p class="timestamp">Last Updated: ${lastUpdated.toLocaleString()}</p>
           </div>
           
@@ -393,7 +389,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   </div>
                   
                   <!-- Double Chance Column -->
-                  <div class="betting-option-column ${game.doubleChance.homeOrDraw || game.doubleChance.drawOrAway || game.doubleChance.homeOrAway ? "" : "disabled"}">
+                  <div class="betting-option-column ${game.doubleChance?.homeOrDraw || game.doubleChance?.drawOrAway || game.doubleChance?.homeOrAway ? "" : "disabled"}">
                     <div class="betting-option-label">Double Chance</div>
                     <div class="betting-option-sub-labels">
                       <div class="betting-option-sub-label">1 or X</div>
@@ -401,48 +397,48 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       <div class="betting-option-sub-label">1 or 2</div>
                     </div>
                     <div class="betting-option-values">
-                      <div class="betting-option-value ${game.doubleChance.homeOrDraw ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance.homeOrDraw) || "-"}
+                      <div class="betting-option-value ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance?.homeOrDraw) || "-"}
                       </div>
-                      <div class="betting-option-value ${game.doubleChance.drawOrAway ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance.drawOrAway) || "-"}
+                      <div class="betting-option-value ${game.doubleChance?.drawOrAway ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance?.drawOrAway) || "-"}
                       </div>
-                      <div class="betting-option-value ${game.doubleChance.homeOrAway ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance.homeOrAway) || "-"}
+                      <div class="betting-option-value ${game.doubleChance?.homeOrAway ? "clickable" : ""}">
+                        ${applyOddsReduction(game.doubleChance?.homeOrAway) || "-"}
                       </div>
                     </div>
                   </div>
                   
                   <!-- Over/Under Column -->
-                  <div class="betting-option-column ${game.overUnder.over25 || game.overUnder.under25 ? "" : "disabled"}">
+                  <div class="betting-option-column ${game.overUnder?.over25 || game.overUnder?.under25 ? "" : "disabled"}">
                     <div class="betting-option-label">Over/Under 2.5</div>
                     <div class="betting-option-sub-labels">
                       <div class="betting-option-sub-label">Over</div>
                       <div class="betting-option-sub-label">Under</div>
                     </div>
                     <div class="betting-option-values">
-                      <div class="betting-option-value ${game.overUnder.over25 ? "clickable" : ""}">
-                        ${applyOddsReduction(game.overUnder.over25) || "-"}
+                      <div class="betting-option-value ${game.overUnder?.over25 ? "clickable" : ""}">
+                        ${applyOddsReduction(game.overUnder?.over25) || "-"}
                       </div>
-                      <div class="betting-option-value ${game.overUnder.under25 ? "clickable" : ""}">
-                        ${applyOddsReduction(game.overUnder.under25) || "-"}
+                      <div class="betting-option-value ${game.overUnder?.under25 ? "clickable" : ""}">
+                        ${applyOddsReduction(game.overUnder?.under25) || "-"}
                       </div>
                     </div>
                   </div>
                   
                   <!-- Both Teams to Score Column -->
-                  <div class="betting-option-column ${game.bothTeamsToScore.yes || game.bothTeamsToScore.no ? "" : "disabled"}">
+                  <div class="betting-option-column ${game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no ? "" : "disabled"}">
                     <div class="betting-option-label">Both Teams To Score</div>
                     <div class="betting-option-sub-labels">
                       <div class="betting-option-sub-label">Yes</div>
                       <div class="betting-option-sub-label">No</div>
                     </div>
                     <div class="betting-option-values">
-                      <div class="betting-option-value ${game.bothTeamsToScore.yes ? "clickable" : ""}">
-                        ${applyOddsReduction(game.bothTeamsToScore.yes) || "-"}
+                      <div class="betting-option-value ${game.bothTeamsToScore?.yes ? "clickable" : ""}">
+                        ${applyOddsReduction(game.bothTeamsToScore?.yes) || "-"}
                       </div>
-                      <div class="betting-option-value ${game.bothTeamsToScore.no ? "clickable" : ""}">
-                        ${applyOddsReduction(game.bothTeamsToScore.no) || "-"}
+                      <div class="betting-option-value ${game.bothTeamsToScore?.no ? "clickable" : ""}">
+                        ${applyOddsReduction(game.bothTeamsToScore?.no) || "-"}
                       </div>
                     </div>
                   </div>
@@ -480,21 +476,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const fetchGames = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const fetchedGames = await GamesService.fetchOdds(leagueKey);
-      setGames(fetchedGames);
-      setLastUpdated(new Date()); // Update timestamp when odds are refreshed
-    } catch (err) {
-      console.error("Error fetching games:", err);
-      setError("Failed to load games. Please try again later.");
-      setGames([]);
-    } finally {
-      setLoading(false);
+  // Update last updated timestamp when games change
+  useEffect(() => {
+    if (games.length > 0) {
+      setLastUpdated(new Date());
     }
-  };
+  }, [games]);
 
   const handlePlaceBet = () => {
     if (!selectedGame || !selectedBet) {
@@ -670,7 +657,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="games-page">
         <div className="games-header">
@@ -762,9 +749,42 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       ? "none"
                       : "1px solid var(--color-border)",
                   transition: "all 0.2s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
+                title="English Premier League"
               >
-                EPL
+                ⚽ EPL
+              </button>
+              <button
+                onClick={() => setLeagueKey("soccer_uefa_world_cup_qualifiers")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  background:
+                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "var(--color-primary)"
+                      : "var(--color-surface)",
+                  color:
+                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "white"
+                      : "var(--color-text)",
+                  border:
+                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "none"
+                      : "1px solid var(--color-border)",
+                  transition: "all 0.2s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+                title="UEFA World Cup Qualifiers"
+              >
+                🏆 UEFA WCQ
               </button>
               {/* Future leagues can be added here */}
             </div>
@@ -858,10 +878,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         </button>
       </div> */}
 
-          {error && (
+          {isError && (
             <div className="error-message">
-              <p>{error}</p>
-              <button className="btn btn-primary" onClick={fetchGames}>
+              <p>{error?.message || "Failed to load games"}</p>
+              <button className="btn btn-primary" onClick={() => mutate()}>
                 Retry
               </button>
             </div>
@@ -888,382 +908,488 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           )}
 
           <div className="games-grid">
-            {games.map((game) => (
+            {isEmpty && leagueKey === "soccer_uefa_world_cup_qualifiers" ? (
               <div
-                key={game.id}
-                className={`game-card ${
-                  selectedGame?.id === game.id ? "selected" : ""
-                }`}
-                onClick={() => setSelectedGame(game)}
+                className="no-games-message"
+                style={{
+                  gridColumn: "1 / -1",
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  background: "var(--color-surface)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--color-border)",
+                  margin: "20px 0",
+                }}
               >
-                <div className="game-info">
-                  <div className="game-teams">
-                    <div className="team home-team">
-                      <span className="team-name">{game.homeTeam}</span>
-                    </div>
-
-                    <div className="vs-divider">VS</div>
-
-                    <div className="team away-team">
-                      <span className="team-name">{game.awayTeam}</span>
-                    </div>
-                  </div>
-
-                  <div className="game-time">
-                    {new Date(game.matchTime).toLocaleDateString()} -{" "}
-                    {new Date(game.matchTime).toLocaleTimeString()}
-                  </div>
-                </div>
-
-                {/* Main Odds Column */}
-                <div
-                  className={`betting-option-column ${
-                    !game.hasValidOdds ? "disabled" : ""
-                  }`}
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
+                <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text)" }}>
+                  UEFA World Cup Qualifiers
+                </h3>
+                <p
+                  style={{
+                    margin: "0 0 16px 0",
+                    color: "var(--color-text-muted)",
+                  }}
                 >
-                  <div className="betting-option-label">3 Way</div>
-                  <div className="betting-option-sub-labels">
-                    <div className="betting-option-sub-label">Home</div>
-                    <div className="betting-option-sub-label">Draw</div>
-                    <div className="betting-option-sub-label">Away</div>
-                  </div>
-                  <div className="betting-option-values">
-                    <div
-                      id={`${game.id}-3 Way-Home`}
-                      className={`betting-option-value ${
-                        game.homeOdds ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "3 Way", "Home")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.homeOdds &&
-                        handleAddToBetSlip(game, "3 Way", "Home", game.homeOdds)
-                      }
-                    >
-                      {applyOddsReduction(game.homeOdds) || "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-3 Way-Draw`}
-                      className={`betting-option-value ${
-                        game.drawOdds ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "3 Way", "Draw")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.drawOdds &&
-                        handleAddToBetSlip(game, "3 Way", "Draw", game.drawOdds)
-                      }
-                    >
-                      {applyOddsReduction(game.drawOdds) || "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-3 Way-Away`}
-                      className={`betting-option-value ${
-                        game.awayOdds ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "3 Way", "Away")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.awayOdds &&
-                        handleAddToBetSlip(game, "3 Way", "Away", game.awayOdds)
-                      }
-                    >
-                      {applyOddsReduction(game.awayOdds) || "-"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Double Chance Column */}
-                <div
-                  className={`betting-option-column ${
-                    game.doubleChance.homeOrDraw ||
-                    game.doubleChance.drawOrAway ||
-                    game.doubleChance.homeOrAway
-                      ? ""
-                      : "disabled"
-                  }`}
+                  No games available at the moment
+                </p>
+                <p
+                  style={{
+                    margin: "0",
+                    fontSize: "14px",
+                    color: "var(--color-text-muted)",
+                  }}
                 >
-                  <div className="betting-option-label">Double Chance</div>
-                  <div className="betting-option-sub-labels">
-                    <div className="betting-option-sub-label">1 or X</div>
-                    <div className="betting-option-sub-label">X or 2</div>
-                    <div className="betting-option-sub-label">1 or 2</div>
-                  </div>
-                  <div className="betting-option-values">
-                    <div
-                      id={`${game.id}-Double Chance-1 or X`}
-                      className={`betting-option-value ${
-                        game.doubleChance.homeOrDraw ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Double Chance", "1 or X")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.doubleChance.homeOrDraw &&
-                        handleAddToBetSlip(
-                          game,
-                          "Double Chance",
-                          "1 or X",
-                          game.doubleChance.homeOrDraw
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.doubleChance.homeOrDraw) ?? "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-Double Chance-X or 2`}
-                      className={`betting-option-value ${
-                        game.doubleChance.drawOrAway ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Double Chance", "X or 2")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.doubleChance.drawOrAway &&
-                        handleAddToBetSlip(
-                          game,
-                          "Double Chance",
-                          "X or 2",
-                          game.doubleChance.drawOrAway
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.doubleChance.drawOrAway) ?? "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-Double Chance-1 or 2`}
-                      className={`betting-option-value ${
-                        game.doubleChance.homeOrAway ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Double Chance", "1 or 2")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.doubleChance.homeOrAway &&
-                        handleAddToBetSlip(
-                          game,
-                          "Double Chance",
-                          "1 or 2",
-                          game.doubleChance.homeOrAway
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.doubleChance.homeOrAway) ?? "-"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Over/Under Column */}
-                <div
-                  className={`betting-option-column ${
-                    game.overUnder.over25 || game.overUnder.under25
-                      ? ""
-                      : "disabled"
-                  }`}
-                >
-                  <div className="betting-option-label">Over/Under 2.5</div>
-                  <div className="betting-option-sub-labels">
-                    <div className="betting-option-sub-label">Over</div>
-                    <div className="betting-option-sub-label">Under</div>
-                  </div>
-                  <div className="betting-option-values">
-                    <div
-                      id={`${game.id}-Over/Under 2.5-Over`}
-                      className={`betting-option-value ${
-                        game.overUnder.over25 ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Over/Under 2.5", "Over")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.overUnder.over25 &&
-                        handleAddToBetSlip(
-                          game,
-                          "Over/Under 2.5",
-                          "Over",
-                          game.overUnder.over25
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.overUnder.over25) ?? "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-Over/Under 2.5-Under`}
-                      className={`betting-option-value ${
-                        game.overUnder.under25 ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Over/Under 2.5", "Under")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.overUnder.under25 &&
-                        handleAddToBetSlip(
-                          game,
-                          "Over/Under 2.5",
-                          "Under",
-                          game.overUnder.under25
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.overUnder.under25) ?? "-"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Both Teams to Score Column */}
-                <div
-                  className={`betting-option-column ${
-                    game.bothTeamsToScore.yes || game.bothTeamsToScore.no
-                      ? ""
-                      : "disabled"
-                  }`}
-                >
-                  <div className="betting-option-label">
-                    Both Teams To Score
-                  </div>
-                  <div className="betting-option-sub-labels">
-                    <div className="betting-option-sub-label">Yes</div>
-                    <div className="betting-option-sub-label">No</div>
-                  </div>
-                  <div className="betting-option-values">
-                    <div
-                      id={`${game.id}-Both Teams To Score-Yes`}
-                      className={`betting-option-value ${
-                        game.bothTeamsToScore.yes ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(
-                          game.id,
-                          "Both Teams To Score",
-                          "Yes"
-                        )
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.bothTeamsToScore.yes &&
-                        handleAddToBetSlip(
-                          game,
-                          "Both Teams To Score",
-                          "Yes",
-                          game.bothTeamsToScore.yes
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.bothTeamsToScore.yes) ?? "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-Both Teams To Score-No`}
-                      className={`betting-option-value ${
-                        game.bothTeamsToScore.no ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(
-                          game.id,
-                          "Both Teams To Score",
-                          "No"
-                        )
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.bothTeamsToScore.no &&
-                        handleAddToBetSlip(
-                          game,
-                          "Both Teams To Score",
-                          "No",
-                          game.bothTeamsToScore.no
-                        )
-                      }
-                    >
-                      {applyOddsReduction(game.bothTeamsToScore.no) ?? "-"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Spreads Column */}
-                <div
-                  className={`betting-option-column ${
-                    game.spreads?.homeSpreadOdds || game.spreads?.awaySpreadOdds
-                      ? ""
-                      : "disabled"
-                  }`}
-                >
-                  <div className="betting-option-label">
-                    {game.spreads?.spreadLine
-                      ? `Spread ${game.spreads.spreadLine > 0 ? `+${game.spreads.spreadLine}` : game.spreads.spreadLine}`
-                      : "Spread"}
-                  </div>
-                  <div className="betting-option-sub-labels">
-                    <div className="betting-option-sub-label">Home</div>
-                    <div className="betting-option-sub-label">Away</div>
-                  </div>
-                  <div className="betting-option-values">
-                    <div
-                      id={`${game.id}-Spread-Home`}
-                      className={`betting-option-value ${
-                        game.spreads?.homeSpreadOdds ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Spread", "Home")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.spreads?.homeSpreadOdds &&
-                        handleAddToBetSlip(
-                          game,
-                          "Spread",
-                          "Home",
-                          game.spreads.homeSpreadOdds
-                        )
-                      }
-                    >
-                      {game.spreads?.homeSpreadOdds ?? "-"}
-                    </div>
-                    <div
-                      id={`${game.id}-Spread-Away`}
-                      className={`betting-option-value ${
-                        game.spreads?.awaySpreadOdds ? "clickable" : ""
-                      } ${
-                        isSelectionInBetSlip(game.id, "Spread", "Away")
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        game.spreads?.awaySpreadOdds &&
-                        handleAddToBetSlip(
-                          game,
-                          "Spread",
-                          "Away",
-                          game.spreads.awaySpreadOdds
-                        )
-                      }
-                    >
-                      {game.spreads?.awaySpreadOdds ?? "-"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expand Arrow */}
-                <div
-                  className={`expand-arrow ${
-                    expandedGames.has(game.id) ? "expanded" : ""
-                  }`}
-                  onClick={(e) => toggleExpanded(game.id, e)}
-                >
-                  ▼
-                </div>
+                  The UEFA World Cup Qualifiers endpoint is not yet implemented
+                  on the backend.
+                  <br />
+                  Expected endpoint:{" "}
+                  <code>/api/uefa-world-cup-qualifiers/odds</code>
+                </p>
               </div>
-            ))}
+            ) : isEmpty ? (
+              <div
+                className="no-games-message"
+                style={{
+                  gridColumn: "1 / -1",
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  background: "var(--color-surface)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--color-border)",
+                  margin: "20px 0",
+                }}
+              >
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚽</div>
+                <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text)" }}>
+                  No Games Available
+                </h3>
+                <p style={{ margin: "0", color: "var(--color-text-muted)" }}>
+                  Please try refreshing or check back later
+                </p>
+              </div>
+            ) : (
+              games
+                .filter(
+                  (game) => game && game.id && game.homeTeam && game.awayTeam
+                )
+                .map((game) => (
+                  <div
+                    key={game.id}
+                    className={`game-card ${
+                      selectedGame?.id === game.id ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedGame(game)}
+                  >
+                    <div className="game-info">
+                      <div className="game-teams">
+                        <div className="team home-team">
+                          <span className="team-name">{game.homeTeam}</span>
+                        </div>
+
+                        <div className="vs-divider">VS</div>
+
+                        <div className="team away-team">
+                          <span className="team-name">{game.awayTeam}</span>
+                        </div>
+                      </div>
+
+                      <div className="game-time">
+                        {new Date(game.matchTime).toLocaleDateString()} -{" "}
+                        {new Date(game.matchTime).toLocaleTimeString()}
+                      </div>
+                    </div>
+
+                    {/* Main Odds Column */}
+                    <div
+                      className={`betting-option-column ${
+                        !game.hasValidOdds ? "disabled" : ""
+                      }`}
+                    >
+                      <div className="betting-option-label">3 Way</div>
+                      <div className="betting-option-sub-labels">
+                        <div className="betting-option-sub-label">Home</div>
+                        <div className="betting-option-sub-label">Draw</div>
+                        <div className="betting-option-sub-label">Away</div>
+                      </div>
+                      <div className="betting-option-values">
+                        <div
+                          id={`${game.id}-3 Way-Home`}
+                          className={`betting-option-value ${
+                            game.homeOdds ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(game.id, "3 Way", "Home")
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.homeOdds &&
+                            handleAddToBetSlip(
+                              game,
+                              "3 Way",
+                              "Home",
+                              game.homeOdds
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.homeOdds) || "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-3 Way-Draw`}
+                          className={`betting-option-value ${
+                            game.drawOdds ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(game.id, "3 Way", "Draw")
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.drawOdds &&
+                            handleAddToBetSlip(
+                              game,
+                              "3 Way",
+                              "Draw",
+                              game.drawOdds
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.drawOdds) || "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-3 Way-Away`}
+                          className={`betting-option-value ${
+                            game.awayOdds ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(game.id, "3 Way", "Away")
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.awayOdds &&
+                            handleAddToBetSlip(
+                              game,
+                              "3 Way",
+                              "Away",
+                              game.awayOdds
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.awayOdds) || "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Double Chance Column */}
+                    <div
+                      className={`betting-option-column ${
+                        game.doubleChance?.homeOrDraw ||
+                        game.doubleChance?.drawOrAway ||
+                        game.doubleChance?.homeOrAway
+                          ? ""
+                          : "disabled"
+                      }`}
+                    >
+                      <div className="betting-option-label">Double Chance</div>
+                      <div className="betting-option-sub-labels">
+                        <div className="betting-option-sub-label">1 or X</div>
+                        <div className="betting-option-sub-label">X or 2</div>
+                        <div className="betting-option-sub-label">1 or 2</div>
+                      </div>
+                      <div className="betting-option-values">
+                        <div
+                          id={`${game.id}-Double Chance-1 or X`}
+                          className={`betting-option-value ${
+                            game.doubleChance?.homeOrDraw ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Double Chance",
+                              "1 or X"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.doubleChance?.homeOrDraw &&
+                            handleAddToBetSlip(
+                              game,
+                              "Double Chance",
+                              "1 or X",
+                              game.doubleChance?.homeOrDraw
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.doubleChance?.homeOrDraw) ??
+                            "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-Double Chance-X or 2`}
+                          className={`betting-option-value ${
+                            game.doubleChance?.drawOrAway ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Double Chance",
+                              "X or 2"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.doubleChance?.drawOrAway &&
+                            handleAddToBetSlip(
+                              game,
+                              "Double Chance",
+                              "X or 2",
+                              game.doubleChance?.drawOrAway
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.doubleChance?.drawOrAway) ??
+                            "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-Double Chance-1 or 2`}
+                          className={`betting-option-value ${
+                            game.doubleChance?.homeOrAway ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Double Chance",
+                              "1 or 2"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.doubleChance?.homeOrAway &&
+                            handleAddToBetSlip(
+                              game,
+                              "Double Chance",
+                              "1 or 2",
+                              game.doubleChance?.homeOrAway
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.doubleChance?.homeOrAway) ??
+                            "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Over/Under Column */}
+                    <div
+                      className={`betting-option-column ${
+                        game.overUnder?.over25 || game.overUnder?.under25
+                          ? ""
+                          : "disabled"
+                      }`}
+                    >
+                      <div className="betting-option-label">Over/Under 2.5</div>
+                      <div className="betting-option-sub-labels">
+                        <div className="betting-option-sub-label">Over</div>
+                        <div className="betting-option-sub-label">Under</div>
+                      </div>
+                      <div className="betting-option-values">
+                        <div
+                          id={`${game.id}-Over/Under 2.5-Over`}
+                          className={`betting-option-value ${
+                            game.overUnder?.over25 ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Over/Under 2.5",
+                              "Over"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.overUnder?.over25 &&
+                            handleAddToBetSlip(
+                              game,
+                              "Over/Under 2.5",
+                              "Over",
+                              game.overUnder?.over25
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.overUnder?.over25) ?? "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-Over/Under 2.5-Under`}
+                          className={`betting-option-value ${
+                            game.overUnder?.under25 ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Over/Under 2.5",
+                              "Under"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.overUnder?.under25 &&
+                            handleAddToBetSlip(
+                              game,
+                              "Over/Under 2.5",
+                              "Under",
+                              game.overUnder?.under25
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.overUnder?.under25) ?? "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Both Teams to Score Column */}
+                    <div
+                      className={`betting-option-column ${
+                        game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no
+                          ? ""
+                          : "disabled"
+                      }`}
+                    >
+                      <div className="betting-option-label">
+                        Both Teams To Score
+                      </div>
+                      <div className="betting-option-sub-labels">
+                        <div className="betting-option-sub-label">Yes</div>
+                        <div className="betting-option-sub-label">No</div>
+                      </div>
+                      <div className="betting-option-values">
+                        <div
+                          id={`${game.id}-Both Teams To Score-Yes`}
+                          className={`betting-option-value ${
+                            game.bothTeamsToScore?.yes ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Both Teams To Score",
+                              "Yes"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.bothTeamsToScore?.yes &&
+                            handleAddToBetSlip(
+                              game,
+                              "Both Teams To Score",
+                              "Yes",
+                              game.bothTeamsToScore?.yes
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.bothTeamsToScore?.yes) ??
+                            "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-Both Teams To Score-No`}
+                          className={`betting-option-value ${
+                            game.bothTeamsToScore?.no ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(
+                              game.id,
+                              "Both Teams To Score",
+                              "No"
+                            )
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.bothTeamsToScore?.no &&
+                            handleAddToBetSlip(
+                              game,
+                              "Both Teams To Score",
+                              "No",
+                              game.bothTeamsToScore?.no
+                            )
+                          }
+                        >
+                          {applyOddsReduction(game.bothTeamsToScore?.no) ?? "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Spreads Column */}
+                    <div
+                      className={`betting-option-column ${
+                        game.spreads?.homeSpreadOdds ||
+                        game.spreads?.awaySpreadOdds
+                          ? ""
+                          : "disabled"
+                      }`}
+                    >
+                      <div className="betting-option-label">
+                        {game.spreads?.spreadLine
+                          ? `Spread ${game.spreads?.spreadLine > 0 ? `+${game.spreads?.spreadLine}` : game.spreads?.spreadLine}`
+                          : "Spread"}
+                      </div>
+                      <div className="betting-option-sub-labels">
+                        <div className="betting-option-sub-label">Home</div>
+                        <div className="betting-option-sub-label">Away</div>
+                      </div>
+                      <div className="betting-option-values">
+                        <div
+                          id={`${game.id}-Spread-Home`}
+                          className={`betting-option-value ${
+                            game.spreads?.homeSpreadOdds ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(game.id, "Spread", "Home")
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.spreads?.homeSpreadOdds &&
+                            handleAddToBetSlip(
+                              game,
+                              "Spread",
+                              "Home",
+                              game.spreads?.homeSpreadOdds
+                            )
+                          }
+                        >
+                          {game.spreads?.homeSpreadOdds ?? "-"}
+                        </div>
+                        <div
+                          id={`${game.id}-Spread-Away`}
+                          className={`betting-option-value ${
+                            game.spreads?.awaySpreadOdds ? "clickable" : ""
+                          } ${
+                            isSelectionInBetSlip(game.id, "Spread", "Away")
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            game.spreads?.awaySpreadOdds &&
+                            handleAddToBetSlip(
+                              game,
+                              "Spread",
+                              "Away",
+                              game.spreads?.awaySpreadOdds
+                            )
+                          }
+                        >
+                          {game.spreads?.awaySpreadOdds ?? "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expand Arrow */}
+                    <div
+                      className={`expand-arrow ${
+                        expandedGames.has(game.id) ? "expanded" : ""
+                      }`}
+                      onClick={(e) => toggleExpanded(game.id, e)}
+                    >
+                      ▼
+                    </div>
+                  </div>
+                ))
+            )}
           </div>
         </div>
 

@@ -1,0 +1,46 @@
+/* MUI Filters Component Styles */
+.filter-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  margin: 1rem 0;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.filter-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-input {
+  width: 100%;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .filter-container {
+    background: #1a1a1a;
+    border-color: #374151;
+  }
+  
+  .filter-title {
+    color: #ffffff;
+  }
+}

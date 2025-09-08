@@ -7,7 +7,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.main.json && vite build && shx mkdir -p dist/renderer && shx cp -r renderer/*.html dist/renderer/ && shx cp -r renderer/styles dist/renderer/ && shx cp -r renderer/public dist/renderer/ && shx cp -r resources dist/",
+    "build": "tsc -p tsconfig.main.json && vite build && shx mkdir -p dist/renderer && shx cp -r renderer/*.html dist/renderer/ && shx cp -r renderer/styles dist/renderer/ && shx cp -r renderer/src/styles dist/renderer/src-styles && shx cp -r renderer/public dist/renderer/ && shx cp -r resources dist/",
     "build:windows": "tsc -p tsconfig.main.json && vite build && shx mkdir -p dist/renderer && shx cp -r renderer/*.html dist/renderer/ && shx cp -r renderer/styles dist/renderer/ && shx cp -r renderer/public dist/renderer/ && shx cp -r resources dist/ && node fix-windows-renderer.js",
     "postbuild": "node fix-windows-renderer.js",
     "start": "yarn build && node ./node_modules/electron/cli.js .",
@@ -32,8 +32,14 @@
     "clean": "shx rm -rf dist dist-installer out"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "@mui/x-date-pickers": "^8.11.1",
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.11.0",
+    "dayjs": "^1.11.18",
     "escpos": "^3.0.0-alpha.6",
     "node-printer": "^1.0.4",
     "node-thermal-printer": "^4.5.0",
@@ -41,6 +47,7 @@
     "react-dom": "^19.1.1",
     "react-phone-number-input": "^3.4.12",
     "react-redux": "^9.2.0",
+    "swr": "^2.3.6",
     "usb": "^2.16.0"
   },
   "devDependencies": {

@@ -1,0 +1,264 @@
+/* Mantine Filters Custom Styles */
+.filter-container {
+  background: var(--mantine-color-white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--mantine-color-gray-2);
+  margin: 1rem 0;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.filter-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--mantine-color-gray-9);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.filter-badge {
+  background: var(--mantine-color-blue-1);
+  color: var(--mantine-color-blue-9);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--mantine-color-blue-3);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mantine-color-gray-7);
+}
+
+.filter-input {
+  border-radius: 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  transition: all 0.2s ease;
+}
+
+.filter-input:focus {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-input:hover {
+  border-color: var(--mantine-color-gray-4);
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-left: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.search-input:hover {
+  border-color: var(--mantine-color-gray-4);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--mantine-color-gray-5);
+  pointer-events: none;
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--mantine-color-gray-5);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+  background: var(--mantine-color-gray-1);
+  color: var(--mantine-color-gray-7);
+}
+
+/* Button Styles */
+.filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.filter-button.primary {
+  background: var(--mantine-color-blue-6);
+  color: white;
+  border-color: var(--mantine-color-blue-6);
+}
+
+.filter-button.primary:hover {
+  background: var(--mantine-color-blue-7);
+  border-color: var(--mantine-color-blue-7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.filter-button.secondary {
+  background: var(--mantine-color-gray-1);
+  color: var(--mantine-color-gray-9);
+  border-color: var(--mantine-color-gray-3);
+}
+
+.filter-button.secondary:hover {
+  background: var(--mantine-color-gray-2);
+  border-color: var(--mantine-color-gray-4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Select Styles */
+.filter-select {
+  border-radius: 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select:hover {
+  border-color: var(--mantine-color-gray-4);
+}
+
+/* Date Input Styles */
+.filter-date-input {
+  border-radius: 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  transition: all 0.2s ease;
+}
+
+.filter-date-input:focus {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-date-input:hover {
+  border-color: var(--mantine-color-gray-4);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .filter-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .filter-container {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-container {
+    padding: 1rem;
+    margin: 0.5rem 0;
+  }
+  
+  .filter-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .filter-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .search-input {
+    padding: 0.625rem 0.875rem;
+    padding-left: 2.25rem;
+  }
+  
+  .search-icon {
+    left: 0.625rem;
+  }
+  
+  .search-clear {
+    right: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-container {
+    padding: 0.75rem;
+  }
+  
+  .filter-title {
+    font-size: 1rem;
+  }
+  
+  .filter-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}

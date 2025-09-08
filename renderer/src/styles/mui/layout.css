@@ -1,0 +1,12 @@
+/* MUI Layout Styles */
+.app-container {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .app-container {
+    background: #0f0f0f;
+  }
+}

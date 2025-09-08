@@ -22,21 +22,20 @@ export const BetRow: React.FC<BetRowProps> = ({
   getStatusColor,
   getStatusIcon,
 }) => {
-  // Check if bet is eligible for payout (won and settled)
-  const isEligibleForPayout =
-    bet.status === "settled" && bet.actualWinnings > 0;
+  // Check if bet is eligible for payout (won status)
+  const isEligibleForPayout = bet.status === "won";
 
   // Get the first selection for display
   const firstSelection = bet.selections[0];
 
   return (
     <div className="bet-row">
-      <div className="table-col col-bet-id">
+      <div className="table-col col-bet-id" data-label="Bet ID">
         <span className="bet-id-short" title={bet.id}>
           {bet.id.substring(0, 8)}...
         </span>
       </div>
-      <div className="table-col col-game">
+      <div className="table-col col-game" data-label="Game">
         <div className="game-info">
           <span className="bet-type-badge">
             {bet.betType === "single" ? "Single Bet" : "Multibet"}
@@ -56,7 +55,7 @@ export const BetRow: React.FC<BetRowProps> = ({
           )}
         </div>
       </div>
-      <div className="table-col col-selection">
+      <div className="table-col col-selection" data-label="Selection">
         <div className="selection-info">
           {firstSelection && (
             <>
@@ -66,16 +65,16 @@ export const BetRow: React.FC<BetRowProps> = ({
           )}
         </div>
       </div>
-      <div className="table-col col-stake">
+      <div className="table-col col-stake" data-label="Stake">
         <span className="stake-amount">SSP{bet.totalStake}</span>
       </div>
-      <div className="table-col col-potential">
+      <div className="table-col col-potential" data-label="Potential">
         <span className="potential-amount">
           SSP{bet.potentialWinnings.toFixed(2)}
         </span>
       </div>
 
-      <div className="table-col col-status">
+      <div className="table-col col-status" data-label="Status">
         <span
           className="status-badge"
           style={{ backgroundColor: getStatusColor(bet.status) }}
@@ -83,53 +82,43 @@ export const BetRow: React.FC<BetRowProps> = ({
           {getStatusIcon(bet.status)} {bet.status}
         </span>
       </div>
-      <div className="table-col col-date">
+      <div className="table-col col-date" data-label="Date">
         <span className="bet-date">
           {new Date(bet.createdAt).toLocaleDateString()}
         </span>
       </div>
-      <div className="table-col col-bet-actions">
+      <div className="table-col col-bet-actions" data-label="Actions">
         <div className="bet-actions">
-          <button
-            className="action-btn print-btn"
-            onClick={() => onPrint(bet)}
-            title="Print Thermal Ticket"
-          >
-            🖨️
-          </button>
-          <button
-            className="action-btn view-btn"
-            onClick={() => onView(bet)}
-            title="View Bet Ticket"
-          >
-            👁️
-          </button>
-          {/* {bet.status === "pending" && onCancel && (
-            <button
-              className="action-btn cancel-btn"
-              onClick={() => onCancel(bet)}
-              title="Cancel Bet"
-            >
-              🚫
-            </button>
-          )} */}
-          {/* {bet.status === "accepted" && onSettle && (
-            <button
-              className="action-btn settle-btn"
-              onClick={() => onSettle(bet)}
-              title="Settle Bet"
-            >
-              🏆
-            </button>
-          )} */}
-          {isEligibleForPayout && onPayout && (
-            <button
-              className="action-btn payout-btn"
-              onClick={() => onPayout(bet)}
-              title="Process Payout"
-            >
-              💰
-            </button>
+          {bet.status === "won" ? (
+            // For won bets, only show payout action
+            isEligibleForPayout &&
+            onPayout && (
+              <button
+                className="action-btn payout-btn"
+                onClick={() => onPayout(bet)}
+                title="Process Payout"
+              >
+                💰
+              </button>
+            )
+          ) : (
+            // For other bet statuses, show print and view actions
+            <>
+              <button
+                className="action-btn print-btn"
+                onClick={() => onPrint(bet)}
+                title="Print Thermal Ticket"
+              >
+                🖨️
+              </button>
+              <button
+                className="action-btn view-btn"
+                onClick={() => onView(bet)}
+                title="View Bet Ticket"
+              >
+                👁️
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -1,0 +1,219 @@
+import { useState, useCallback } from 'react';
+import { useAppSelector } from '../store/hooks';
+import { pendingPayoutsService, PendingPayout } from '../services/pendingPayoutsService';
+import { payoutService, PayoutValidationRequest } from '../services/payoutService';
+
+export const usePayoutData = () => {
+      const { user } = useAppSelector((state) => state.auth);
+
+      const [pendingPayouts, setPendingPayouts] = useState<PendingPayout[]>([]);
+      const [totalPayouts, setTotalPayouts] = useState<number>(0);
+      const [isLoadingPayouts, setIsLoadingPayouts] = useState(false);
+      const [payoutError, setPayoutError] = useState<string | null>(null);
+      const [validatingPayouts, setValidatingPayouts] = useState<Set<string>>(new Set());
+      const [payoutValidationResults, setPayoutValidationResults] = useState<Map<string, boolean>>(new Map());
+      const [isExportingPayouts, setIsExportingPayouts] = useState(false);
+      const [completingPayouts, setCompletingPayouts] = useState<Set<string>>(new Set());
+
+      const loadPendingPayouts = useCallback(async () => {
+            if (!user?.id) return;
+
+            setIsLoadingPayouts(true);
+            setPayoutError(null);
+
+            try {
+                  console.log("🔄 Loading pending payouts...");
+
+                  const response = await pendingPayoutsService.getPendingPayouts();
+
+                  if (response.success && response.data) {
+                        setPendingPayouts(response.data.pendingPayouts);
+                        setTotalPayouts(response.data.total);
+                        console.log("✅ Pending payouts loaded:", response.data.pendingPayouts.length, "Total:", response.data.total);
+                  } else {
+                        setPendingPayouts([]);
+                        setTotalPayouts(0);
+                  }
+            } catch (error: any) {
+                  console.error("❌ Error loading pending payouts:", error);
+                  setPayoutError(error.message || "Failed to load pending payouts");
+                  setPendingPayouts([]);
+                  setTotalPayouts(0);
+            } finally {
+                  setIsLoadingPayouts(false);
+            }
+      }, [user?.id]);
+
+      const validatePayoutForBet = useCallback(
+            async (payout: PendingPayout) => {
+                  const payoutId = payout.id;
+
+                  setValidatingPayouts((prev) => new Set(prev).add(payoutId));
+
+                  try {
+                        const validationRequest: PayoutValidationRequest = {
+                              ticketId: payout.ticketId,
+                              betId: payout.betId,
+                              userId: payout.userId,
+                              amount: payout.amount,
+                              currency: payout.currency,
+                              paymentMethod: payout.paymentMethod,
+                              reference: payout.reference,
+                              notes: payout.notes,
+                        };
+
+                        console.log("🔄 Validating payout:", payoutId);
+                        const validationResult = await payoutService.validatePayout(validationRequest);
+
+                        console.log("✅ Payout validation result:", validationResult);
+
+                        setPayoutValidationResults((prev) => {
+                              const newMap = new Map(prev);
+                              newMap.set(payoutId, validationResult.data?.isValid || false);
+                              return newMap;
+                        });
+
+                        return validationResult.data?.isValid || false;
+                  } catch (error: any) {
+                        console.error("❌ Error validating payout:", error);
+                        setPayoutValidationResults((prev) => {
+                              const newMap = new Map(prev);
+                              newMap.set(payoutId, false);
+                              return newMap;
+                        });
+                        return false;
+                  } finally {
+                        setValidatingPayouts((prev) => {
+                              const newSet = new Set(prev);
+                              newSet.delete(payoutId);
+                              return newSet;
+                        });
+                  }
+            },
+            [user?.id]
+      );
+
+      const validateAllPayouts = useCallback(async () => {
+            if (pendingPayouts.length === 0) return;
+
+            console.log("🔄 Validating all payouts...");
+
+            for (const payout of pendingPayouts) {
+                  await validatePayoutForBet(payout);
+            }
+      }, [pendingPayouts, validatePayoutForBet]);
+
+      const completePayout = useCallback(
+            async (payoutId: string, notes?: string) => {
+                  setCompletingPayouts((prev) => new Set(prev).add(payoutId));
+
+                  try {
+                        console.log("🔄 Completing payout:", payoutId);
+                        const response = await payoutService.completePayout(payoutId, notes);
+
+                        console.log("✅ Payout completed successfully:", response);
+
+                        // Remove the completed payout from the pending list
+                        setPendingPayouts((prev) => prev.filter((payout) => payout.id !== payoutId));
+                        setTotalPayouts((prev) => Math.max(0, prev - 1));
+
+                        return response;
+                  } catch (error: any) {
+                        console.error("❌ Error completing payout:", error);
+                        throw error;
+                  } finally {
+                        setCompletingPayouts((prev) => {
+                              const newSet = new Set(prev);
+                              newSet.delete(payoutId);
+                              return newSet;
+                        });
+                  }
+            },
+            []
+      );
+
+      const exportPayoutsToExcel = useCallback(async () => {
+            if (pendingPayouts.length === 0) {
+                  alert("No payouts to export");
+                  return;
+            }
+
+            setIsExportingPayouts(true);
+            try {
+                  // Prepare data for Excel export
+                  const exportData = pendingPayouts.map((payout, index) => ({
+                        "S/N": index + 1,
+                        "Payout ID": payout.id,
+                        "Ticket ID": payout.ticketId,
+                        "Bet ID": payout.betId,
+                        "User ID": payout.userId,
+                        "Amount": payout.amount,
+                        "Currency": payout.currency,
+                        "Payment Method": payout.paymentMethod,
+                        "Reference": payout.reference,
+                        "Status": payout.status,
+                        "Notes": payout.notes,
+                        "Created At": new Date(payout.createdAt).toLocaleDateString(),
+                        "Updated At": new Date(payout.updatedAt).toLocaleDateString(),
+                  }));
+
+                  // Create CSV content
+                  const headers = Object.keys(exportData[0] as Record<string, any>);
+                  const csvContent = [
+                        headers.join(","),
+                        ...exportData.map((row) =>
+                              headers
+                                    .map((header) => {
+                                          const value = (row as Record<string, any>)[header];
+                                          // Escape commas and quotes in values
+                                          if (
+                                                typeof value === "string" &&
+                                                (value.includes(",") || value.includes('"'))
+                                          ) {
+                                                return `"${value.replace(/"/g, '""')}"`;
+                                          }
+                                          return value;
+                                    })
+                                    .join(",")
+                        ),
+                  ].join("\n");
+
+                  // Create and download file
+                  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                  const link = document.createElement("a");
+                  const url = URL.createObjectURL(blob);
+                  link.setAttribute("href", url);
+                  link.setAttribute(
+                        "download",
+                        `pending_payouts_${new Date().toISOString().split("T")[0]}.csv`
+                  );
+                  link.style.visibility = "hidden";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+
+                  console.log("✅ Payouts exported successfully");
+            } catch (error: any) {
+                  console.error("❌ Error exporting payouts:", error);
+                  alert(`Failed to export payouts: ${error.message}`);
+            } finally {
+                  setIsExportingPayouts(false);
+            }
+      }, [pendingPayouts]);
+
+      return {
+            pendingPayouts,
+            totalPayouts,
+            isLoadingPayouts,
+            payoutError,
+            validatingPayouts,
+            payoutValidationResults,
+            isExportingPayouts,
+            completingPayouts,
+            loadPendingPayouts,
+            validatePayoutForBet,
+            validateAllPayouts,
+            completePayout,
+            exportPayoutsToExcel,
+      };
+};

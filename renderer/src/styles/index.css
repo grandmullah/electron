@@ -1,0 +1,12 @@
+/* Main CSS Index - Imports all styles */
+
+/* Existing App Styles */
+@import './main.css';
+@import './dashboard.css';
+
+/* MUI Component Styles */
+@import './mui/table.css';
+@import './mui/filters.css';
+@import './mui/pagination.css';
+@import './mui/history.css';
+@import './mui/layout.css';

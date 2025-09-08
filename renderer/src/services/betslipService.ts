@@ -108,6 +108,25 @@ export class BetSlipService {
                   throw new Error('User not authenticated - no auth token found');
             }
 
+            // 5. Try to extract user ID from JWT token as fallback
+            try {
+                  console.log('Attempting to extract user ID from JWT token...');
+                  const tokenParts = authToken.split('.');
+                  if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        console.log('JWT payload:', payload);
+
+                        // Try different possible user ID fields
+                        const userId = payload.userId || payload.user_id || payload.sub || payload.id;
+                        if (userId) {
+                              console.log('Found userId from JWT token:', userId);
+                              return userId;
+                        }
+                  }
+            } catch (error) {
+                  console.error('Error extracting user ID from JWT token:', error);
+            }
+
             // If we have a token but no user ID, this suggests a login flow issue
             console.error('Auth token found but no user ID - login flow issue');
             throw new Error('User ID not found. Please try logging in again or refresh the page.');
@@ -382,9 +401,17 @@ export class BetSlipService {
                   console.log('Placing single bets with userId:', userId, 'and bet slip ID:', betSlipId);
                   console.log('Place bet data:', placeBetData);
                   console.log('Making request to:', `${API_BASE_URL}/bets/place`);
+
+                  const authToken = localStorage.getItem('authToken');
+                  console.log('Auth token status:', {
+                        tokenExists: !!authToken,
+                        tokenLength: authToken ? authToken.length : 0,
+                        tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'null'
+                  });
+
                   console.log('Request headers:', {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken') ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
+                        'Authorization': `Bearer ${authToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
                   });
 
                   const response = await axios.post(
@@ -393,7 +420,7 @@ export class BetSlipService {
                         {
                               headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                    'Authorization': `Bearer ${authToken}`,
                               },
                         }
                   );
@@ -481,9 +508,17 @@ export class BetSlipService {
                   console.log('Placing multibet with userId:', userId, 'and bet slip ID:', betSlipId);
                   console.log('Place bet data:', placeBetData);
                   console.log('Making request to:', `${API_BASE_URL}/bets/place`);
+
+                  const authToken = localStorage.getItem('authToken');
+                  console.log('Auth token status:', {
+                        tokenExists: !!authToken,
+                        tokenLength: authToken ? authToken.length : 0,
+                        tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'null'
+                  });
+
                   console.log('Request headers:', {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken') ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
+                        'Authorization': `Bearer ${authToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
                   });
 
                   const response = await axios.post(
@@ -492,7 +527,7 @@ export class BetSlipService {
                         {
                               headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                    'Authorization': `Bearer ${authToken}`,
                               },
                         }
                   );
@@ -757,6 +792,13 @@ export class BetSlipService {
                   // Server responded with error status
                   console.error('Server error response:', error.response);
                   const errorData: BetError = error.response.data;
+
+                  // Handle authentication errors specifically
+                  if (error.response.status === 401) {
+                        console.error('Authentication error - user not authenticated');
+                        return new Error('User not authenticated. Please log in again.');
+                  }
+
                   const errorMessage = errorData.error || errorData.message || 'Bet placement failed';
                   return new Error(`Server error: ${errorMessage}`);
             } else if (error.request) {
