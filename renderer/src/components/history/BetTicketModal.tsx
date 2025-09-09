@@ -80,8 +80,8 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
       PaperProps={{
         sx: {
           borderRadius: 3,
-          background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
         },
       }}
     >
@@ -105,7 +105,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             <ReceiptIcon />
           </Avatar>
           <Box>
-            <Typography variant="h5" fontWeight="bold">
+            <Typography variant="h5" fontWeight="bold" sx={{ color: "rgba(255,255,255,0.9)" }}>
               Bet Ticket
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -126,22 +126,22 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, background: "#0e1220" }}>
         {/* Ticket Header */}
         <Paper
           sx={{
             p: 3,
             m: 3,
-            background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-            border: "2px solid #dee2e6",
+            background: "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 2,
           }}
         >
           <Box textAlign="center" mb={2}>
-            <Typography variant="h4" fontWeight="bold" color="primary.main">
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "#667eea" }}>
               🎯 BETZONE
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.6)" }}>
               Betting Ticket
             </Typography>
           </Box>
@@ -150,7 +150,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             <Grid item xs={6}>
               <Box display="flex" alignItems="center" gap={1}>
                 <SportsIcon color="primary" fontSize="small" />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
                   Type:
                 </Typography>
                 <Chip
@@ -164,7 +164,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             <Grid item xs={6}>
               <Box display="flex" alignItems="center" gap={1}>
                 {getStatusIconComponent(bet.status)}
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
                   Status:
                 </Typography>
                 <Chip
@@ -179,7 +179,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
 
         {/* Bet Information */}
         <Box p={3}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
+          <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: "rgba(255,255,255,0.9)" }}>
             💰 Bet Details
           </Typography>
           <Grid container spacing={3}>
@@ -187,21 +187,21 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
               <Card
                 sx={{
                   background:
-                    "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-                  border: "1px solid #90CAF9",
+                    "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                  border: "1px solid rgba(255,255,255,0.1)",
                 }}
               >
                 <CardContent sx={{ p: 2 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <MoneyIcon color="primary" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
                       Total Stake
                     </Typography>
                   </Box>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
-                    color="primary.main"
+                    sx={{ color: "#667eea" }}
                   >
                     SSP {bet.totalStake.toFixed(2)}
                   </Typography>
@@ -212,21 +212,21 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
               <Card
                 sx={{
                   background:
-                    "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)",
-                  border: "1px solid #A5D6A7",
+                    "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                  border: "1px solid rgba(255,255,255,0.1)",
                 }}
               >
                 <CardContent sx={{ p: 2 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <TrendingUpIcon color="success" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
                       Potential Winnings
                     </Typography>
                   </Box>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
-                    color="success.main"
+                    sx={{ color: "#4caf50" }}
                   >
                     SSP {bet.potentialWinnings.toFixed(2)}
                   </Typography>
@@ -242,14 +242,14 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   <Card
                     sx={{
                       background:
-                        "linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
-                      border: "1px solid #FFB74D",
+                        "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                      border: "1px solid rgba(255,255,255,0.1)",
                     }}
                   >
                     <CardContent sx={{ p: 2 }}>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
                         gutterBottom
                       >
                         Tax ({bet.taxPercentage}%)
@@ -268,14 +268,14 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   <Card
                     sx={{
                       background:
-                        "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)",
-                      border: "1px solid #81C784",
+                        "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                      border: "1px solid rgba(255,255,255,0.1)",
                     }}
                   >
                     <CardContent sx={{ p: 2 }}>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
                         gutterBottom
                       >
                         Net Winnings
@@ -299,7 +299,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
 
         {/* Selections */}
         <Box p={3}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
+          <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: "rgba(255,255,255,0.9)" }}>
             🎯 Selections
           </Typography>
           <Stack spacing={2}>
@@ -308,8 +308,8 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                 key={index}
                 sx={{
                   background:
-                    "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-                  border: "1px solid #e0e0e0",
+                    "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                  border: "1px solid rgba(255,255,255,0.1)",
                   transition: "all 0.3s ease",
                   "&:hover": {
                     transform: "translateY(-2px)",
@@ -331,10 +331,10 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                       {index + 1}
                     </Avatar>
                     <Box flex={1}>
-                      <Typography variant="h6" fontWeight="bold">
+                      <Typography variant="h6" fontWeight="bold" sx={{ color: "rgba(255,255,255,0.9)" }}>
                         {selection.homeTeam} vs {selection.awayTeam}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
                         {selection.betType}
                       </Typography>
                     </Box>
@@ -365,14 +365,15 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, gap: 2 }}>
+      <DialogActions sx={{ p: 3, gap: 2, background: "#0e1220" }}>
         <Button
-          variant="outlined"
           onClick={onClose}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1,
+            color: "rgba(255,255,255,0.8)",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,1)",
+            },
           }}
         >
           Close
@@ -382,10 +383,8 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
           startIcon={<PrintIcon />}
           onClick={() => onPrint(bet)}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1,
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
             "&:hover": {
               background: "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
             },

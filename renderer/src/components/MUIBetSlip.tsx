@@ -11,7 +11,6 @@ import {
 } from "../store/betslipSlice";
 import { placeBets, BetSlipService } from "../services/betslipService";
 import { addAgentBet } from "../store/agentSlice";
-import BetSlipSummary from "./BetSlipSummary";
 import {
   Dialog,
   DialogTitle,
@@ -262,7 +261,11 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       >
         <Box display="flex" alignItems="center" gap={2}>
           <CasinoIcon sx={{ fontSize: 28 }} />
-          <Typography variant="h5" fontWeight="bold">
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{ color: "rgba(255,255,255,0.9)" }}
+          >
             Bet Slip ({betSlipItems?.length || 0} bets)
           </Typography>
         </Box>
@@ -374,10 +377,17 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                   }
                   label={
                     <Box>
-                      <Typography variant="body1" fontWeight="bold">
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        sx={{ color: "rgba(255,255,255,0.9)" }}
+                      >
                         {isMultibetMode ? "Multibet Mode" : "Single Bet Mode"}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
+                      >
                         {isMultibetMode
                           ? "All selections combined into one bet"
                           : "Each selection as individual bet"}
@@ -495,7 +505,27 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                           ? `Min: ${user.currency} ${user.bettingLimits.minStake.toFixed(2)} | Max: ${user.currency} ${user.bettingLimits.maxStake.toFixed(2)}`
                           : ""
                       }
-                      sx={{ mt: 1 }}
+                      sx={{
+                        mt: 1,
+                        "& .MuiInputLabel-root": {
+                          color: "rgba(255,255,255,0.7)",
+                        },
+                        "& .MuiOutlinedInput-root": {
+                          color: "rgba(255,255,255,0.8)",
+                          "& fieldset": {
+                            borderColor: "rgba(255,255,255,0.2)",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "rgba(255,255,255,0.4)",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#667eea",
+                          },
+                        },
+                        "& .MuiFormHelperText-root": {
+                          color: "rgba(255,255,255,0.6)",
+                        },
+                      }}
                     />
                   </Box>
                 </Paper>
@@ -622,10 +652,10 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                   key={bet.id}
                   sx={{
                     background:
-                      "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
-                    border: "1px solid #e9ecef",
+                      "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+                    border: "1px solid rgba(255,255,255,0.1)",
                     "&:hover": {
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)",
                     },
                   }}
                 >
@@ -636,12 +666,17 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                       justifyContent="space-between"
                     >
                       <Box flex={1}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        <Typography
+                          variant="h6"
+                          fontWeight="bold"
+                          gutterBottom
+                          sx={{ color: "rgba(255,255,255,0.9)" }}
+                        >
                           {bet.homeTeam} vs {bet.awayTeam}
                         </Typography>
                         <Typography
                           variant="body2"
-                          color="text.secondary"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
                           gutterBottom
                         >
                           {bet.betType}: {bet.selection} @ {bet.odds}
@@ -689,11 +724,28 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                   max: user?.bettingLimits?.maxStake || 1000,
                                   step: 0.01,
                                 }}
-                                sx={{ width: 120 }}
+                                sx={{
+                                  width: 120,
+                                  "& .MuiInputLabel-root": {
+                                    color: "rgba(255,255,255,0.7)",
+                                  },
+                                  "& .MuiOutlinedInput-root": {
+                                    color: "rgba(255,255,255,0.8)",
+                                    "& fieldset": {
+                                      borderColor: "rgba(255,255,255,0.2)",
+                                    },
+                                    "&:hover fieldset": {
+                                      borderColor: "rgba(255,255,255,0.4)",
+                                    },
+                                    "&.Mui-focused fieldset": {
+                                      borderColor: "#667eea",
+                                    },
+                                  },
+                                }}
                               />
                               <Typography
                                 variant="body2"
-                                color="text.secondary"
+                                sx={{ color: "rgba(255,255,255,0.6)" }}
                               >
                                 Potential: ${bet.potentialWinnings.toFixed(2)}
                               </Typography>
@@ -717,102 +769,36 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                 </Card>
               ))}
             </Stack>
-
-            {/* BetSlip Summary */}
-            {(betSlipItems?.length || 0) > 0 && (
-              <Paper
-                sx={{
-                  p: 3,
-                  background:
-                    "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)",
-                  border: "1px solid #A5D6A7",
-                }}
-              >
-                <BetSlipSummary
-                  slip={
-                    betSlipData || {
-                      id: "temp-slip",
-                      userId: user?.id || "",
-                      selections: betSlipItems.map((bet) => ({
-                        gameId: bet.gameId,
-                        homeTeam: bet.homeTeam,
-                        awayTeam: bet.awayTeam,
-                        marketType: bet.betType,
-                        outcome: bet.selection,
-                        odds: {
-                          decimal: bet.odds,
-                          american: 0,
-                          multiplier: 0,
-                        },
-                        bookmaker: bet.bookmaker,
-                        gameTime: bet.gameTime,
-                        sportKey: bet.sportKey,
-                      })),
-                      stake:
-                        (betSlipItems?.length || 0) > 1
-                          ? multibetStake
-                          : betSlipItems?.[0]?.stake || 0,
-                      potentialWinnings:
-                        (betSlipItems?.length || 0) > 1
-                          ? calculateMultibetWinnings(
-                              betSlipItems,
-                              multibetStake
-                            )
-                          : (betSlipItems?.[0]?.stake || 0) *
-                            (betSlipItems[0]?.odds || 1),
-                      taxPercentage: 0,
-                      taxAmount: 0,
-                      netWinnings: (() => {
-                        const stake =
-                          (betSlipItems?.length || 0) > 1
-                            ? multibetStake
-                            : betSlipItems?.[0]?.stake || 0;
-                        const odds =
-                          (betSlipItems?.length || 0) > 1
-                            ? calculateCombinedOdds(betSlipItems)
-                            : betSlipItems[0]?.odds || 1;
-                        const potentialWinnings = stake * odds;
-                        return potentialWinnings;
-                      })(),
-                      odds: {
-                        decimal: calculateCombinedOdds(betSlipItems),
-                        american: 0,
-                        multiplier: 0,
-                      },
-                      createdAt: new Date().toISOString(),
-                      expiresAt: new Date(
-                        Date.now() + 24 * 60 * 60 * 1000
-                      ).toISOString(),
-                    }
-                  }
-                  currency={user?.currency || "USD"}
-                  isMultibet={(betSlipItems?.length || 0) > 1}
-                  isLoading={!betSlipData}
-                  betSlipResponse={
-                    betSlipData
-                      ? {
-                          success: true,
-                          message: "",
-                          data: betSlipData,
-                        }
-                      : undefined
-                  }
-                />
-              </Paper>
-            )}
           </Box>
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, background: "#f8f9fa" }}>
-        <Button onClick={onClose} color="inherit">
+      <DialogActions sx={{ p: 3, background: "#0e1220" }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            color: "rgba(255,255,255,0.8)",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,1)",
+            },
+          }}
+        >
           Cancel
         </Button>
         <Button
           onClick={() => dispatch(clearBetSlip())}
-          color="error"
           startIcon={<DeleteIcon />}
           disabled={(betSlipItems?.length || 0) === 0}
+          sx={{
+            color: "#f44336",
+            "&:hover": {
+              backgroundColor: "rgba(244, 67, 54, 0.1)",
+            },
+            "&:disabled": {
+              color: "rgba(255,255,255,0.3)",
+            },
+          }}
         >
           Clear All
         </Button>
@@ -844,8 +830,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           }
           sx={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
             "&:hover": {
               background: "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
+            },
+            "&:disabled": {
+              background: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.3)",
             },
           }}
         >

@@ -327,9 +327,17 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   };
 
   // Print handler
-  const printThermalTicket = (bet: DisplayBet) => {
+  const printThermalTicket = async (bet: DisplayBet) => {
     console.log("Printing thermal ticket for bet:", bet.id);
-    // Implementation for thermal printing
+    try {
+      const { printThermalTicket: printTicket } = await import(
+        "../../services/printService"
+      );
+      await printTicket(bet);
+    } catch (error) {
+      console.error("Error importing print service:", error);
+      alert("Error: Unable to load print service. Please try again.");
+    }
   };
 
   // Payout handler

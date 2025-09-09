@@ -9,6 +9,7 @@ import {
   Paper,
   Chip,
   IconButton,
+  Button,
   Tooltip,
   Box,
   Typography,
@@ -69,6 +70,8 @@ const getStatusColorScheme = (
     case "cancelled":
     case "failed":
       return "error";
+    case "accepted":
+      return "default";
     default:
       return "default";
   }
@@ -118,50 +121,110 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
         }}
       >
         <TableHead>
-          <TableRow sx={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+          <TableRow
+            sx={{
+              background:
+                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+              borderBottom: "2px solid rgba(255,255,255,0.1)",
+            }}
+          >
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Bet ID
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Type
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Selections
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Stake
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Odds
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Potential Win
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Status
             </TableCell>
             <TableCell
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Date
             </TableCell>
             <TableCell
               align="center"
-              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
             >
               Actions
             </TableCell>
@@ -293,6 +356,16 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                   color={getStatusColorScheme(bet.status)}
                   variant={getStatusVariant(bet.status)}
                   size="small"
+                  sx={{
+                    ...(bet.status.toLowerCase() === "accepted" && {
+                      backgroundColor: "white",
+                      color: "rgba(0,0,0,0.8)",
+                      border: "1px solid rgba(0,0,0,0.2)",
+                      "& .MuiChip-icon": {
+                        color: "rgba(0,0,0,0.6)",
+                      },
+                    }),
+                  }}
                 />
               </TableCell>
 
@@ -311,34 +384,64 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               <TableCell align="center">
                 <Box display="flex" gap={1} justifyContent="center">
                   <Tooltip title="View Details">
-                    <IconButton
+                    <Button
                       size="small"
                       onClick={() => onView(bet)}
-                      sx={{ color: "#667eea" }}
+                      startIcon={<IconEye />}
+                      sx={{
+                        color: "rgba(255,255,255,0.8)",
+                        minWidth: "auto",
+                        px: 1,
+                        py: 0.5,
+                        "&:hover": {
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                          color: "rgba(255,255,255,1)",
+                        },
+                      }}
                     >
-                      <IconEye fontSize="small" />
-                    </IconButton>
+                      View
+                    </Button>
                   </Tooltip>
 
                   <Tooltip title="Print Ticket">
-                    <IconButton
+                    <Button
                       size="small"
                       onClick={() => onPrint(bet)}
-                      sx={{ color: "#9c27b0" }}
+                      startIcon={<IconPrinter />}
+                      sx={{
+                        color: "#9c27b0",
+                        minWidth: "auto",
+                        px: 1,
+                        py: 0.5,
+                        "&:hover": {
+                          backgroundColor: "rgba(156, 39, 176, 0.1)",
+                          color: "#9c27b0",
+                        },
+                      }}
                     >
-                      <IconPrinter fontSize="small" />
-                    </IconButton>
+                      Print
+                    </Button>
                   </Tooltip>
 
                   {bet.status === "won" && (
                     <Tooltip title="Process Payout">
-                      <IconButton
+                      <Button
                         size="small"
                         onClick={() => onPayout(bet)}
-                        sx={{ color: "#4caf50" }}
+                        startIcon={<IconMoneybag />}
+                        sx={{
+                          color: "#4caf50",
+                          minWidth: "auto",
+                          px: 1,
+                          py: 0.5,
+                          "&:hover": {
+                            backgroundColor: "rgba(76, 175, 80, 0.1)",
+                            color: "#4caf50",
+                          },
+                        }}
                       >
-                        <IconMoneybag fontSize="small" />
-                      </IconButton>
+                        Payout
+                      </Button>
                     </Tooltip>
                   )}
                 </Box>
