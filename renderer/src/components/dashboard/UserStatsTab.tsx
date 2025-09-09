@@ -71,14 +71,29 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
   return (
     <Box>
       {/* Section Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 3,
+          background:
+            "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 3,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
         <Box display="flex" alignItems="center" gap={2}>
-          <BarChartIcon color="primary" sx={{ fontSize: 32 }} />
+          <BarChartIcon sx={{ fontSize: 32, color: "#667eea" }} />
           <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
               Your Betting Statistics
             </Typography>
-            <Typography color="text.secondary">
+            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
               Overview of your personal betting performance
             </Typography>
           </Box>
@@ -91,8 +106,11 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
           <Card
             sx={{
               height: "100%",
-              background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+              background:
+                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
               borderRadius: 3,
               transition: "all 0.3s ease",
               "&:hover": {
@@ -116,14 +134,18 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                 </Box>
                 <Box>
                   <Typography
-                    color="text.secondary"
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
                     gutterBottom
                     variant="body2"
                     fontWeight={500}
                   >
                     Total Bets
                   </Typography>
-                  <Typography variant="h4" fontWeight="bold" color="primary">
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    sx={{ color: "#667eea" }}
+                  >
                     {personalStats?.totalBets ||
                       dashboardStats?.personal?.totalBets ||
                       0}
@@ -137,8 +159,11 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
           <Card
             sx={{
               height: "100%",
-              background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+              background:
+                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
               borderRadius: 3,
               transition: "all 0.3s ease",
               "&:hover": {
@@ -162,7 +187,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                 </Box>
                 <Box>
                   <Typography
-                    color="text.secondary"
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
                     gutterBottom
                     variant="body2"
                     fontWeight={500}
@@ -190,8 +215,11 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
           <Card
             sx={{
               height: "100%",
-              background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+              background:
+                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
               borderRadius: 3,
               transition: "all 0.3s ease",
               "&:hover": {
@@ -215,7 +243,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                 </Box>
                 <Box>
                   <Typography
-                    color="text.secondary"
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
                     gutterBottom
                     variant="body2"
                     fontWeight={500}
@@ -243,8 +271,11 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
           <Card
             sx={{
               height: "100%",
-              background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+              background:
+                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
               borderRadius: 3,
               transition: "all 0.3s ease",
               "&:hover": {
@@ -268,7 +299,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                 </Box>
                 <Box>
                   <Typography
-                    color="text.secondary"
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
                     gutterBottom
                     variant="body2"
                     fontWeight={500}
@@ -302,10 +333,17 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
               <Box display="flex" alignItems="center" gap={2}>
                 <ChartIcon color="primary" />
                 <Box>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                    gutterBottom
+                  >
                     Avg Odds
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     {(
                       personalStats?.averageOdds ||
                       dashboardStats?.personal?.averageOdds ||
@@ -323,7 +361,10 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
               <Box display="flex" alignItems="center" gap={2}>
                 <WalletIcon color="primary" />
                 <Box>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                    gutterBottom
+                  >
                     Net Profit
                   </Typography>
                   <Typography
@@ -355,10 +396,17 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
               <Box display="flex" alignItems="center" gap={2}>
                 <AssessmentIcon color="primary" />
                 <Box>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                    gutterBottom
+                  >
                     Avg Stake
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     SSP{" "}
                     {(
                       personalStats?.averageStake ||
@@ -377,10 +425,17 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
               <Box display="flex" alignItems="center" gap={2}>
                 <StarIcon color="primary" />
                 <Box>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                    gutterBottom
+                  >
                     Best Win
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     SSP{" "}
                     {(
                       personalStats?.bestWin ||
@@ -445,7 +500,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >
@@ -478,7 +533,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >
@@ -511,7 +566,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >
@@ -544,7 +599,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >
@@ -577,7 +632,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >
@@ -610,7 +665,7 @@ export const UserStatsTab: React.FC<UserStatsTabProps> = ({
                   0}
               </Typography>
               <Typography
-                color="text.secondary"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
                 variant="body2"
                 fontWeight={500}
               >

@@ -8,6 +8,50 @@ import GamesService, { Game } from "../../services/gamesService";
 import { testPrint, testBixolonPrinter } from "../../services/printService";
 import settingsService from "../../services/settingsService";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
+import { GameCard } from "../../components/games/GameCard";
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Stack,
+  Button,
+  Chip,
+  Grid,
+  Card,
+  CardContent,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  IconButton,
+  Tooltip,
+  Fade,
+  Snackbar,
+  Divider,
+  Badge,
+} from "@mui/material";
+import {
+  SportsSoccer as SoccerIcon,
+  Refresh as RefreshIcon,
+  Print as PrintIcon,
+  Science as TestIcon,
+  Person as PersonIcon,
+  AttachMoney as MoneyIcon,
+  ExpandMore as ExpandMoreIcon,
+  CheckCircle as CheckIcon,
+  Close as CloseIcon,
+  Home as HomeIcon,
+  EmojiEvents as TrophyIcon,
+  TrendingUp as TrendingUpIcon,
+} from "@mui/icons-material";
 
 interface GamesPageProps {
   onNavigate: (
@@ -659,57 +703,112 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
   if (isLoading) {
     return (
-      <div className="games-page">
-        <div className="games-header">
-          <h1>⚽ Games & Odds</h1>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button
-              className="btn btn-outline"
-              onClick={() => onNavigate("home")}
-            >
-              ← Back to Home
-            </button>
-            <button
-              onClick={handlePrintGames}
-              className="btn-print"
-              title="Print games and odds"
-            >
-              🖨️ Print Games
-            </button>
+      <Box sx={{ bgcolor: "#0e1220", minHeight: "100vh" }}>
+        <Header
+          onNavigate={onNavigate}
+          currentPage="games"
+          selectedUser={selectedUser}
+          isAgentMode={isAgentMode}
+        />
+        <Container maxWidth="xl" sx={{ py: 4, px: 3 }}>
+          <Paper
+            sx={{
+              p: 4,
+              mb: 4,
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              color: "white",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <Box position="relative" zIndex={1}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={3}
+              >
+                <Box display="flex" alignItems="center" gap={2}>
+                  <SoccerIcon sx={{ fontSize: 40 }} />
+                  <Box>
+                    <Typography variant="h3" fontWeight="bold">
+                      ⚽ Games & Odds
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ opacity: 0.9, fontWeight: 300 }}
+                    >
+                      Live betting odds and game information
+                    </Typography>
+                  </Box>
+                </Box>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<HomeIcon />}
+                    onClick={() => onNavigate("home")}
+                    sx={{
+                      color: "white",
+                      borderColor: "rgba(255,255,255,0.3)",
+                      "&:hover": {
+                        borderColor: "white",
+                        bgcolor: "rgba(255,255,255,0.1)",
+                      },
+                    }}
+                  >
+                    Back to Home
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<PrintIcon />}
+                    onClick={handlePrintGames}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.3)",
+                      },
+                    }}
+                  >
+                    Print Games
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<TestIcon />}
+                    onClick={() => {
+                      testBixolonPrinter();
+                      testPrint(settingsService.getPrinterLogicalName());
+                    }}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.3)",
+                      },
+                    }}
+                  >
+                    Test Printer
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
+          </Paper>
 
-            <button
-              onClick={() => {
-                testBixolonPrinter();
-                testPrint(settingsService.getPrinterLogicalName());
-              }}
-              className="btn-test"
-              title="Test printer functionality"
-              style={{
-                background: "var(--color-warning)",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-                marginLeft: "8px",
-              }}
-            >
-              🧪 Test Printer
-            </button>
-          </div>
-        </div>
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Loading games...</p>
-        </div>
-      </div>
+          <Paper sx={{ p: 6, textAlign: "center" }}>
+            <Stack alignItems="center" spacing={3}>
+              <CircularProgress size={60} sx={{ color: "primary.main" }} />
+              <Typography variant="h5" color="text.secondary">
+                Loading games...
+              </Typography>
+            </Stack>
+          </Paper>
+        </Container>
+      </Box>
     );
   }
 
   return (
-    <div>
+    <Box sx={{ bgcolor: "#0e1220", minHeight: "100vh" }}>
       <Header
         onNavigate={onNavigate}
         currentPage="games"
@@ -717,834 +816,542 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         isAgentMode={isAgentMode}
       />
 
-      <div className="games-content">
-        {/* League selector and refresh section */}
-        <div className="league-selector" style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
+      <Container maxWidth="xl" sx={{ py: 4, px: 3 }}>
+        {/* Header Section */}
+        <Paper
+          sx={{
+            p: 4,
+            mb: 4,
+            background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+            color: "white",
+            position: "relative",
+            overflow: "hidden",
+            border: "1px solid #2a2d3a",
+            borderRadius: "16px",
+            boxShadow:
+              "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+          }}
+        >
+          <Box position="relative" zIndex={1}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              mb={3}
+            >
+              <Box display="flex" alignItems="center" gap={2}>
+                <SoccerIcon sx={{ fontSize: 40 }} />
+                <Box>
+                  <Typography variant="h3" fontWeight="bold">
+                    ⚽ Games & Odds
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{ opacity: 0.9, fontWeight: 300 }}
+                  >
+                    Live betting odds and game information
+                  </Typography>
+                </Box>
+              </Box>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="outlined"
+                  startIcon={<HomeIcon />}
+                  onClick={() => onNavigate("home")}
+                  sx={{
+                    color: "white",
+                    borderColor: "rgba(255,255,255,0.3)",
+                    "&:hover": {
+                      borderColor: "white",
+                      bgcolor: "rgba(255,255,255,0.1)",
+                    },
+                  }}
+                >
+                  Back to Home
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<PrintIcon />}
+                  onClick={handlePrintGames}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.2)",
+                    color: "white",
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.3)",
+                    },
+                  }}
+                >
+                  Print Games
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<TestIcon />}
+                  onClick={() => {
+                    testBixolonPrinter();
+                    testPrint(settingsService.getPrinterLogicalName());
+                  }}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.2)",
+                    color: "white",
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.3)",
+                    },
+                  }}
+                >
+                  Test Printer
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Paper>
+
+        {/* Main Content with Left Panel and Games */}
+        <Box sx={{ display: "flex", gap: 3 }}>
+          {/* Left Panel - League Selector and Controls */}
+          <Paper
+            sx={{
+              p: 3,
+              width: 300,
+              height: "fit-content",
+              position: "sticky",
+              top: 20,
+              background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+              border: "1px solid #2a2d3a",
+              borderRadius: "16px",
+              boxShadow:
+                "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
             }}
           >
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                onClick={() => setLeagueKey("soccer_epl")}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  background:
-                    leagueKey === "soccer_epl"
-                      ? "var(--color-primary)"
-                      : "var(--color-surface)",
-                  color:
-                    leagueKey === "soccer_epl" ? "white" : "var(--color-text)",
-                  border:
-                    leagueKey === "soccer_epl"
-                      ? "none"
-                      : "1px solid var(--color-border)",
-                  transition: "all 0.2s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              mb={3}
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
+              Controls
+            </Typography>
+
+            <Stack spacing={2} mb={4}>
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={handleManualRefresh}
+                color="success"
+                fullWidth
+                sx={{
+                  fontWeight: 600,
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                  },
                 }}
-                title="English Premier League"
               >
-                ⚽ EPL
-              </button>
-              <button
+                Refresh Odds
+              </Button>
+              <Typography
+                variant="caption"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
+                textAlign="center"
+              >
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </Typography>
+            </Stack>
+
+            <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.1)" }} />
+
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              mb={2}
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
+              League Selection
+            </Typography>
+
+            <Stack spacing={2} mb={3}>
+              <Chip
+                icon={<SoccerIcon />}
+                label="EPL"
+                onClick={() => setLeagueKey("soccer_epl")}
+                color={leagueKey === "soccer_epl" ? "primary" : "default"}
+                variant={leagueKey === "soccer_epl" ? "filled" : "outlined"}
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
+                    leagueKey === "soccer_epl"
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    leagueKey === "soccer_epl"
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_epl"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+              <Chip
+                icon={<TrophyIcon />}
+                label="UEFA WCQ"
                 onClick={() => setLeagueKey("soccer_uefa_world_cup_qualifiers")}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  background:
+                color={
+                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    ? "primary"
+                    : "default"
+                }
+                variant={
+                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    ? "filled"
+                    : "outlined"
+                }
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
                     leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "var(--color-primary)"
-                      : "var(--color-surface)",
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
                   color:
                     leagueKey === "soccer_uefa_world_cup_qualifiers"
                       ? "white"
-                      : "var(--color-text)",
-                  border:
-                    leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "none"
-                      : "1px solid var(--color-border)",
-                  transition: "all 0.2s ease",
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_uefa_world_cup_qualifiers"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+            </Stack>
+
+            {/* Agent Mode Indicator */}
+            {isAgentMode && (
+              <Box>
+                <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.1)" }} />
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  mb={2}
+                  sx={{ color: "rgba(255,255,255,0.9)" }}
+                >
+                  Agent Mode
+                </Typography>
+                <Paper
+                  sx={{
+                    p: 2,
+                    background:
+                      "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                    border: "1px solid #90CAF9",
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: "primary.main" }}>
+                        <PersonIcon />
+                      </Avatar>
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        color="primary.main"
+                      >
+                        Agent Mode Active
+                      </Typography>
+                    </Stack>
+                    {selectedUser && (
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          Placing bet for:
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {selectedUser.phone_number}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ${selectedUser.balance.toFixed(2)}{" "}
+                          {selectedUser.currency}
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          onClick={() => setShowUserSelector(true)}
+                          sx={{ mt: 1 }}
+                        >
+                          Change User
+                        </Button>
+                      </Box>
+                    )}
+                    {!selectedUser && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        fullWidth
+                        onClick={() => setShowUserSelector(true)}
+                      >
+                        Select User
+                      </Button>
+                    )}
+                  </Stack>
+                </Paper>
+              </Box>
+            )}
+          </Paper>
+
+          {/* Right Panel - Games */}
+          <Box sx={{ flex: 1 }}>
+            {/* Error Message */}
+            {isError && (
+              <Alert
+                severity="error"
+                action={
+                  <Button color="inherit" size="small" onClick={() => mutate()}>
+                    Retry
+                  </Button>
+                }
+                sx={{ mb: 3 }}
+              >
+                {error?.message || "Failed to load games"}
+              </Alert>
+            )}
+
+            {/* Auto-refresh notification */}
+            <Snackbar
+              open={showRefreshNotification}
+              autoHideDuration={3000}
+              onClose={() => setShowRefreshNotification(false)}
+              anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+              <Alert
+                severity="success"
+                icon={<RefreshIcon />}
+                onClose={() => setShowRefreshNotification(false)}
+              >
+                Odds automatically refreshed at{" "}
+                {new Date().toLocaleTimeString()}
+              </Alert>
+            </Snackbar>
+
+            {/* Games Grid */}
+            <Box>
+              {isEmpty && leagueKey === "soccer_uefa_world_cup_qualifiers" ? (
+                <Paper
+                  sx={{
+                    p: 6,
+                    textAlign: "center",
+                    background:
+                      "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                    border: "1px solid #90CAF9",
+                    mb: 3,
+                  }}
+                >
+                  <TrophyIcon
+                    sx={{ fontSize: 64, color: "primary.main", mb: 2 }}
+                  />
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    color="primary.main"
+                    gutterBottom
+                  >
+                    UEFA World Cup Qualifiers
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" paragraph>
+                    No games available at the moment
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    The UEFA World Cup Qualifiers endpoint is not yet
+                    implemented on the backend.
+                    <br />
+                    Expected endpoint:{" "}
+                    <code>/api/uefa-world-cup-qualifiers/odds</code>
+                  </Typography>
+                </Paper>
+              ) : isEmpty ? (
+                <Paper
+                  sx={{
+                    p: 6,
+                    textAlign: "center",
+                    background:
+                      "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                    border: "1px solid #CE93D8",
+                    mb: 3,
+                  }}
+                >
+                  <SoccerIcon
+                    sx={{ fontSize: 64, color: "secondary.main", mb: 2 }}
+                  />
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    color="secondary.main"
+                    gutterBottom
+                  >
+                    No Games Available
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Please try refreshing or check back later
+                  </Typography>
+                </Paper>
+              ) : (
+                <Stack spacing={2}>
+                  {games
+                    .filter(
+                      (game) =>
+                        game && game.id && game.homeTeam && game.awayTeam
+                    )
+                    .map((game) => (
+                      <GameCard
+                        key={game.id}
+                        game={game}
+                        isSelected={selectedGame?.id === game.id}
+                        onSelect={setSelectedGame}
+                        onAddToBetSlip={handleAddToBetSlip}
+                        isSelectionInBetSlip={isSelectionInBetSlip}
+                        applyOddsReduction={applyOddsReduction}
+                        expandedGames={expandedGames}
+                        onToggleExpanded={toggleExpanded}
+                      />
+                    ))}
+                </Stack>
+              )}
+            </Box>
+
+            {/* User Selector Modal */}
+            <Dialog
+              open={showUserSelector}
+              onClose={() => setShowUserSelector(false)}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: 3,
+                  background:
+                    "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+                },
+              }}
+            >
+              <DialogTitle
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
                   display: "flex",
                   alignItems: "center",
-                  gap: "4px",
-                }}
-                title="UEFA World Cup Qualifiers"
-              >
-                🏆 UEFA WCQ
-              </button>
-              {/* Future leagues can be added here */}
-            </div>
-
-            {/* Refresh Button */}
-            <button
-              onClick={handleManualRefresh}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: "pointer",
-                background: "var(--color-success)",
-                color: "white",
-                border: "none",
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-              title="Refresh odds (auto-refresh every 10 minutes)"
-            >
-              🔄 Refresh Odds
-            </button>
-
-            {/* Print Button */}
-            <button
-              onClick={handlePrintGames}
-              className="btn-print"
-              title="Print games and odds"
-            >
-              🖨️ Print Games
-            </button>
-
-            {/* Last Updated Timestamp */}
-            <div
-              style={{
-                fontSize: "11px",
-                color: "var(--color-text-muted)",
-                textAlign: "center",
-                marginTop: "4px",
-              }}
-            >
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </div>
-          </div>
-          {/* Agent Mode Indicator */}
-          {isAgentMode && (
-            <div className="agent-mode-indicator">
-              <div className="agent-mode-content">
-                <span className="agent-mode-icon">👤</span>
-                <span className="agent-mode-text">Agent Mode</span>
-                {selectedUser && (
-                  <div className="selected-user-display">
-                    <span className="selected-user-label">
-                      Placing bet for:
-                    </span>
-                    <span className="selected-user-name">
-                      {selectedUser.phone_number}
-                    </span>
-                    <span className="selected-user-balance">
-                      ${selectedUser.balance.toFixed(2)} {selectedUser.currency}
-                    </span>
-                    <button
-                      className="change-user-btn"
-                      onClick={() => setShowUserSelector(true)}
-                    >
-                      Change User
-                    </button>
-                  </div>
-                )}
-                {!selectedUser && (
-                  <button
-                    className="select-user-btn"
-                    onClick={() => setShowUserSelector(true)}
-                  >
-                    Select User
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          {/* <div className="games-header">
-          <h1>⚽ Games & Odds</h1>
-        </div> */}
-
-          {/* <div className="games-header">
-        <button className="btn btn-outline" onClick={() => onNavigate("home")}>
-          ← Back to Home
-        </button>
-      </div> */}
-
-          {isError && (
-            <div className="error-message">
-              <p>{error?.message || "Failed to load games"}</p>
-              <button className="btn btn-primary" onClick={() => mutate()}>
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Auto-refresh notification */}
-          {showRefreshNotification && (
-            <div
-              style={{
-                background: "var(--color-success)",
-                color: "white",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                marginBottom: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                animation: "slideIn 0.3s ease-out",
-              }}
-            >
-              🔄 Odds automatically refreshed at{" "}
-              {new Date().toLocaleTimeString()}
-            </div>
-          )}
-
-          <div className="games-grid">
-            {isEmpty && leagueKey === "soccer_uefa_world_cup_qualifiers" ? (
-              <div
-                className="no-games-message"
-                style={{
-                  gridColumn: "1 / -1",
-                  textAlign: "center",
-                  padding: "40px 20px",
-                  background: "var(--color-surface)",
-                  borderRadius: "12px",
-                  border: "1px solid var(--color-border)",
-                  margin: "20px 0",
+                  justifyContent: "space-between",
+                  py: 2,
                 }}
               >
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
-                <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text)" }}>
-                  UEFA World Cup Qualifiers
-                </h3>
-                <p
-                  style={{
-                    margin: "0 0 16px 0",
-                    color: "var(--color-text-muted)",
-                  }}
+                <Box display="flex" alignItems="center" gap={2}>
+                  <PersonIcon sx={{ fontSize: 28 }} />
+                  <Typography variant="h6" fontWeight="bold">
+                    Select User to Place Bet For
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => setShowUserSelector(false)}
+                  sx={{ color: "white" }}
                 >
-                  No games available at the moment
-                </p>
-                <p
-                  style={{
-                    margin: "0",
-                    fontSize: "14px",
-                    color: "var(--color-text-muted)",
-                  }}
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+
+              <DialogContent sx={{ p: 0 }}>
+                <List sx={{ p: 0 }}>
+                  {managedUsers
+                    .filter((user) => user.isActive)
+                    .map((user) => (
+                      <ListItem
+                        key={user.id}
+                        component="div"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowUserSelector(false);
+                        }}
+                        sx={{
+                          borderBottom: "1px solid",
+                          borderColor: "divider",
+                          cursor: "pointer",
+                          "&:hover": {
+                            bgcolor: "action.hover",
+                          },
+                          "&:last-child": {
+                            borderBottom: "none",
+                          },
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: "primary.main" }}>
+                            {user.phone_number.charAt(1).toUpperCase()}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body1" fontWeight="bold">
+                              {user.phone_number}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {user.country_code} • {user.currency}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Balance: ${user.balance.toFixed(2)}{" "}
+                                {user.currency}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Box display="flex" alignItems="center">
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              bgcolor: user.isActive
+                                ? "success.main"
+                                : "error.main",
+                            }}
+                          />
+                        </Box>
+                      </ListItem>
+                    ))}
+                </List>
+              </DialogContent>
+
+              <DialogActions sx={{ p: 3 }}>
+                <Button
+                  onClick={() => setShowUserSelector(false)}
+                  variant="outlined"
+                  startIcon={<CloseIcon />}
                 >
-                  The UEFA World Cup Qualifiers endpoint is not yet implemented
-                  on the backend.
-                  <br />
-                  Expected endpoint:{" "}
-                  <code>/api/uefa-world-cup-qualifiers/odds</code>
-                </p>
-              </div>
-            ) : isEmpty ? (
-              <div
-                className="no-games-message"
-                style={{
-                  gridColumn: "1 / -1",
-                  textAlign: "center",
-                  padding: "40px 20px",
-                  background: "var(--color-surface)",
-                  borderRadius: "12px",
-                  border: "1px solid var(--color-border)",
-                  margin: "20px 0",
-                }}
-              >
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚽</div>
-                <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text)" }}>
-                  No Games Available
-                </h3>
-                <p style={{ margin: "0", color: "var(--color-text-muted)" }}>
-                  Please try refreshing or check back later
-                </p>
-              </div>
-            ) : (
-              games
-                .filter(
-                  (game) => game && game.id && game.homeTeam && game.awayTeam
-                )
-                .map((game) => (
-                  <div
-                    key={game.id}
-                    className={`game-card ${
-                      selectedGame?.id === game.id ? "selected" : ""
-                    }`}
-                    onClick={() => setSelectedGame(game)}
-                  >
-                    <div className="game-info">
-                      <div className="game-teams">
-                        <div className="team home-team">
-                          <span className="team-name">{game.homeTeam}</span>
-                        </div>
-
-                        <div className="vs-divider">VS</div>
-
-                        <div className="team away-team">
-                          <span className="team-name">{game.awayTeam}</span>
-                        </div>
-                      </div>
-
-                      <div className="game-time">
-                        {new Date(game.matchTime).toLocaleDateString()} -{" "}
-                        {new Date(game.matchTime).toLocaleTimeString()}
-                      </div>
-                    </div>
-
-                    {/* Main Odds Column */}
-                    <div
-                      className={`betting-option-column ${
-                        !game.hasValidOdds ? "disabled" : ""
-                      }`}
-                    >
-                      <div className="betting-option-label">3 Way</div>
-                      <div className="betting-option-sub-labels">
-                        <div className="betting-option-sub-label">Home</div>
-                        <div className="betting-option-sub-label">Draw</div>
-                        <div className="betting-option-sub-label">Away</div>
-                      </div>
-                      <div className="betting-option-values">
-                        <div
-                          id={`${game.id}-3 Way-Home`}
-                          className={`betting-option-value ${
-                            game.homeOdds ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(game.id, "3 Way", "Home")
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.homeOdds &&
-                            handleAddToBetSlip(
-                              game,
-                              "3 Way",
-                              "Home",
-                              game.homeOdds
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.homeOdds) || "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-3 Way-Draw`}
-                          className={`betting-option-value ${
-                            game.drawOdds ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(game.id, "3 Way", "Draw")
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.drawOdds &&
-                            handleAddToBetSlip(
-                              game,
-                              "3 Way",
-                              "Draw",
-                              game.drawOdds
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.drawOdds) || "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-3 Way-Away`}
-                          className={`betting-option-value ${
-                            game.awayOdds ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(game.id, "3 Way", "Away")
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.awayOdds &&
-                            handleAddToBetSlip(
-                              game,
-                              "3 Way",
-                              "Away",
-                              game.awayOdds
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.awayOdds) || "-"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Double Chance Column */}
-                    <div
-                      className={`betting-option-column ${
-                        game.doubleChance?.homeOrDraw ||
-                        game.doubleChance?.drawOrAway ||
-                        game.doubleChance?.homeOrAway
-                          ? ""
-                          : "disabled"
-                      }`}
-                    >
-                      <div className="betting-option-label">Double Chance</div>
-                      <div className="betting-option-sub-labels">
-                        <div className="betting-option-sub-label">1 or X</div>
-                        <div className="betting-option-sub-label">X or 2</div>
-                        <div className="betting-option-sub-label">1 or 2</div>
-                      </div>
-                      <div className="betting-option-values">
-                        <div
-                          id={`${game.id}-Double Chance-1 or X`}
-                          className={`betting-option-value ${
-                            game.doubleChance?.homeOrDraw ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Double Chance",
-                              "1 or X"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.doubleChance?.homeOrDraw &&
-                            handleAddToBetSlip(
-                              game,
-                              "Double Chance",
-                              "1 or X",
-                              game.doubleChance?.homeOrDraw
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.doubleChance?.homeOrDraw) ??
-                            "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-Double Chance-X or 2`}
-                          className={`betting-option-value ${
-                            game.doubleChance?.drawOrAway ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Double Chance",
-                              "X or 2"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.doubleChance?.drawOrAway &&
-                            handleAddToBetSlip(
-                              game,
-                              "Double Chance",
-                              "X or 2",
-                              game.doubleChance?.drawOrAway
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.doubleChance?.drawOrAway) ??
-                            "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-Double Chance-1 or 2`}
-                          className={`betting-option-value ${
-                            game.doubleChance?.homeOrAway ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Double Chance",
-                              "1 or 2"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.doubleChance?.homeOrAway &&
-                            handleAddToBetSlip(
-                              game,
-                              "Double Chance",
-                              "1 or 2",
-                              game.doubleChance?.homeOrAway
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.doubleChance?.homeOrAway) ??
-                            "-"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Over/Under Column */}
-                    <div
-                      className={`betting-option-column ${
-                        game.overUnder?.over25 || game.overUnder?.under25
-                          ? ""
-                          : "disabled"
-                      }`}
-                    >
-                      <div className="betting-option-label">Over/Under 2.5</div>
-                      <div className="betting-option-sub-labels">
-                        <div className="betting-option-sub-label">Over</div>
-                        <div className="betting-option-sub-label">Under</div>
-                      </div>
-                      <div className="betting-option-values">
-                        <div
-                          id={`${game.id}-Over/Under 2.5-Over`}
-                          className={`betting-option-value ${
-                            game.overUnder?.over25 ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Over/Under 2.5",
-                              "Over"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.overUnder?.over25 &&
-                            handleAddToBetSlip(
-                              game,
-                              "Over/Under 2.5",
-                              "Over",
-                              game.overUnder?.over25
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.overUnder?.over25) ?? "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-Over/Under 2.5-Under`}
-                          className={`betting-option-value ${
-                            game.overUnder?.under25 ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Over/Under 2.5",
-                              "Under"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.overUnder?.under25 &&
-                            handleAddToBetSlip(
-                              game,
-                              "Over/Under 2.5",
-                              "Under",
-                              game.overUnder?.under25
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.overUnder?.under25) ?? "-"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Both Teams to Score Column */}
-                    <div
-                      className={`betting-option-column ${
-                        game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no
-                          ? ""
-                          : "disabled"
-                      }`}
-                    >
-                      <div className="betting-option-label">
-                        Both Teams To Score
-                      </div>
-                      <div className="betting-option-sub-labels">
-                        <div className="betting-option-sub-label">Yes</div>
-                        <div className="betting-option-sub-label">No</div>
-                      </div>
-                      <div className="betting-option-values">
-                        <div
-                          id={`${game.id}-Both Teams To Score-Yes`}
-                          className={`betting-option-value ${
-                            game.bothTeamsToScore?.yes ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Both Teams To Score",
-                              "Yes"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.bothTeamsToScore?.yes &&
-                            handleAddToBetSlip(
-                              game,
-                              "Both Teams To Score",
-                              "Yes",
-                              game.bothTeamsToScore?.yes
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.bothTeamsToScore?.yes) ??
-                            "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-Both Teams To Score-No`}
-                          className={`betting-option-value ${
-                            game.bothTeamsToScore?.no ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(
-                              game.id,
-                              "Both Teams To Score",
-                              "No"
-                            )
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.bothTeamsToScore?.no &&
-                            handleAddToBetSlip(
-                              game,
-                              "Both Teams To Score",
-                              "No",
-                              game.bothTeamsToScore?.no
-                            )
-                          }
-                        >
-                          {applyOddsReduction(game.bothTeamsToScore?.no) ?? "-"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Spreads Column */}
-                    <div
-                      className={`betting-option-column ${
-                        game.spreads?.homeSpreadOdds ||
-                        game.spreads?.awaySpreadOdds
-                          ? ""
-                          : "disabled"
-                      }`}
-                    >
-                      <div className="betting-option-label">
-                        {game.spreads?.spreadLine
-                          ? `Spread ${game.spreads?.spreadLine > 0 ? `+${game.spreads?.spreadLine}` : game.spreads?.spreadLine}`
-                          : "Spread"}
-                      </div>
-                      <div className="betting-option-sub-labels">
-                        <div className="betting-option-sub-label">Home</div>
-                        <div className="betting-option-sub-label">Away</div>
-                      </div>
-                      <div className="betting-option-values">
-                        <div
-                          id={`${game.id}-Spread-Home`}
-                          className={`betting-option-value ${
-                            game.spreads?.homeSpreadOdds ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(game.id, "Spread", "Home")
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.spreads?.homeSpreadOdds &&
-                            handleAddToBetSlip(
-                              game,
-                              "Spread",
-                              "Home",
-                              game.spreads?.homeSpreadOdds
-                            )
-                          }
-                        >
-                          {game.spreads?.homeSpreadOdds ?? "-"}
-                        </div>
-                        <div
-                          id={`${game.id}-Spread-Away`}
-                          className={`betting-option-value ${
-                            game.spreads?.awaySpreadOdds ? "clickable" : ""
-                          } ${
-                            isSelectionInBetSlip(game.id, "Spread", "Away")
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            game.spreads?.awaySpreadOdds &&
-                            handleAddToBetSlip(
-                              game,
-                              "Spread",
-                              "Away",
-                              game.spreads?.awaySpreadOdds
-                            )
-                          }
-                        >
-                          {game.spreads?.awaySpreadOdds ?? "-"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expand Arrow */}
-                    <div
-                      className={`expand-arrow ${
-                        expandedGames.has(game.id) ? "expanded" : ""
-                      }`}
-                      onClick={(e) => toggleExpanded(game.id, e)}
-                    >
-                      ▼
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
-
-        {/* {selectedGame && (
-        <div className="betting-panel">
-          <h3>Place Your Bet</h3>
-          <div className="selected-game">
-            <h4>
-              {selectedGame.homeTeam} vs {selectedGame.awayTeam}
-            </h4>
-            <p>{new Date(selectedGame.matchTime).toLocaleString()}</p>
-          </div>
-
-          <div className="bet-options">
-            <button
-              className={`bet-option ${
-                selectedBet === "home" ? "selected" : ""
-              }`}
-              onClick={() => setSelectedBet("home")}
-            >
-              <span>{selectedGame.homeTeam}</span>
-              <span className="odds">{applyOddsReduction(selectedGame.homeOdds)}</span>
-            </button>
-
-            <button
-              className={`bet-option ${
-                selectedBet === "draw" ? "selected" : ""
-              }`}
-              onClick={() => setSelectedBet("draw")}
-            >
-              <span>Draw</span>
-              <span className="odds">{applyOddsReduction(selectedGame.drawOdds)}</span>
-            </button>
-
-            <button
-              className={`bet-option ${
-                selectedBet === "away" ? "selected" : ""
-              }`}
-              onClick={() => setSelectedBet("away")}
-            >
-              <span>{selectedGame.awayTeam}</span>
-              <span className="odds">{applyOddsReduction(selectedGame.awayOdds)}</span>
-            </button>
-          </div>
-
-          <div className="bet-amount">
-            <label htmlFor="betAmount">Bet Amount (SSP)</label>
-            <input
-              type="number"
-              id="betAmount"
-              value={betAmount}
-              onChange={(e) => setBetAmount(Number(e.target.value))}
-              min="1"
-              max="1000"
-            />
-          </div>
-
-          {selectedBet && (
-            <div className="potential-winnings">
-              <p>
-                Potential Winnings: SSP
-                {(() => {
-                  const odds =
-                    selectedBet === "home"
-                      ? applyOddsReduction(selectedGame.homeOdds)
-                      : selectedBet === "draw"
-                      ? applyOddsReduction(selectedGame.drawOdds)
-                      : applyOddsReduction(selectedGame.awayOdds);
-                  return odds ? (betAmount * odds).toFixed(2) : "N/A";
-                })()}
-              </p>
-            </div>
-          )}
-
-          <button
-            className="btn btn-primary place-bet-btn"
-            onClick={handlePlaceBet}
-            disabled={!selectedBet}
-          >
-            Place Bet
-          </button>
-        </div>
-      )} */}
-      </div>
-
-      {/* User Selector Modal */}
-      {showUserSelector && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowUserSelector(false)}
-        >
-          <div
-            className="modal-content user-selector-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>Select User to Place Bet For</h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowUserSelector(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="users-list">
-                {managedUsers
-                  .filter((user) => user.isActive)
-                  .map((user) => (
-                    <div
-                      key={user.id}
-                      className={`user-selector-item ${
-                        selectedUser?.id === user.id ? "selected" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setShowUserSelector(false);
-                      }}
-                    >
-                      <div className="user-selector-avatar">
-                        <span>{user.phone_number.charAt(1).toUpperCase()}</span>
-                      </div>
-                      <div className="user-selector-info">
-                        <div className="user-selector-name">
-                          {user.phone_number}
-                        </div>
-                        <div className="user-selector-details">
-                          {user.country_code} • {user.currency}
-                        </div>
-                        <div className="user-selector-balance">
-                          Balance: ${user.balance.toFixed(2)} {user.currency}
-                        </div>
-                      </div>
-                      <div className="user-selector-status">
-                        <span
-                          className={`status-indicator ${
-                            user.isActive ? "active" : "inactive"
-                          }`}
-                        ></span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowUserSelector(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                  Cancel
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 };

@@ -100,20 +100,71 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
   return (
     <TableContainer
       component={Paper}
-      sx={{ borderRadius: 2, overflow: "hidden" }}
+      sx={{
+        borderRadius: "16px",
+        overflow: "hidden",
+        background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+        border: "1px solid #2a2d3a",
+        boxShadow:
+          "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+      }}
     >
-      <Table>
+      <Table
+        sx={{
+          "& .MuiTableCell-root": {
+            color: "rgba(255,255,255,0.8)",
+            borderColor: "rgba(255,255,255,0.1)",
+          },
+        }}
+      >
         <TableHead>
-          <TableRow>
-            <TableCell>Bet ID</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Selections</TableCell>
-            <TableCell>Stake</TableCell>
-            <TableCell>Odds</TableCell>
-            <TableCell>Potential Win</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell align="center">Actions</TableCell>
+          <TableRow sx={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Bet ID
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Type
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Selections
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Stake
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Odds
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Potential Win
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Status
+            </TableCell>
+            <TableCell
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Date
+            </TableCell>
+            <TableCell
+              align="center"
+              sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+            >
+              Actions
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -122,8 +173,12 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               key={bet.id}
               hover
               sx={{
+                backgroundColor: "rgba(255,255,255,0.02)",
                 "&:hover": {
-                  backgroundColor: "action.hover",
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                },
+                "&:nth-of-type(even)": {
+                  backgroundColor: "rgba(255,255,255,0.01)",
                 },
               }}
             >
@@ -135,10 +190,17 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                     <IconId fontSize="small" />
                   </Avatar>
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      sx={{ color: "rgba(255,255,255,0.9)" }}
+                    >
                       {bet.id.substring(0, 8)}...
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                    >
                       {bet.type}
                     </Typography>
                   </Box>
@@ -151,6 +213,15 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                   size="small"
                   color={bet.betType === "single" ? "primary" : "secondary"}
                   variant="outlined"
+                  sx={{
+                    backgroundColor:
+                      bet.betType === "single"
+                        ? "rgba(102, 126, 234, 0.2)"
+                        : "rgba(156, 39, 176, 0.2)",
+                    color: bet.betType === "single" ? "#667eea" : "#9c27b0",
+                    borderColor:
+                      bet.betType === "single" ? "#667eea" : "#9c27b0",
+                  }}
                 />
               </TableCell>
 
@@ -158,10 +229,17 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                 <Stack spacing={0.5}>
                   {bet.selections.map((selection, index) => (
                     <Box key={index} display="flex" alignItems="center" gap={1}>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={500}
+                        sx={{ color: "rgba(255,255,255,0.9)" }}
+                      >
                         {selection.homeTeam}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
+                      >
                         vs {selection.awayTeam}
                       </Typography>
                     </Box>
@@ -172,7 +250,11 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconCoins color="primary" fontSize="small" />
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     {formatCurrency(bet.totalStake, "SSP")}
                   </Typography>
                 </Box>
@@ -181,7 +263,11 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconTrendingUp color="success" fontSize="small" />
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     {bet.selections[0]?.odds?.toFixed(2) || "N/A"}
                   </Typography>
                 </Box>
@@ -190,7 +276,11 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconTrophy color="warning" fontSize="small" />
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     {formatCurrency(bet.potentialWinnings, "SSP")}
                   </Typography>
                 </Box>
@@ -209,7 +299,10 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconCalendar color="action" fontSize="small" />
-                  <Typography variant="body2">
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.8)" }}
+                  >
                     {formatDate(bet.createdAt)}
                   </Typography>
                 </Box>
@@ -221,7 +314,7 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                     <IconButton
                       size="small"
                       onClick={() => onView(bet)}
-                      color="primary"
+                      sx={{ color: "#667eea" }}
                     >
                       <IconEye fontSize="small" />
                     </IconButton>
@@ -231,7 +324,7 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                     <IconButton
                       size="small"
                       onClick={() => onPrint(bet)}
-                      color="secondary"
+                      sx={{ color: "#9c27b0" }}
                     >
                       <IconPrinter fontSize="small" />
                     </IconButton>
@@ -242,7 +335,7 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                       <IconButton
                         size="small"
                         onClick={() => onPayout(bet)}
-                        color="success"
+                        sx={{ color: "#4caf50" }}
                       >
                         <IconMoneybag fontSize="small" />
                       </IconButton>

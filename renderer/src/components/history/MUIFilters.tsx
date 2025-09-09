@@ -99,9 +99,11 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
         sx={{
           p: 3,
           mb: 3,
-          background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-          borderRadius: 3,
+          background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+          boxShadow:
+            "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+          borderRadius: "16px",
+          border: "1px solid #2a2d3a",
         }}
       >
         {/* Enhanced Header */}
@@ -123,10 +125,17 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
               <IconFilter />
             </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                sx={{ color: "rgba(255,255,255,0.9)" }}
+              >
                 Smart Filters
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.6)" }}
+              >
                 Find your bets quickly and easily
               </Typography>
             </Box>
@@ -136,7 +145,12 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                 color="primary"
                 variant="outlined"
                 size="small"
-                sx={{ ml: 2 }}
+                sx={{
+                  ml: 2,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                }}
               />
             </Badge>
           </Box>
@@ -182,7 +196,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <IconSearch color="primary" />
+                    <IconSearch sx={{ color: "#667eea" }} />
                   </InputAdornment>
                 ),
                 endAdornment: searchTerm && (
@@ -191,6 +205,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                       size="small"
                       onClick={() => setSearchTerm("")}
                       edge="end"
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
                     >
                       <IconX />
                     </IconButton>
@@ -198,10 +213,20 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                 ),
               }}
               sx={{
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
                 "& .MuiOutlinedInput-root": {
+                  color: "rgba(255,255,255,0.8)",
                   borderRadius: 2,
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "primary.main",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
                   },
                 },
               }}
@@ -212,7 +237,27 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
 
           {/* Status Filter */}
           <Grid item xs={6} md={2}>
-            <FormControl fullWidth size="small">
+            <FormControl
+              fullWidth
+              size="small"
+              sx={{
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
+                "& .MuiOutlinedInput-root": {
+                  color: "rgba(255,255,255,0.8)",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
+                  },
+                },
+              }}
+            >
               <InputLabel>Status</InputLabel>
               <Select
                 value={betStatusFilter}
@@ -244,7 +289,27 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
 
           {/* Bet Type Filter */}
           <Grid item xs={6} md={2}>
-            <FormControl fullWidth size="small">
+            <FormControl
+              fullWidth
+              size="small"
+              sx={{
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
+                "& .MuiOutlinedInput-root": {
+                  color: "rgba(255,255,255,0.8)",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
+                  },
+                },
+              }}
+            >
               <InputLabel>Type</InputLabel>
               <Select
                 value={betTypeFilter}
@@ -284,11 +349,26 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                   fullWidth: true,
                   sx: {
                     borderRadius: 2,
+                    "& .MuiInputLabel-root": {
+                      color: "rgba(255,255,255,0.7)",
+                    },
+                    "& .MuiOutlinedInput-root": {
+                      color: "rgba(255,255,255,0.8)",
+                      "& fieldset": {
+                        borderColor: "rgba(255,255,255,0.2)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "rgba(255,255,255,0.4)",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#667eea",
+                      },
+                    },
                   },
                   InputProps: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconCalendar color="primary" />
+                        <IconCalendar sx={{ color: "#667eea" }} />
                       </InputAdornment>
                     ),
                   },
@@ -311,11 +391,26 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                   fullWidth: true,
                   sx: {
                     borderRadius: 2,
+                    "& .MuiInputLabel-root": {
+                      color: "rgba(255,255,255,0.7)",
+                    },
+                    "& .MuiOutlinedInput-root": {
+                      color: "rgba(255,255,255,0.8)",
+                      "& fieldset": {
+                        borderColor: "rgba(255,255,255,0.2)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "rgba(255,255,255,0.4)",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#667eea",
+                      },
+                    },
                   },
                   InputProps: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconCalendar color="primary" />
+                        <IconCalendar sx={{ color: "#667eea" }} />
                       </InputAdornment>
                     ),
                   },
@@ -327,7 +422,11 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
 
         {/* Quick Filter Chips */}
         <Box mt={2}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          <Typography
+            variant="subtitle2"
+            sx={{ color: "rgba(255,255,255,0.6)" }}
+            gutterBottom
+          >
             Quick Filters
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
@@ -343,16 +442,64 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                 onClick={() => setBetStatusFilter(option.value)}
                 icon={
                   option.value === "won" ? (
-                    <IconTrendingUp />
+                    <IconTrendingUp
+                      sx={{
+                        color:
+                          betStatusFilter === option.value
+                            ? "white"
+                            : "#4caf50",
+                      }}
+                    />
                   ) : option.value === "lost" ? (
-                    <IconX />
+                    <IconX
+                      sx={{
+                        color:
+                          betStatusFilter === option.value
+                            ? "white"
+                            : "#f44336",
+                      }}
+                    />
                   ) : option.value === "pending" ? (
-                    <IconRefresh />
+                    <IconRefresh
+                      sx={{
+                        color:
+                          betStatusFilter === option.value
+                            ? "white"
+                            : "#ff9800",
+                      }}
+                    />
                   ) : (
-                    <IconSports />
+                    <IconSports
+                      sx={{
+                        color:
+                          betStatusFilter === option.value
+                            ? "white"
+                            : "#667eea",
+                      }}
+                    />
                   )
                 }
                 size="small"
+                sx={{
+                  backgroundColor:
+                    betStatusFilter === option.value
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    betStatusFilter === option.value
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor:
+                    betStatusFilter === option.value
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    backgroundColor:
+                      betStatusFilter === option.value
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
               />
             ))}
             {typeOptions.slice(1).map((option) => (
@@ -364,9 +511,43 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                 variant={betTypeFilter === option.value ? "filled" : "outlined"}
                 onClick={() => setBetTypeFilter(option.value)}
                 icon={
-                  option.value === "single" ? <IconSports /> : <IconMoney />
+                  option.value === "single" ? (
+                    <IconSports
+                      sx={{
+                        color:
+                          betTypeFilter === option.value ? "white" : "#667eea",
+                      }}
+                    />
+                  ) : (
+                    <IconMoney
+                      sx={{
+                        color:
+                          betTypeFilter === option.value ? "white" : "#9c27b0",
+                      }}
+                    />
+                  )
                 }
                 size="small"
+                sx={{
+                  backgroundColor:
+                    betTypeFilter === option.value
+                      ? "#9c27b0"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    betTypeFilter === option.value
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor:
+                    betTypeFilter === option.value
+                      ? "#9c27b0"
+                      : "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    backgroundColor:
+                      betTypeFilter === option.value
+                        ? "#8e24aa"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
               />
             ))}
           </Stack>

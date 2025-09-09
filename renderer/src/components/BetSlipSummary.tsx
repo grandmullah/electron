@@ -165,43 +165,45 @@ export default function BetSlipSummary({
             </div>
 
             {/* Validation Status */}
-            <div className="validation-status">
-              <h4>Validation Status</h4>
-              {enhancedData.selections.map((selection, index) => (
-                <div key={index} className="selection-validation">
-                  <div className="selection-header">
-                    <span className="teams">
-                      {selection.homeTeam} vs {selection.awayTeam}
-                    </span>
-                    <span className="market">
-                      {selection.marketType}: {selection.outcome}
-                    </span>
-                  </div>
-                  {selection.validation && (
-                    <div className="validation-details">
-                      <span
-                        className={`status ${selection.validation.oddsVerified ? "valid" : "invalid"}`}
-                      >
-                        {selection.validation.oddsVerified ? "✅" : "❌"} Odds
-                        Verified
+            {enhancedData.selections && enhancedData.selections.length > 0 && (
+              <div className="validation-status">
+                <h4>Validation Status</h4>
+                {enhancedData.selections.map((selection, index) => (
+                  <div key={index} className="selection-validation">
+                    <div className="selection-header">
+                      <span className="teams">
+                        {selection.homeTeam} vs {selection.awayTeam}
                       </span>
-                      <span
-                        className={`status ${selection.validation.gameExists ? "valid" : "invalid"}`}
-                      >
-                        {selection.validation.gameExists ? "✅" : "❌"} Game
-                        Exists
-                      </span>
-                      <span
-                        className={`status ${selection.validation.oddsMatch ? "valid" : "invalid"}`}
-                      >
-                        {selection.validation.oddsMatch ? "✅" : "❌"} Odds
-                        Match
+                      <span className="market">
+                        {selection.marketType}: {selection.outcome}
                       </span>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    {selection.validation && (
+                      <div className="validation-details">
+                        <span
+                          className={`status ${selection.validation.oddsVerified ? "valid" : "invalid"}`}
+                        >
+                          {selection.validation.oddsVerified ? "✅" : "❌"} Odds
+                          Verified
+                        </span>
+                        <span
+                          className={`status ${selection.validation.gameExists ? "valid" : "invalid"}`}
+                        >
+                          {selection.validation.gameExists ? "✅" : "❌"} Game
+                          Exists
+                        </span>
+                        <span
+                          className={`status ${selection.validation.oddsMatch ? "valid" : "invalid"}`}
+                        >
+                          {selection.validation.oddsMatch ? "✅" : "❌"} Odds
+                          Match
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Frontend Data */}
             {enhancedData.details?.frontendData && (
@@ -237,7 +239,7 @@ export default function BetSlipSummary({
               <div className="next-steps">
                 <h4>Next Steps</h4>
                 <ul>
-                  {enhancedData.nextSteps.map((step, index) => (
+                  {enhancedData.nextSteps?.map((step, index) => (
                     <li key={index}>{step}</li>
                   ))}
                 </ul>

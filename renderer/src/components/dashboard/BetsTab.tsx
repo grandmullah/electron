@@ -90,14 +90,29 @@ export const BetsTab: React.FC<BetsTabProps> = ({
   return (
     <Box>
       {/* Section Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 3,
+          background:
+            "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 3,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
         <Box display="flex" alignItems="center" gap={2}>
-          <BetsIcon color="primary" sx={{ fontSize: 32 }} />
+          <BetsIcon sx={{ fontSize: 32, color: "#667eea" }} />
           <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
               Recent Bets
             </Typography>
-            <Typography color="text.secondary">
+            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
               Your latest betting activity
             </Typography>
           </Box>
@@ -105,30 +120,88 @@ export const BetsTab: React.FC<BetsTabProps> = ({
       </Paper>
 
       {/* Bets Table */}
-      <Paper>
+      <Paper
+        sx={{
+          background:
+            "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 3,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(10px)",
+          overflow: "hidden",
+        }}
+      >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Bet ID</TableCell>
-                <TableCell>Game</TableCell>
-                <TableCell>Selection</TableCell>
-                <TableCell>Stake</TableCell>
-                <TableCell>Potential</TableCell>
-                <TableCell>Taxes</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Date</TableCell>
+              <TableRow sx={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Bet ID
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Game
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Selection
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Stake
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Potential
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Taxes
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Status
+                </TableCell>
+                <TableCell
+                  sx={{ color: "rgba(255,255,255,0.9)", fontWeight: "bold" }}
+                >
+                  Date
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {recentBets.map((bet) => (
-                <TableRow key={bet.betId || bet.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" title={bet.betId || bet.id}>
+              {recentBets.map((bet, index) => (
+                <TableRow
+                  key={bet.betId || bet.id}
+                  hover
+                  sx={{
+                    backgroundColor:
+                      index % 2 === 0
+                        ? "rgba(255,255,255,0.02)"
+                        : "rgba(255,255,255,0.05)",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                    },
+                  }}
+                >
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                    <Typography
+                      variant="body2"
+                      title={bet.betId || bet.id}
+                      sx={{ color: "rgba(255,255,255,0.8)" }}
+                    >
                       {(bet.betId || bet.id).substring(0, 8)}...
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
                     <Box>
                       <Chip
                         label={
@@ -138,45 +211,74 @@ export const BetsTab: React.FC<BetsTabProps> = ({
                         color={
                           bet.betType === "single" ? "primary" : "secondary"
                         }
-                        sx={{ mb: 1 }}
+                        sx={{
+                          mb: 1,
+                          backgroundColor:
+                            bet.betType === "single" ? "#667eea" : "#9c27b0",
+                          color: "white",
+                        }}
                       />
                       {bet.selections && bet.selections[0] && (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
                           {bet.selections[0].homeTeam} vs{" "}
                           {bet.selections[0].awayTeam}
                         </Typography>
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
                     {bet.selections && bet.selections[0] && (
                       <Box>
-                        <Typography variant="body2" fontWeight="bold">
+                        <Typography
+                          variant="body2"
+                          fontWeight="bold"
+                          sx={{ color: "rgba(255,255,255,0.9)" }}
+                        >
                           {bet.selections[0].selection}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
                           {bet.selections[0].odds}x
                         </Typography>
                       </Box>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight="bold"
+                      sx={{ color: "rgba(255,255,255,0.9)" }}
+                    >
                       SSP{bet.totalStake || bet.stake}
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight="bold"
+                      sx={{ color: "rgba(255,255,255,0.9)" }}
+                    >
                       SSP{(bet.potentialWinnings || 0).toFixed(2)}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
                     <Box>
-                      <Typography variant="body2">
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255,255,255,0.9)" }}
+                      >
                         SSP{(bet.taxAmount || 0).toFixed(2)}
                       </Typography>
                       {bet.taxPercentage && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
                           (
                           {bet.taxPercentage > 1
                             ? bet.taxPercentage.toFixed(1)
@@ -186,16 +288,30 @@ export const BetsTab: React.FC<BetsTabProps> = ({
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
                     <Chip
                       label={bet.status}
                       color={getStatusColor(bet.status) as any}
                       size="small"
                       icon={getStatusIcon(bet.status)}
+                      sx={{
+                        backgroundColor:
+                          getStatusColor(bet.status) === "success"
+                            ? "#4caf50"
+                            : getStatusColor(bet.status) === "error"
+                              ? "#f44336"
+                              : getStatusColor(bet.status) === "warning"
+                                ? "#ff9800"
+                                : "#667eea",
+                        color: "white",
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
+                  <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255,255,255,0.9)" }}
+                    >
                       {new Date(
                         bet.timestamp || (bet as any).createdAt || ""
                       ).toLocaleDateString()}

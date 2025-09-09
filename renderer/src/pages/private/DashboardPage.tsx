@@ -106,7 +106,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: "#0e1220", minHeight: "100vh" }}>
       <Header onNavigate={onNavigate} currentPage="dashboard" />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -116,10 +116,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             p: 4,
             mb: 4,
             background:
-              "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
+              "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
             color: "white",
             position: "relative",
             overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            backdropFilter: "blur(10px)",
             "&::before": {
               content: '""',
               position: "absolute",
@@ -128,7 +132,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               right: 0,
               bottom: 0,
               background:
-                "linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%)",
+                "linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 50%)",
               pointerEvents: "none",
             },
           }}
@@ -266,10 +270,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <Paper
           sx={{
             mb: 3,
-            background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            background:
+              "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
             borderRadius: 3,
             overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.1)",
+            backdropFilter: "blur(10px)",
           }}
         >
           <Tabs
@@ -283,15 +290,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 fontWeight: 600,
                 textTransform: "none",
                 transition: "all 0.3s ease",
+                color: "rgba(255,255,255,0.7)",
                 "&:hover": {
-                  bgcolor: "rgba(102, 126, 234, 0.08)",
+                  bgcolor: "rgba(102, 126, 234, 0.15)",
+                  color: "rgba(255,255,255,0.9)",
                   transform: "translateY(-2px)",
                 },
                 "&.Mui-selected": {
-                  bgcolor: "rgba(102, 126, 234, 0.12)",
-                  color: "primary.main",
+                  bgcolor: "rgba(102, 126, 234, 0.2)",
+                  color: "#667eea",
                   "& .MuiSvgIcon-root": {
                     transform: "scale(1.1)",
+                    color: "#667eea",
                   },
                 },
               },
@@ -337,7 +347,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         {/* Tab Content */}
         <Fade in={true} timeout={300}>
-          <Box>
+          <Box
+            sx={{
+              backgroundColor: "transparent",
+              "& .MuiPaper-root": {
+                backgroundColor: "rgba(26, 29, 41, 0.8)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                backdropFilter: "blur(10px)",
+              },
+            }}
+          >
             {activeTab === "user" && (
               <UserStatsTab
                 personalStats={personalStats}

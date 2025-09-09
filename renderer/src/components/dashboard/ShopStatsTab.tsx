@@ -74,14 +74,29 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
     <Box>
       {/* Shop Information Display */}
       {userShop && (
-        <Paper sx={{ p: 3, mb: 3 }}>
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
+            background:
+              "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
           <Box display="flex" alignItems="center" gap={2} mb={3}>
-            <StoreIcon color="primary" sx={{ fontSize: 32 }} />
+            <StoreIcon sx={{ fontSize: 32, color: "#667eea" }} />
             <Box>
-              <Typography variant="h4" gutterBottom>
+              <Typography
+                variant="h4"
+                gutterBottom
+                sx={{ color: "rgba(255,255,255,0.9)" }}
+              >
                 Shop Information
               </Typography>
-              <Typography color="text.secondary">
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
                 Your current shop details
               </Typography>
             </Box>
@@ -89,20 +104,36 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={4}>
               <Box>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.6)" }}
+                  variant="body2"
+                  gutterBottom
+                >
                   Shop Name
                 </Typography>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{ color: "rgba(255,255,255,0.9)" }}
+                >
                   {userShop.shop_name}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <Box>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.6)" }}
+                  variant="body2"
+                  gutterBottom
+                >
                   Shop Code
                 </Typography>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{ color: "rgba(255,255,255,0.9)" }}
+                >
                   {userShop.shop_code}
                 </Typography>
               </Box>
@@ -111,13 +142,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
               <Grid item xs={12} sm={6} md={4}>
                 <Box>
                   <Typography
-                    color="text.secondary"
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
                     variant="body2"
                     gutterBottom
                   >
                     Address
                   </Typography>
-                  <Typography variant="h6" fontWeight="bold">
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
                     {userShop.shop_address}
                   </Typography>
                 </Box>
@@ -125,20 +160,36 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
             )}
             <Grid item xs={12} sm={6} md={4}>
               <Box>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.6)" }}
+                  variant="body2"
+                  gutterBottom
+                >
                   Default Currency
                 </Typography>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{ color: "rgba(255,255,255,0.9)" }}
+                >
                   {userShop.default_currency}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <Box>
-                <Typography color="text.secondary" variant="body2" gutterBottom>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.6)" }}
+                  variant="body2"
+                  gutterBottom
+                >
                   Commission Rate
                 </Typography>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{ color: "rgba(255,255,255,0.9)" }}
+                >
                   {userShop.commission_rate}%
                 </Typography>
               </Box>
@@ -152,10 +203,14 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
         <Box display="flex" alignItems="center" gap={2} mb={3}>
           <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
           <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{ color: "rgba(255,255,255,0.9)" }}
+            >
               Shop Performance Overview
             </Typography>
-            <Typography color="text.secondary">
+            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
               Complete shop betting activity and statistics
             </Typography>
           </Box>
@@ -169,10 +224,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <AssessmentIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Total Bets
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      sx={{ color: "#667eea" }}
+                    >
                       {shopStats?.totalBets ||
                         dashboardStats?.shop?.totalBets ||
                         0}
@@ -188,10 +250,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <MoneyIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Total Stake
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      sx={{ color: "#667eea" }}
+                    >
                       SSP{" "}
                       {(
                         shopStats?.totalStake ||
@@ -210,10 +279,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <StarIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Total Winnings
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      sx={{ color: "#667eea" }}
+                    >
                       SSP{" "}
                       {(
                         shopStats?.totalWinnings ||
@@ -232,7 +308,10 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <WalletIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Net Profit
                     </Typography>
                     <Typography
@@ -264,10 +343,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <PeopleIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Active Users
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      sx={{ color: "#667eea" }}
+                    >
                       {shopStats?.activeUsers ||
                         dashboardStats?.shop?.activeUsers ||
                         0}
@@ -283,10 +369,17 @@ export const ShopStatsTab: React.FC<ShopStatsTabProps> = ({
                 <Box display="flex" alignItems="center" gap={2}>
                   <ChartIcon color="primary" />
                   <Box>
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                      gutterBottom
+                    >
                       Avg Bet Size
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      sx={{ color: "#667eea" }}
+                    >
                       SSP{" "}
                       {(
                         shopStats?.averageBetSize ||

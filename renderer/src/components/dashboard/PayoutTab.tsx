@@ -142,7 +142,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               <Typography variant="h4" gutterBottom>
                 Payout Management
               </Typography>
-              <Typography color="text.secondary">
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
                 Process payouts for winning bets
               </Typography>
             </Box>
@@ -203,7 +203,11 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               🎉
             </Box>
             <Box>
-              <Typography color="text.secondary" variant="body2" gutterBottom>
+              <Typography
+                sx={{ color: "rgba(255,255,255,0.6)" }}
+                variant="body2"
+                gutterBottom
+              >
                 Pending Payouts
               </Typography>
               <Typography variant="h4" fontWeight="bold">
@@ -229,13 +233,20 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               💰
             </Box>
             <Box>
-              <Typography color="text.secondary" variant="body2" gutterBottom>
+              <Typography
+                sx={{ color: "rgba(255,255,255,0.6)" }}
+                variant="body2"
+                gutterBottom
+              >
                 Total Payout Amount
               </Typography>
               <Typography variant="h4" fontWeight="bold">
                 SSP {totalPayoutAmount.toFixed(2)}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography
+                sx={{ color: "rgba(255,255,255,0.6)" }}
+                variant="body2"
+              >
                 Ready for processing
               </Typography>
             </Box>
