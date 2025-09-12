@@ -54,7 +54,43 @@ class GamesService {
                   const games: Game[] = (response.data?.data || [])
                         .map((game: any) => {
                               const bookmakers = Array.isArray(game.bookmakers) ? game.bookmakers : [];
-                              if (bookmakers.length === 0) return null;
+
+                              // Handle games without bookmaker data (like Bundesliga/La Liga)
+                              if (bookmakers.length === 0) {
+                                    return {
+                                          id: game.id,
+                                          homeTeam: game.home_team,
+                                          awayTeam: game.away_team,
+                                          homeOdds: null,
+                                          drawOdds: null,
+                                          awayOdds: null,
+                                          matchTime: game.commence_time,
+                                          league: game.sport_title || 'Unknown',
+                                          sportKey: game.sport_key,
+                                          status: game.status === 'scheduled' ? 'upcoming' : game.status,
+                                          doubleChance: {
+                                                homeOrDraw: null,
+                                                homeOrAway: null,
+                                                drawOrAway: null,
+                                          },
+                                          overUnder: {
+                                                over25: null,
+                                                under25: null,
+                                          },
+                                          bothTeamsToScore: {
+                                                yes: null,
+                                                no: null,
+                                          },
+                                          spreads: {
+                                                homeSpread: null,
+                                                awaySpread: null,
+                                                homeSpreadOdds: null,
+                                                awaySpreadOdds: null,
+                                                spreadLine: null,
+                                          },
+                                          hasValidOdds: false,
+                                    };
+                              }
 
                               // Prefer the first bookmaker that has the market we need
                               const findMarketFromAnyBookmaker = (marketKey: string) => {

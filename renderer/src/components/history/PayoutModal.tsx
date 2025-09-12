@@ -88,20 +88,47 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          borderRadius: 4,
+          background: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow:
+            "0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
+          },
         },
       }}
     >
       <DialogTitle
         sx={{
-          background: "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
+          background: "rgba(76, 175, 80, 0.2)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(76, 175, 80, 0.3)",
           color: "white",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           py: 2,
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.5) 50%, transparent 100%)",
+          },
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -137,14 +164,19 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           sx={{
             p: 3,
             m: 3,
-            background: "linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%)",
-            border: "1px solid #C8E6C9",
+            background: "rgba(76, 175, 80, 0.08)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(76, 175, 80, 0.2)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(76, 175, 80, 0.1)",
+            color: "white",
           }}
         >
           <Typography
             variant="h6"
             fontWeight="bold"
-            color="success.main"
+            sx={{ color: "rgba(76, 175, 80, 0.9)" }}
             gutterBottom
           >
             Bet Details
@@ -155,13 +187,17 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
                 Bet ID:
               </Typography>
               <Typography
                 variant="body2"
                 fontWeight="bold"
                 fontFamily="monospace"
+                sx={{ color: "rgba(255,255,255,0.9)" }}
               >
                 {bet.id}
               </Typography>
@@ -171,14 +207,28 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
                 Bet Type:
               </Typography>
               <Chip
                 label={bet.betType}
-                color={bet.betType === "single" ? "primary" : "secondary"}
                 size="small"
                 variant="outlined"
+                sx={{
+                  background:
+                    bet.betType === "single"
+                      ? "rgba(102, 126, 234, 0.2)"
+                      : "rgba(156, 39, 176, 0.2)",
+                  backdropFilter: "blur(10px)",
+                  color: bet.betType === "single" ? "#667eea" : "#9c27b0",
+                  border:
+                    bet.betType === "single"
+                      ? "1px solid rgba(102, 126, 234, 0.3)"
+                      : "1px solid rgba(156, 39, 176, 0.3)",
+                }}
               />
             </Box>
             <Box
@@ -186,10 +236,17 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
                 Total Stake:
               </Typography>
-              <Typography variant="body2" fontWeight="bold">
+              <Typography
+                variant="body2"
+                fontWeight="bold"
+                sx={{ color: "rgba(255,255,255,0.9)" }}
+              >
                 ${bet.totalStake.toFixed(2)}
               </Typography>
             </Box>
@@ -199,13 +256,16 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255,255,255,0.7)" }}
+                >
                   Combined Odds:
                 </Typography>
                 <Typography
                   variant="body2"
                   fontWeight="bold"
-                  color="primary.main"
+                  sx={{ color: "#667eea" }}
                 >
                   {bet.selections
                     .reduce((acc, selection) => acc * selection.odds, 1)
@@ -219,10 +279,17 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
                 Gross Winnings:
               </Typography>
-              <Typography variant="body2" fontWeight="bold" color="info.main">
+              <Typography
+                variant="body2"
+                fontWeight="bold"
+                sx={{ color: "#2196f3" }}
+              >
                 ${bet.potentialWinnings.toFixed(2)}
               </Typography>
             </Box>
@@ -232,13 +299,16 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255,255,255,0.7)" }}
+                >
                   Tax ({bet.taxPercentage || 0}%):
                 </Typography>
                 <Typography
                   variant="body2"
                   fontWeight="bold"
-                  color="warning.main"
+                  sx={{ color: "#ff9800" }}
                 >
                   -${bet.taxAmount.toFixed(2)}
                 </Typography>
@@ -257,15 +327,14 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               <Typography
                 variant="body2"
                 fontWeight="bold"
-                color="text.primary"
+                sx={{ color: "rgba(255,255,255,0.9)" }}
               >
                 Net Winnings:
               </Typography>
               <Typography
                 variant="body2"
                 fontWeight="bold"
-                color="success.main"
-                sx={{ fontSize: "1.1rem" }}
+                sx={{ color: "#4caf50", fontSize: "1.1rem" }}
               >
                 $
                 {(
@@ -281,14 +350,17 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255,255,255,0.7)" }}
+                >
                   Payout ID:
                 </Typography>
                 <Typography
                   variant="body2"
                   fontWeight="bold"
                   fontFamily="monospace"
-                  color="primary.main"
+                  sx={{ color: "#667eea" }}
                 >
                   {bet.paymentStatus.payoutId}
                 </Typography>
@@ -302,14 +374,19 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           sx={{
             p: 3,
             m: 3,
-            background: "linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
-            border: "1px solid #FFB74D",
+            background: "rgba(255, 152, 0, 0.08)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 152, 0, 0.2)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 152, 0, 0.1)",
+            color: "white",
           }}
         >
           <Typography
             variant="h6"
             fontWeight="bold"
-            color="warning.main"
+            sx={{ color: "rgba(255, 152, 0, 0.9)" }}
             gutterBottom
           >
             Financial Breakdown
@@ -413,14 +490,19 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           sx={{
             p: 3,
             m: 3,
-            background: "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)",
-            border: "1px solid #4CAF50",
+            background: "rgba(76, 175, 80, 0.1)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(76, 175, 80, 0.3)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(76, 175, 80, 0.1)",
+            color: "white",
           }}
         >
           <Typography
             variant="h6"
             fontWeight="bold"
-            color="success.main"
+            sx={{ color: "rgba(76, 175, 80, 0.9)" }}
             gutterBottom
           >
             Payout Amount
@@ -434,16 +516,16 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
             <Typography
               variant="h3"
               fontWeight="bold"
-              color="success.main"
               sx={{
-                textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                color: "#4caf50",
+                textShadow: "0 2px 4px rgba(0,0,0,0.3)",
               }}
             >
               ${totalWinnings.toFixed(2)}
             </Typography>
           </Box>
           <Box textAlign="center">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
               {bet.netWinnings
                 ? "Net Winnings (after tax)"
                 : bet.actualWinnings
@@ -453,7 +535,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
             {bet.taxAmount && bet.taxAmount > 0 && (
               <Typography
                 variant="caption"
-                color="warning.main"
+                sx={{ color: "#ff9800" }}
                 display="block"
               >
                 Tax of ${bet.taxAmount.toFixed(2)} deducted from gross
@@ -464,7 +546,12 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 
         {/* Notes Section */}
         <Box sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
+          <Typography
+            variant="h6"
+            fontWeight="bold"
+            sx={{ color: "rgba(255,255,255,0.9)" }}
+            gutterBottom
+          >
             Payout Notes (Optional)
           </Typography>
           <TextField
@@ -478,6 +565,26 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "rgba(255,255,255,0.9)",
+                "& fieldset": {
+                  border: "none",
+                },
+                "&:hover fieldset": {
+                  border: "none",
+                },
+                "&.Mui-focused fieldset": {
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                },
+              },
+              "& .MuiInputBase-input": {
+                color: "rgba(255,255,255,0.9)",
+                "&::placeholder": {
+                  color: "rgba(255,255,255,0.5)",
+                  opacity: 1,
+                },
               },
             }}
           />
@@ -504,8 +611,17 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           onClick={handleClose}
           disabled={isProcessing}
           variant="outlined"
-          color="inherit"
           startIcon={<CloseIcon />}
+          sx={{
+            color: "rgba(255,255,255,0.8)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            background: "rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(10px)",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+            },
+          }}
         >
           Cancel
         </Button>
@@ -513,16 +629,21 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           onClick={handleCompletePayout}
           disabled={isProcessing}
           variant="contained"
-          color="success"
           startIcon={
             isProcessing ? <CircularProgress size={20} /> : <CheckIcon />
           }
           sx={{
-            background: "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
+            background: "rgba(76, 175, 80, 0.8)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(76, 175, 80, 0.3)",
+            color: "white",
             "&:hover": {
-              background: "linear-gradient(135deg, #45a049 0%, #2e7d32 100%)",
+              backgroundColor: "rgba(76, 175, 80, 0.9)",
+              transform: "translateY(-1px)",
+              boxShadow: "0 4px 12px rgba(76, 175, 80, 0.4)",
             },
             minWidth: 140,
+            transition: "all 0.3s ease",
           }}
         >
           {isProcessing ? "Processing..." : "Complete Payout"}

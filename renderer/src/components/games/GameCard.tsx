@@ -149,6 +149,31 @@ export const GameCard: React.FC<GameCardProps> = ({
             </Typography>
           </Box>
 
+          {/* No Odds Available Indicator */}
+          {!game.hasValidOdds && (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 2,
+                mb: 2,
+                bgcolor: "rgba(255,193,7,0.1)",
+                border: "1px solid rgba(255,193,7,0.3)",
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                color="warning.main"
+                fontWeight="bold"
+              >
+                ⚠️ Odds Not Available
+              </Typography>
+              <Typography variant="caption" color="rgba(255,193,7,0.8)">
+                This game is scheduled but betting odds are not yet available
+              </Typography>
+            </Box>
+          )}
+
           {/* 3 Way Odds */}
           <Box textAlign="center" minWidth={120}>
             <Typography

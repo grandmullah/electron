@@ -167,12 +167,24 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
     <TableContainer
       component={Paper}
       sx={{
-        borderRadius: "16px",
+        borderRadius: 4,
         overflow: "hidden",
-        background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
-        border: "1px solid #2a2d3a",
+        background: "rgba(255, 255, 255, 0.05)",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
         boxShadow:
-          "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+          "0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "1px",
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)",
+        },
       }}
     >
       <Table
@@ -186,106 +198,126 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
         <TableHead>
           <TableRow
             sx={{
-              background:
-                "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
-              borderBottom: "2px solid rgba(255,255,255,0.1)",
+              background: "rgba(255, 255, 255, 0.08)",
+              backdropFilter: "blur(20px)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
+              position: "relative",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "1px",
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
+              },
             }}
           >
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Bet ID
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Type
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Selections
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Stake
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Odds
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Potential Win
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Status
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Payment Status
             </TableCell>
             <TableCell
               sx={{
-                color: "rgba(255,255,255,1)",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 600,
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
               }}
             >
               Date
@@ -311,18 +343,29 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               hover
               sx={{
                 backgroundColor: "rgba(255,255,255,0.02)",
+                transition: "all 0.3s ease",
                 "&:hover": {
-                  backgroundColor: "rgba(255,255,255,0.05)",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
                 },
                 "&:nth-of-type(even)": {
-                  backgroundColor: "rgba(255,255,255,0.01)",
+                  backgroundColor: "rgba(255,255,255,0.03)",
                 },
               }}
             >
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Avatar
-                    sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      background:
+                        "linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(156, 39, 176, 0.8) 100%)",
+                      backdropFilter: "blur(10px)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+                    }}
                   >
                     <IconId fontSize="small" />
                   </Avatar>
@@ -348,16 +391,20 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                 <Chip
                   label={bet.betType}
                   size="small"
-                  color={bet.betType === "single" ? "primary" : "secondary"}
                   variant="outlined"
                   sx={{
-                    backgroundColor:
+                    background:
                       bet.betType === "single"
-                        ? "rgba(102, 126, 234, 0.2)"
-                        : "rgba(156, 39, 176, 0.2)",
+                        ? "rgba(102, 126, 234, 0.15)"
+                        : "rgba(156, 39, 176, 0.15)",
+                    backdropFilter: "blur(10px)",
                     color: bet.betType === "single" ? "#667eea" : "#9c27b0",
-                    borderColor:
-                      bet.betType === "single" ? "#667eea" : "#9c27b0",
+                    border:
+                      bet.betType === "single"
+                        ? "1px solid rgba(102, 126, 234, 0.3)"
+                        : "1px solid rgba(156, 39, 176, 0.3)",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    fontWeight: 500,
                   }}
                 />
               </TableCell>
@@ -521,13 +568,20 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                       onClick={() => onView(bet)}
                       startIcon={<IconEye />}
                       sx={{
-                        color: "rgba(255,255,255,0.8)",
+                        color: "rgba(255,255,255,0.9)",
                         minWidth: "auto",
-                        px: 1,
+                        px: 1.5,
                         py: 0.5,
+                        background: "rgba(255, 255, 255, 0.05)",
+                        backdropFilter: "blur(10px)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: 2,
+                        transition: "all 0.3s ease",
                         "&:hover": {
-                          backgroundColor: "rgba(255,255,255,0.1)",
+                          backgroundColor: "rgba(255,255,255,0.15)",
                           color: "rgba(255,255,255,1)",
+                          transform: "translateY(-1px)",
+                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
                         },
                       }}
                     >
@@ -543,11 +597,18 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                       sx={{
                         color: "#9c27b0",
                         minWidth: "auto",
-                        px: 1,
+                        px: 1.5,
                         py: 0.5,
+                        background: "rgba(156, 39, 176, 0.1)",
+                        backdropFilter: "blur(10px)",
+                        border: "1px solid rgba(156, 39, 176, 0.2)",
+                        borderRadius: 2,
+                        transition: "all 0.3s ease",
                         "&:hover": {
-                          backgroundColor: "rgba(156, 39, 176, 0.1)",
+                          backgroundColor: "rgba(156, 39, 176, 0.2)",
                           color: "#9c27b0",
+                          transform: "translateY(-1px)",
+                          boxShadow: "0 4px 12px rgba(156, 39, 176, 0.3)",
                         },
                       }}
                     >
@@ -566,11 +627,18 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                           sx={{
                             color: "#4caf50",
                             minWidth: "auto",
-                            px: 1,
+                            px: 1.5,
                             py: 0.5,
+                            background: "rgba(76, 175, 80, 0.1)",
+                            backdropFilter: "blur(10px)",
+                            border: "1px solid rgba(76, 175, 80, 0.2)",
+                            borderRadius: 2,
+                            transition: "all 0.3s ease",
                             "&:hover": {
-                              backgroundColor: "rgba(76, 175, 80, 0.1)",
+                              backgroundColor: "rgba(76, 175, 80, 0.2)",
                               color: "#4caf50",
+                              transform: "translateY(-1px)",
+                              boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)",
                             },
                           }}
                         >

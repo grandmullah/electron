@@ -83,9 +83,24 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         sx={{
           p: 3,
           mb: 3,
-          backgroundColor: "rgba(26, 29, 41, 0.8)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: 4,
+          boxShadow:
+            "0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           color: "white",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)",
+          },
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -109,9 +124,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             p: 2,
             flex: 1,
             minWidth: 200,
-            backgroundColor: "rgba(26, 29, 41, 0.8)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255, 255, 255, 0.06)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-2px)",
+              boxShadow:
+                "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+            },
           }}
         >
           <Typography variant="h6" gutterBottom color="primary">
@@ -155,9 +181,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             p: 2,
             flex: 1,
             minWidth: 200,
-            backgroundColor: "rgba(26, 29, 41, 0.8)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255, 255, 255, 0.06)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-2px)",
+              boxShadow:
+                "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+            },
           }}
         >
           <Typography variant="h6" gutterBottom color="primary">
@@ -203,9 +240,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             p: 2,
             flex: 1,
             minWidth: 200,
-            backgroundColor: "rgba(26, 29, 41, 0.8)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255, 255, 255, 0.06)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: 3,
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-2px)",
+              boxShadow:
+                "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+            },
           }}
         >
           <Typography variant="h6" gutterBottom color="primary">
@@ -253,9 +301,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           <Paper
             sx={{
               p: 3,
-              backgroundColor: "rgba(26, 29, 41, 0.8)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255, 255, 255, 0.06)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: 3,
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow:
+                  "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+              },
             }}
           >
             <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -318,9 +377,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           <Paper
             sx={{
               p: 3,
-              backgroundColor: "rgba(26, 29, 41, 0.8)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255, 255, 255, 0.06)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: 3,
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow:
+                  "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+              },
             }}
           >
             <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -356,9 +426,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           <Paper
             sx={{
               p: 3,
-              backgroundColor: "rgba(26, 29, 41, 0.8)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255, 255, 255, 0.06)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: 3,
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow:
+                  "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+              },
             }}
           >
             <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -412,9 +493,20 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           <Paper
             sx={{
               p: 3,
-              backgroundColor: "rgba(26, 29, 41, 0.8)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255, 255, 255, 0.06)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: 3,
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow:
+                  "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+              },
             }}
           >
             <Typography variant="h5" gutterBottom fontWeight="bold">

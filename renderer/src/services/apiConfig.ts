@@ -9,7 +9,8 @@ export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ?
 
 // Export apiConfig object for services that need it
 export const apiConfig = {
-      baseURL: API_BASE_URL
+      baseURL: API_BASE_URL,
+      baseUrl: API_BASE_URL  // Add both for compatibility
 };
 
 
