@@ -27,6 +27,10 @@ import {
   MonetizationOn as IconCoins,
   TrendingUp as IconTrendingUp,
   CalendarToday as IconCalendar,
+  CheckCircle as IconCheckCircle,
+  Pending as IconPending,
+  Cancel as IconCancel,
+  Error as IconError,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
 
@@ -90,6 +94,65 @@ const formatDate = (dateString: string): string => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const getPaymentStatusIcon = (status: string): React.ReactNode => {
+  switch (status) {
+    case "paid":
+      return <IconCheckCircle fontSize="small" />;
+    case "pending":
+      return <IconPending fontSize="small" />;
+    case "no_payout":
+      return <IconCancel fontSize="small" />;
+    case "no_payment_needed":
+      return <IconCancel fontSize="small" />;
+    case "failed":
+      return <IconError fontSize="small" />;
+    case "cancelled":
+      return <IconCancel fontSize="small" />;
+    default:
+      return <IconPending fontSize="small" />;
+  }
+};
+
+const getPaymentStatusColor = (
+  status: string
+): "success" | "warning" | "error" | "default" => {
+  switch (status) {
+    case "paid":
+      return "success";
+    case "pending":
+      return "warning";
+    case "no_payout":
+      return "default";
+    case "no_payment_needed":
+      return "default";
+    case "failed":
+      return "error";
+    case "cancelled":
+      return "error";
+    default:
+      return "default";
+  }
+};
+
+const getPaymentStatusVariant = (status: string): "filled" | "outlined" => {
+  switch (status) {
+    case "paid":
+      return "filled";
+    case "pending":
+      return "outlined";
+    case "no_payout":
+      return "outlined";
+    case "no_payment_needed":
+      return "outlined";
+    case "failed":
+      return "filled";
+    case "cancelled":
+      return "filled";
+    default:
+      return "outlined";
+  }
 };
 
 export const MUIBetTable: React.FC<MUIBetTableProps> = ({
@@ -204,6 +267,17 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               }}
             >
               Status
+            </TableCell>
+            <TableCell
+              sx={{
+                color: "rgba(255,255,255,1)",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Payment Status
             </TableCell>
             <TableCell
               sx={{
@@ -370,6 +444,64 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
               </TableCell>
 
               <TableCell>
+                {bet.paymentStatus ? (
+                  <Box display="flex" flexDirection="column" gap={0.5}>
+                    <Chip
+                      icon={getPaymentStatusIcon(bet.paymentStatus.status)}
+                      label={bet.paymentStatus.status
+                        .replace("_", " ")
+                        .toUpperCase()}
+                      color={getPaymentStatusColor(bet.paymentStatus.status)}
+                      variant={getPaymentStatusVariant(
+                        bet.paymentStatus.status
+                      )}
+                      size="small"
+                    />
+                    {bet.paymentStatus.payoutAmount && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "rgba(255,255,255,0.7)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {formatCurrency(bet.paymentStatus.payoutAmount, "SSP")}
+                      </Typography>
+                    )}
+                    {bet.paymentStatus.paymentMethod && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "rgba(255,255,255,0.6)",
+                          fontSize: "0.7rem",
+                        }}
+                      >
+                        via {bet.paymentStatus.paymentMethod}
+                      </Typography>
+                    )}
+                    {bet.paymentStatus.payoutId && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "rgba(255,255,255,0.5)",
+                          fontSize: "0.65rem",
+                        }}
+                      >
+                        ID: {bet.paymentStatus.payoutId}
+                      </Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "rgba(255,255,255,0.5)" }}
+                  >
+                    No payment info
+                  </Typography>
+                )}
+              </TableCell>
+
+              <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconCalendar color="action" fontSize="small" />
                   <Typography
@@ -423,27 +555,29 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                     </Button>
                   </Tooltip>
 
-                  {bet.status === "won" && (
-                    <Tooltip title="Process Payout">
-                      <Button
-                        size="small"
-                        onClick={() => onPayout(bet)}
-                        startIcon={<IconMoneybag />}
-                        sx={{
-                          color: "#4caf50",
-                          minWidth: "auto",
-                          px: 1,
-                          py: 0.5,
-                          "&:hover": {
-                            backgroundColor: "rgba(76, 175, 80, 0.1)",
+                  {bet.status === "won" &&
+                    (!bet.paymentStatus ||
+                      bet.paymentStatus.status !== "paid") && (
+                      <Tooltip title="Process Payout">
+                        <Button
+                          size="small"
+                          onClick={() => onPayout(bet)}
+                          startIcon={<IconMoneybag />}
+                          sx={{
                             color: "#4caf50",
-                          },
-                        }}
-                      >
-                        Payout
-                      </Button>
-                    </Tooltip>
-                  )}
+                            minWidth: "auto",
+                            px: 1,
+                            py: 0.5,
+                            "&:hover": {
+                              backgroundColor: "rgba(76, 175, 80, 0.1)",
+                              color: "#4caf50",
+                            },
+                          }}
+                        >
+                          Payout
+                        </Button>
+                      </Tooltip>
+                    )}
                 </Box>
               </TableCell>
             </TableRow>

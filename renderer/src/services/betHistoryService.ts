@@ -6,7 +6,8 @@ import {
       ShopInfo,
       UserInfo,
       ShopSummary,
-      EnhancedUserBetsResponse
+      EnhancedUserBetsResponse,
+      PaymentStatus
 } from '../types/history';
 
 // Types for bet history API (keeping for backward compatibility)
@@ -33,6 +34,7 @@ export interface SingleBet {
       cancelledAt?: string;
       result?: 'won' | 'lost' | 'pending';
       actualWinnings?: number;
+      paymentStatus?: PaymentStatus;
 }
 
 export interface Multibet {
@@ -64,6 +66,7 @@ export interface Multibet {
       cancelledAt?: string;
       result?: 'won' | 'lost' | 'pending';
       actualWinnings?: number;
+      paymentStatus?: PaymentStatus;
 }
 
 export interface UserBetsResponse {

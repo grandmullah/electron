@@ -29,6 +29,10 @@ import {
   TrendingUp as IconTrendingUp,
   SportsEsports as IconSports,
   AttachMoney as IconMoney,
+  CheckCircle as IconCheckCircle,
+  Pending as IconPending,
+  Cancel as IconCancel,
+  Error as IconError,
 } from "@mui/icons-material";
 import dayjs from "dayjs";
 
@@ -37,6 +41,8 @@ interface MUIFiltersProps {
   setBetStatusFilter: (value: string) => void;
   betTypeFilter: string;
   setBetTypeFilter: (value: string) => void;
+  paymentStatusFilter: string;
+  setPaymentStatusFilter: (value: string) => void;
   dateFrom: Date | null;
   setDateFrom: (date: Date | null) => void;
   dateTo: Date | null;
@@ -63,11 +69,23 @@ const typeOptions = [
   { value: "multibet", label: "Multibet" },
 ];
 
+const paymentStatusOptions = [
+  { value: "all", label: "All Payments" },
+  { value: "paid", label: "Paid" },
+  { value: "pending", label: "Pending" },
+  { value: "no_payout", label: "No Payout" },
+  { value: "no_payment_needed", label: "No Payment Needed" },
+  { value: "failed", label: "Failed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export const MUIFilters: React.FC<MUIFiltersProps> = ({
   betStatusFilter,
   setBetStatusFilter,
   betTypeFilter,
   setBetTypeFilter,
+  paymentStatusFilter,
+  setPaymentStatusFilter,
   dateFrom,
   setDateFrom,
   dateTo,
@@ -86,10 +104,18 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
     if (searchTerm) count++;
     if (betStatusFilter !== "all") count++;
     if (betTypeFilter !== "all") count++;
+    if (paymentStatusFilter !== "all") count++;
     if (dateFrom) count++;
     if (dateTo) count++;
     setActiveFiltersCount(count);
-  }, [searchTerm, betStatusFilter, betTypeFilter, dateFrom, dateTo]);
+  }, [
+    searchTerm,
+    betStatusFilter,
+    betTypeFilter,
+    paymentStatusFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -187,7 +213,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
         {/* Search and Advanced Filters in One Row */}
         <Grid container spacing={2} alignItems="center">
           {/* Search Field */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3}>
             <TextField
               fullWidth
               label="Search bets (first 3 characters match)..."
@@ -236,7 +262,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
           </Grid>
 
           {/* Status Filter */}
-          <Grid item xs={6} md={2}>
+          <Grid item xs={6} md={1.5}>
             <FormControl
               fullWidth
               size="small"
@@ -288,7 +314,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
           </Grid>
 
           {/* Bet Type Filter */}
-          <Grid item xs={6} md={2}>
+          <Grid item xs={6} md={1.5}>
             <FormControl
               fullWidth
               size="small"
@@ -335,8 +361,66 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
             </FormControl>
           </Grid>
 
+          {/* Payment Status Filter */}
+          <Grid item xs={6} md={1.5}>
+            <FormControl
+              fullWidth
+              size="small"
+              sx={{
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
+                "& .MuiOutlinedInput-root": {
+                  color: "rgba(255,255,255,0.8)",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
+                  },
+                },
+              }}
+            >
+              <InputLabel>Payment</InputLabel>
+              <Select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                label="Payment"
+                sx={{
+                  borderRadius: 2,
+                }}
+              >
+                {paymentStatusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {option.value === "paid" ? (
+                        <IconCheckCircle color="success" fontSize="small" />
+                      ) : option.value === "pending" ? (
+                        <IconPending color="warning" fontSize="small" />
+                      ) : option.value === "no_payout" ? (
+                        <IconCancel color="action" fontSize="small" />
+                      ) : option.value === "no_payment_needed" ? (
+                        <IconCancel color="action" fontSize="small" />
+                      ) : option.value === "failed" ? (
+                        <IconError color="error" fontSize="small" />
+                      ) : option.value === "cancelled" ? (
+                        <IconCancel color="error" fontSize="small" />
+                      ) : (
+                        <IconMoney color="primary" fontSize="small" />
+                      )}
+                      {option.label}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
           {/* From Date */}
-          <Grid item xs={6} md={2}>
+          <Grid item xs={6} md={1.5}>
             <DatePicker
               label="From Date"
               value={dateFrom ? dayjs(dateFrom) : null}
@@ -378,7 +462,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
           </Grid>
 
           {/* To Date */}
-          <Grid item xs={6} md={2}>
+          <Grid item xs={6} md={1.5}>
             <DatePicker
               label="To Date"
               value={dateTo ? dayjs(dateTo) : null}
@@ -545,6 +629,98 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                     backgroundColor:
                       betTypeFilter === option.value
                         ? "#8e24aa"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+            ))}
+            {paymentStatusOptions.slice(1).map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                clickable
+                color={
+                  paymentStatusFilter === option.value ? "success" : "default"
+                }
+                variant={
+                  paymentStatusFilter === option.value ? "filled" : "outlined"
+                }
+                onClick={() => setPaymentStatusFilter(option.value)}
+                icon={
+                  option.value === "paid" ? (
+                    <IconCheckCircle
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#4caf50",
+                      }}
+                    />
+                  ) : option.value === "pending" ? (
+                    <IconPending
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#ff9800",
+                      }}
+                    />
+                  ) : option.value === "no_payout" ? (
+                    <IconCancel
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#9e9e9e",
+                      }}
+                    />
+                  ) : option.value === "no_payment_needed" ? (
+                    <IconCancel
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#9e9e9e",
+                      }}
+                    />
+                  ) : option.value === "cancelled" ? (
+                    <IconCancel
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#f44336",
+                      }}
+                    />
+                  ) : (
+                    <IconError
+                      sx={{
+                        color:
+                          paymentStatusFilter === option.value
+                            ? "white"
+                            : "#f44336",
+                      }}
+                    />
+                  )
+                }
+                size="small"
+                sx={{
+                  backgroundColor:
+                    paymentStatusFilter === option.value
+                      ? "#4caf50"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    paymentStatusFilter === option.value
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor:
+                    paymentStatusFilter === option.value
+                      ? "#4caf50"
+                      : "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    backgroundColor:
+                      paymentStatusFilter === option.value
+                        ? "#45a049"
                         : "rgba(255,255,255,0.2)",
                   },
                 }}

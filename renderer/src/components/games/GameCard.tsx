@@ -370,71 +370,71 @@ export const GameCard: React.FC<GameCardProps> = ({
           </Box>
 
           {/* Spreads Odds */}
-          <Box textAlign="center" minWidth={100}>
-            <Typography
-              variant="caption"
-              fontWeight="bold"
-              color="rgba(255,255,255,0.8)"
-              gutterBottom
-              display="block"
-            >
-              {game.spreads?.spreadLine
-                ? `SPREAD ${game.spreads?.spreadLine > 0 ? `+${game.spreads?.spreadLine}` : game.spreads?.spreadLine}`
-                : "SPREAD"}
-            </Typography>
-            <Stack direction="row" spacing={1} justifyContent="center">
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  Home
-                </Typography>
-                <BettingOption
-                  betType="Spread"
-                  selection="Home"
-                  odds={game.spreads?.homeSpreadOdds}
-                  label="Home"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  Away
-                </Typography>
-                <BettingOption
-                  betType="Spread"
-                  selection="Away"
-                  odds={game.spreads?.awaySpreadOdds}
-                  label="Away"
-                />
-              </Box>
-            </Stack>
-          </Box>
-
-                  {/* Expand Arrow */}
-            <Box textAlign="center" mt={2}>
-                  <IconButton
-                        onClick={(e) => onToggleExpanded(game.id, e)}
-                        sx={{
-                        transform: expandedGames.has(game.id)
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                        transition: "transform 0.3s ease",
-                        }}
+          {(game.spreads?.homeSpreadOdds || game.spreads?.awaySpreadOdds) && (
+            <Box textAlign="center" minWidth={100}>
+              <Typography
+                variant="caption"
+                fontWeight="bold"
+                color="rgba(255,255,255,0.8)"
+                gutterBottom
+                display="block"
+              >
+                {game.spreads?.spreadLine
+                  ? `SPREAD ${game.spreads?.spreadLine > 0 ? `+${game.spreads?.spreadLine}` : game.spreads?.spreadLine}`
+                  : "SPREAD"}
+              </Typography>
+              <Stack direction="row" spacing={1} justifyContent="center">
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
                   >
-                        <ExpandMoreIcon />
-                  </IconButton>
+                    Home
+                  </Typography>
+                  <BettingOption
+                    betType="Spread"
+                    selection="Home"
+                    odds={game.spreads?.homeSpreadOdds}
+                    label="Home"
+                  />
+                </Box>
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    Away
+                  </Typography>
+                  <BettingOption
+                    betType="Spread"
+                    selection="Away"
+                    odds={game.spreads?.awaySpreadOdds}
+                    label="Away"
+                  />
+                </Box>
+              </Stack>
             </Box>
+          )}
+
+          {/* Expand Arrow */}
+          <Box textAlign="center" mt={2}>
+            <IconButton
+              onClick={(e) => onToggleExpanded(game.id, e)}
+              sx={{
+                transform: expandedGames.has(game.id)
+                  ? "rotate(180deg)"
+                  : "rotate(0deg)",
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
         </Stack>
-
-
       </CardContent>
     </Card>
   );

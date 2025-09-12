@@ -19,7 +19,7 @@ import {
 } from "../../store/agentSlice";
 import AgentService from "../../services/agentService";
 import { Header } from "../../components/Header";
-import { printThermalTicket as printTicket } from "../../services/printService";
+// Dynamic import for printService to enable code splitting
 
 interface AgentPageProps {
   onNavigate: (
@@ -83,7 +83,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
     });
   };
 
-  const printThermalTicket = (bet: AgentBet, combinedOdds?: number) => {
+  const printThermalTicket = async (bet: AgentBet, combinedOdds?: number) => {
     // Calculate combined odds from selections if not available
     const calculatedOdds =
       combinedOdds ||
@@ -103,7 +103,16 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
         selections: bet.selections,
       },
     });
-    printTicket(bet, calculatedOdds);
+
+    try {
+      const { printThermalTicket: printTicket } = await import(
+        "../../services/printService"
+      );
+      await printTicket(bet, calculatedOdds);
+    } catch (error) {
+      console.error("Error importing print service:", error);
+      alert("Error: Unable to load print service. Please try again.");
+    }
   };
   const [newUser, setNewUser] = useState({
     phone_number: "",

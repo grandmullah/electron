@@ -168,11 +168,28 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
 
       const result = await placeBets(betSlipItems, isMultibet, stake);
 
-      if (result.success) {
+      // Handle different response types for single bets vs multibets
+      let success = false;
+      let betId = "";
+      let error = "";
+
+      if (Array.isArray(result)) {
+        // Single bets - result is an array
+        success = result.length > 0 && result.every((bet) => bet.success);
+        betId = result.length > 0 ? result[0].betId : "";
+        error = result.length > 0 ? result[0].error || "" : "No bets returned";
+      } else {
+        // Multibet - result is a single object
+        success = result.success;
+        betId = result.betId || "";
+        error = result.error || "";
+      }
+
+      if (success) {
         if (isAgentMode && selectedUser) {
           dispatch(
             addAgentBet({
-              id: result.betId || `agent-bet-${Date.now()}`,
+              id: betId || `agent-bet-${Date.now()}`,
               userId: selectedUser.id,
               phoneNumber: selectedUser.phone_number,
               selections: betSlipItems,
@@ -188,7 +205,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         onClose();
         alert("Bets placed successfully!");
       } else {
-        alert(`Failed to place bets: ${result.error}`);
+        alert(`Failed to place bets: ${error}`);
       }
     } catch (error) {
       console.error("Error placing bets:", error);

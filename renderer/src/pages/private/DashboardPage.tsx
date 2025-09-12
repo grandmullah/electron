@@ -5,9 +5,12 @@ import { DashboardTabs } from "../../components/dashboard/DashboardTabs";
 import { UserStatsTab } from "../../components/dashboard/UserStatsTab";
 import { ShopStatsTab } from "../../components/dashboard/ShopStatsTab";
 import { PayoutTab } from "../../components/dashboard/PayoutTab";
+import { FinancialTab } from "../../components/dashboard/FinancialTab";
 import { BetsTab } from "../../components/dashboard/BetsTab";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { usePayoutData } from "../../hooks/usePayoutData";
+import { usePayoutSummary } from "../../hooks/usePayoutSummary";
+import { useFinancialSummary } from "../../hooks/useFinancialSummary";
 import { useBetsData } from "../../hooks/useBetsData";
 import {
   Container,
@@ -47,7 +50,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<
-    "user" | "shop" | "payout" | "bets"
+    "user" | "shop" | "payout" | "financial" | "bets"
   >("user");
 
   // Use custom hooks for data management
@@ -79,14 +82,50 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const { recentBets, isLoadingBets, betsError, loadRecentBets } =
     useBetsData();
 
+  const {
+    payoutSummary,
+    isLoadingSummary,
+    summaryError,
+    loadPayoutSummary,
+    formatCurrency,
+  } = usePayoutSummary();
+
+  const {
+    financialSummary,
+    periodSummaries,
+    isLoadingFinancialSummary,
+    financialSummaryError,
+    loadFinancialSummary,
+    loadFinancialSummaryForPeriods,
+    formatCurrency: formatFinancialCurrency,
+    getProfitMarginColor,
+    getWinRateColor,
+  } = useFinancialSummary();
+
   // Load tab-specific data when tab changes
   useEffect(() => {
     if (activeTab === "payout") {
       loadPendingPayouts();
+      loadPayoutSummary();
+    } else if (activeTab === "financial") {
+      loadFinancialSummary(30);
+      loadFinancialSummaryForPeriods();
     } else if (activeTab === "bets") {
       loadRecentBets();
     }
-  }, [activeTab, loadPendingPayouts, loadRecentBets]);
+  }, [
+    activeTab,
+    loadPendingPayouts,
+    loadPayoutSummary,
+    loadFinancialSummary,
+    loadFinancialSummaryForPeriods,
+    loadRecentBets,
+  ]);
+
+  // Load payout summary on component mount
+  useEffect(() => {
+    loadPayoutSummary();
+  }, [loadPayoutSummary]);
 
   // Validate payouts when pending payouts are loaded
   useEffect(() => {
@@ -96,12 +135,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   }, [pendingPayouts, validateAllPayouts]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    const tabs = ["user", "shop", "payout", "bets"];
-    setActiveTab(tabs[newValue] as "user" | "shop" | "payout" | "bets");
+    const tabs = ["user", "shop", "payout", "financial", "bets"];
+    setActiveTab(
+      tabs[newValue] as "user" | "shop" | "payout" | "financial" | "bets"
+    );
   };
 
   const getTabIndex = (tab: string) => {
-    const tabs = ["user", "shop", "payout", "bets"];
+    const tabs = ["user", "shop", "payout", "financial", "bets"];
     return tabs.indexOf(tab);
   };
 
@@ -255,8 +296,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           Pending Payouts
                         </Typography>
                         <Typography variant="h6" fontWeight="bold">
-                          {totalPayouts}
+                          {payoutSummary?.pending.count || totalPayouts}
                         </Typography>
+                        {payoutSummary?.pending.totalAmount && (
+                          <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                            {formatCurrency(payoutSummary.pending.totalAmount)}
+                          </Typography>
+                        )}
                       </Box>
                     </Stack>
                   </CardContent>
@@ -341,6 +387,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               label="Payout Management"
               iconPosition="start"
             />
+            <Tab
+              icon={<AssessmentIcon />}
+              label="Financial Analytics"
+              iconPosition="start"
+            />
             <Tab icon={<BetsIcon />} label="Recent Bets" iconPosition="start" />
           </Tabs>
         </Paper>
@@ -403,6 +454,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                       | "history"
                   ) => void
                 }
+              />
+            )}
+
+            {activeTab === "financial" && (
+              <FinancialTab
+                financialSummary={financialSummary}
+                periodSummaries={periodSummaries}
+                isLoadingSummary={isLoadingFinancialSummary}
+                summaryError={financialSummaryError}
+                isLoadingPeriods={isLoadingFinancialSummary}
+                periodsError={financialSummaryError}
+                onRetry={() => {
+                  loadFinancialSummary(30);
+                  loadFinancialSummaryForPeriods();
+                }}
+                formatCurrency={formatFinancialCurrency}
+                getProfitMarginColor={getProfitMarginColor}
+                getWinRateColor={getWinRateColor}
               />
             )}
 

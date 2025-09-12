@@ -1,0 +1,138 @@
+import { apiConfig } from './apiConfig';
+
+export interface RevenueData {
+      totalStakesReceived: number;
+      stakesKeptFromLostBets: number;
+      totalTaxCollected: number;
+      totalRevenue: number;
+}
+
+export interface ExpensesData {
+      actualWinningsPaid: number;
+      totalPayoutAmount: number;
+}
+
+export interface ProfitData {
+      grossProfit: number;
+      netProfit: number;
+      profitMargin: number;
+}
+
+export interface TaxData {
+      totalTaxCollected: number;
+      taxRate: number;
+      effectiveTaxCollected: number;
+}
+
+export interface PerformanceData {
+      totalBets: number;
+      winRate: number;
+      averageStake: number;
+      averageWinnings: number;
+}
+
+export interface PeriodData {
+      days: number;
+      fromDate: string;
+      toDate: string;
+}
+
+export interface FinancialSummary {
+      revenue: RevenueData;
+      expenses: ExpensesData;
+      profit: ProfitData;
+      tax: TaxData;
+      performance: PerformanceData;
+      period: PeriodData;
+}
+
+export interface FinancialSummaryResponse {
+      success: boolean;
+      message: string;
+      data: FinancialSummary;
+      error?: string;
+}
+
+class FinancialSummaryService {
+      private baseUrl = apiConfig.baseUrl;
+
+      /**
+       * Get financial summary for dashboard
+       * GET /api/analytics/financial-summary?days=30
+       */
+      async getFinancialSummary(days: number = 30): Promise<FinancialSummaryResponse> {
+            try {
+                  console.log(`🔄 Fetching financial summary for ${days} days...`);
+
+                  const token = localStorage.getItem('token');
+                  if (!token) {
+                        throw new Error('No authentication token found. Please log in again.');
+                  }
+
+                  console.log('🔑 Using token:', token.substring(0, 20) + '...');
+
+                  const response = await fetch(`${this.baseUrl}/analytics/financial-summary?days=${days}`, {
+                        method: 'GET',
+                        headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`,
+                        },
+                  });
+
+                  const data = await response.json();
+
+                  if (!response.ok) {
+                        console.error('❌ API Error Response:', data);
+                        if (data.error === 'Invalid or expired token') {
+                              // Clear invalid token and redirect to login
+                              localStorage.removeItem('token');
+                              localStorage.removeItem('user');
+                              throw new Error('Your session has expired. Please log in again.');
+                        }
+                        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                  }
+
+                  if (data.success) {
+                        console.log('✅ Financial summary fetched successfully:', data.data);
+                        return data;
+                  } else {
+                        throw new Error(data.message || 'Failed to fetch financial summary');
+                  }
+            } catch (error: any) {
+                  console.error('❌ Error fetching financial summary:', error);
+                  throw new Error(error.message || 'Failed to fetch financial summary');
+            }
+      }
+
+      /**
+       * Get financial summary for different time periods
+       */
+      async getFinancialSummaryForPeriods(): Promise<{
+            today: FinancialSummary | null;
+            thisWeek: FinancialSummary | null;
+            thisMonth: FinancialSummary | null;
+      }> {
+            try {
+                  const [today, thisWeek, thisMonth] = await Promise.allSettled([
+                        this.getFinancialSummary(1),
+                        this.getFinancialSummary(7),
+                        this.getFinancialSummary(30)
+                  ]);
+
+                  return {
+                        today: today.status === 'fulfilled' ? today.value.data : null,
+                        thisWeek: thisWeek.status === 'fulfilled' ? thisWeek.value.data : null,
+                        thisMonth: thisMonth.status === 'fulfilled' ? thisMonth.value.data : null,
+                  };
+            } catch (error: any) {
+                  console.error('❌ Error fetching financial summary for periods:', error);
+                  return {
+                        today: null,
+                        thisWeek: null,
+                        thisMonth: null,
+                  };
+            }
+      }
+}
+
+export const financialSummaryService = new FinancialSummaryService();

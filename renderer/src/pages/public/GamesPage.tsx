@@ -5,7 +5,7 @@ import { addToBetSlip, BetSlipItem } from "../../store/betslipSlice";
 import { ManagedUser } from "../../store/agentSlice";
 import AgentService from "../../services/agentService";
 import GamesService, { Game } from "../../services/gamesService";
-import { testPrint, testBixolonPrinter } from "../../services/printService";
+// Dynamic import for printService to enable code splitting
 import settingsService from "../../services/settingsService";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 import { GameCard } from "../../components/games/GameCard";
@@ -396,7 +396,15 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         <body>
           <div class="print-header">
             <h1>⚽ Betzone Games & Odds</h1>
-            <p class="subtitle">${leagueKey === "soccer_uefa_world_cup_qualifiers" ? "UEFA World Cup Qualifiers" : "Premier League"} - ${new Date().toLocaleDateString()}</p>
+            <p class="subtitle">${
+              leagueKey === "soccer_uefa_world_cup_qualifiers"
+                ? "UEFA World Cup Qualifiers"
+                : leagueKey === "soccer_bundesliga"
+                  ? "Bundesliga"
+                  : leagueKey === "soccer_laliga"
+                    ? "La Liga"
+                    : "Premier League"
+            } - ${new Date().toLocaleDateString()}</p>
             <p class="timestamp">Last Updated: ${lastUpdated.toLocaleString()}</p>
           </div>
           
@@ -775,9 +783,19 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   <Button
                     variant="contained"
                     startIcon={<TestIcon />}
-                    onClick={() => {
-                      testBixolonPrinter();
-                      testPrint(settingsService.getPrinterLogicalName());
+                    onClick={async () => {
+                      try {
+                        const { testBixolonPrinter, testPrint } = await import(
+                          "../../services/printService"
+                        );
+                        testBixolonPrinter();
+                        testPrint(settingsService.getPrinterLogicalName());
+                      } catch (error) {
+                        console.error("Error importing print service:", error);
+                        alert(
+                          "Error: Unable to load print service. Please try again."
+                        );
+                      }
                     }}
                     sx={{
                       bgcolor: "rgba(255,255,255,0.2)",
@@ -886,9 +904,19 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 <Button
                   variant="contained"
                   startIcon={<TestIcon />}
-                  onClick={() => {
-                    testBixolonPrinter();
-                    testPrint(settingsService.getPrinterLogicalName());
+                  onClick={async () => {
+                    try {
+                      const { testBixolonPrinter, testPrint } = await import(
+                        "../../services/printService"
+                      );
+                      testBixolonPrinter();
+                      testPrint(settingsService.getPrinterLogicalName());
+                    } catch (error) {
+                      console.error("Error importing print service:", error);
+                      alert(
+                        "Error: Unable to load print service. Please try again."
+                      );
+                    }
                   }}
                   sx={{
                     bgcolor: "rgba(255,255,255,0.2)",
@@ -1032,6 +1060,66 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   },
                 }}
               />
+              <Chip
+                icon={<SoccerIcon />}
+                label="Bundesliga"
+                onClick={() => setLeagueKey("soccer_bundesliga")}
+                color={
+                  leagueKey === "soccer_bundesliga" ? "primary" : "default"
+                }
+                variant={
+                  leagueKey === "soccer_bundesliga" ? "filled" : "outlined"
+                }
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
+                    leagueKey === "soccer_bundesliga"
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    leagueKey === "soccer_bundesliga"
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_bundesliga"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+              <Chip
+                icon={<SoccerIcon />}
+                label="La Liga"
+                onClick={() => setLeagueKey("soccer_laliga")}
+                color={leagueKey === "soccer_laliga" ? "primary" : "default"}
+                variant={leagueKey === "soccer_laliga" ? "filled" : "outlined"}
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
+                    leagueKey === "soccer_laliga"
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    leagueKey === "soccer_laliga"
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_laliga"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
             </Stack>
 
             {/* Agent Mode Indicator */}
@@ -1146,7 +1234,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
             {/* Games Grid */}
             <Box>
-              {isEmpty && leagueKey === "soccer_uefa_world_cup_qualifiers" ? (
+              {isEmpty &&
+              (leagueKey === "soccer_uefa_world_cup_qualifiers" ||
+                leagueKey === "soccer_bundesliga" ||
+                leagueKey === "soccer_laliga") ? (
                 <Paper
                   sx={{
                     p: 6,
@@ -1166,17 +1257,34 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     color="primary.main"
                     gutterBottom
                   >
-                    UEFA World Cup Qualifiers
+                    {leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "UEFA World Cup Qualifiers"
+                      : leagueKey === "soccer_bundesliga"
+                        ? "Bundesliga"
+                        : "La Liga"}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" paragraph>
                     No games available at the moment
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    The UEFA World Cup Qualifiers endpoint is not yet
-                    implemented on the backend.
+                    The{" "}
+                    {leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "UEFA World Cup Qualifiers"
+                      : leagueKey === "soccer_bundesliga"
+                        ? "Bundesliga"
+                        : "La Liga"}{" "}
+                    endpoint is not yet implemented on the backend.
                     <br />
                     Expected endpoint:{" "}
-                    <code>/api/uefa-world-cup-qualifiers/odds</code>
+                    <code>
+                      /api/
+                      {leagueKey === "soccer_uefa_world_cup_qualifiers"
+                        ? "uefa-world-cup-qualifiers"
+                        : leagueKey === "soccer_bundesliga"
+                          ? "bundesliga"
+                          : "laliga"}
+                      /odds
+                    </code>
                   </Typography>
                 </Paper>
               ) : isEmpty ? (

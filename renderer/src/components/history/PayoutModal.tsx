@@ -56,9 +56,9 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
     setError(null);
 
     try {
-      // For now, we'll use the bet ID as the payout ID
-      // In a real implementation, you might need to create a payout first
-      const response = await payoutService.completePayout(bet.id, notes);
+      // Use the payoutId from payment status if available, otherwise use bet ID
+      const payoutId = bet.paymentStatus?.payoutId || bet.id;
+      const response = await payoutService.completePayout(payoutId, notes);
 
       if (response.success) {
         onPayoutComplete();
@@ -76,7 +76,9 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 
   if (!bet) return null;
 
-  const totalWinnings = bet.actualWinnings || bet.potentialWinnings;
+  // Calculate the actual payout amount - prioritize actual winnings, then net winnings, then potential winnings
+  const totalWinnings =
+    bet.actualWinnings || bet.netWinnings || bet.potentialWinnings;
 
   return (
     <Dialog
@@ -191,37 +193,215 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                 ${bet.totalStake.toFixed(2)}
               </Typography>
             </Box>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Typography variant="body2" color="text.secondary">
-                Potential Winnings:
-              </Typography>
-              <Typography
-                variant="body2"
-                fontWeight="bold"
-                color="success.main"
-              >
-                ${bet.potentialWinnings.toFixed(2)}
-              </Typography>
-            </Box>
-            {bet.actualWinnings && bet.actualWinnings > 0 && (
+            {bet.betType === "multibet" && bet.selections.length > 1 && (
               <Box
                 display="flex"
                 justifyContent="space-between"
                 alignItems="center"
               >
                 <Typography variant="body2" color="text.secondary">
-                  Actual Winnings:
+                  Combined Odds:
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="primary.main"
+                >
+                  {bet.selections
+                    .reduce((acc, selection) => acc * selection.odds, 1)
+                    .toFixed(2)}
+                  x
+                </Typography>
+              </Box>
+            )}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="body2" color="text.secondary">
+                Gross Winnings:
+              </Typography>
+              <Typography variant="body2" fontWeight="bold" color="info.main">
+                ${bet.potentialWinnings.toFixed(2)}
+              </Typography>
+            </Box>
+            {bet.taxAmount && bet.taxAmount > 0 && (
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Tax ({bet.taxPercentage || 0}%):
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="warning.main"
+                >
+                  -${bet.taxAmount.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{
+                borderTop: "1px solid rgba(0,0,0,0.1)",
+                pt: 1,
+                mt: 1,
+              }}
+            >
+              <Typography
+                variant="body2"
+                fontWeight="bold"
+                color="text.primary"
+              >
+                Net Winnings:
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight="bold"
+                color="success.main"
+                sx={{ fontSize: "1.1rem" }}
+              >
+                $
+                {(
+                  bet.netWinnings ||
+                  bet.actualWinnings ||
+                  bet.potentialWinnings
+                ).toFixed(2)}
+              </Typography>
+            </Box>
+            {bet.paymentStatus?.payoutId && (
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Payout ID:
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  fontFamily="monospace"
+                  color="primary.main"
+                >
+                  {bet.paymentStatus.payoutId}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </Paper>
+
+        {/* Financial Breakdown */}
+        <Paper
+          sx={{
+            p: 3,
+            m: 3,
+            background: "linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+            border: "1px solid #FFB74D",
+          }}
+        >
+          <Typography
+            variant="h6"
+            fontWeight="bold"
+            color="warning.main"
+            gutterBottom
+          >
+            Financial Breakdown
+          </Typography>
+          <Stack spacing={1.5}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="body2" color="text.secondary">
+                Gross Winnings:
+              </Typography>
+              <Typography variant="body2" fontWeight="bold" color="info.main">
+                ${bet.potentialWinnings.toFixed(2)}
+              </Typography>
+            </Box>
+            {bet.taxAmount && bet.taxAmount > 0 ? (
+              <>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Tax ({bet.taxPercentage || 0}%):
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    color="warning.main"
+                  >
+                    -${bet.taxAmount.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{
+                    borderTop: "1px solid rgba(0,0,0,0.1)",
+                    pt: 1,
+                    mt: 1,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    color="text.primary"
+                  >
+                    Net Winnings:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    color="success.main"
+                    sx={{ fontSize: "1.1rem" }}
+                  >
+                    $
+                    {(
+                      bet.netWinnings ||
+                      bet.actualWinnings ||
+                      bet.potentialWinnings
+                    ).toFixed(2)}
+                  </Typography>
+                </Box>
+              </>
+            ) : (
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  borderTop: "1px solid rgba(0,0,0,0.1)",
+                  pt: 1,
+                  mt: 1,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="text.primary"
+                >
+                  Net Winnings (No Tax):
                 </Typography>
                 <Typography
                   variant="body2"
                   fontWeight="bold"
                   color="success.main"
+                  sx={{ fontSize: "1.1rem" }}
                 >
-                  ${bet.actualWinnings.toFixed(2)}
+                  ${bet.potentialWinnings.toFixed(2)}
                 </Typography>
               </Box>
             )}
@@ -233,14 +413,14 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           sx={{
             p: 3,
             m: 3,
-            background: "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-            border: "1px solid #90CAF9",
+            background: "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)",
+            border: "1px solid #4CAF50",
           }}
         >
           <Typography
             variant="h6"
             fontWeight="bold"
-            color="primary.main"
+            color="success.main"
             gutterBottom
           >
             Payout Amount
@@ -254,13 +434,31 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
             <Typography
               variant="h3"
               fontWeight="bold"
-              color="primary.main"
+              color="success.main"
               sx={{
                 textShadow: "0 2px 4px rgba(0,0,0,0.1)",
               }}
             >
               ${totalWinnings.toFixed(2)}
             </Typography>
+          </Box>
+          <Box textAlign="center">
+            <Typography variant="body2" color="text.secondary">
+              {bet.netWinnings
+                ? "Net Winnings (after tax)"
+                : bet.actualWinnings
+                  ? "Actual Winnings"
+                  : "Gross Winnings"}
+            </Typography>
+            {bet.taxAmount && bet.taxAmount > 0 && (
+              <Typography
+                variant="caption"
+                color="warning.main"
+                display="block"
+              >
+                Tax of ${bet.taxAmount.toFixed(2)} deducted from gross
+              </Typography>
+            )}
           </Box>
         </Paper>
 

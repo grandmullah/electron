@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "../../components/Header";
 import settingsService from "../../services/settingsService";
-import { testPrint } from "../../services/printService";
+// Dynamic import for printService to enable code splitting
 
 interface SettingsPageProps {
   onNavigate: (
@@ -176,9 +176,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
           <div className="setting-item">
             <button
               className="btn btn-secondary"
-              onClick={() => {
+              onClick={async () => {
                 // Test printer functionality using the configured printer name
-                testPrint(settings.printerLogicalName);
+                try {
+                  const { testPrint } = await import(
+                    "../../services/printService"
+                  );
+                  testPrint(settings.printerLogicalName);
+                } catch (error) {
+                  console.error("Error importing print service:", error);
+                  alert(
+                    "Error: Unable to load print service. Please try again."
+                  );
+                }
               }}
             >
               🧪 Test Printer

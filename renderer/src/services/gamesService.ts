@@ -42,6 +42,8 @@ class GamesService {
                   const leaguePathMap: Record<string, string> = {
                         soccer_epl: '/epl/odds',
                         soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
+                        soccer_bundesliga: '/bundesliga/odds',
+                        soccer_laliga: '/laliga/odds',
                   };
 
                   const path = leaguePathMap[leagueKey] || `/epl/odds`; // default to EPL if unknown for now
@@ -120,12 +122,12 @@ class GamesService {
                                     const outcome = dcMarket.outcomes.find((o: any) =>
                                           candidates.some(p => normalize(String(o.name || '')) === normalize(p))
                                     );
-                                    if (outcome?.decimalOdds) return outcome.decimalOdds;
+                                    if (outcome?.price) return outcome.price;
 
                                     const outcomeContains = dcMarket.outcomes.find((o: any) =>
                                           candidates.some(p => normalize(String(o.name || '')).includes(normalize(p)))
                                     );
-                                    return outcomeContains?.decimalOdds ?? null;
+                                    return outcomeContains?.price ?? null;
                               };
 
                               // Totals (Over/Under 2.5)
@@ -140,20 +142,36 @@ class GamesService {
                                           const hasPoint = typeof o.point === 'number' && Math.abs((o.point as number) - targetPoint) < 1e-6;
                                           return matches && hasPoint;
                                     });
-                                    if (byPoint?.decimalOdds) return byPoint.decimalOdds;
+                                    if (byPoint?.price) return byPoint.price;
                                     // Fallback: name contains the point
                                     const targetText = `${isOver ? 'over' : 'under'} ${targetPoint}`;
                                     const byName = outcomes.find((o: any) => String(o.name || '').toLowerCase().includes(targetText));
-                                    if (byName?.decimalOdds) return byName.decimalOdds;
+                                    if (byName?.price) return byName.price;
                                     // Last resort: first Over/Under
                                     const generic = outcomes.find((o: any) => String(o.name || '').toLowerCase().includes(isOver ? 'over' : 'under'));
-                                    return generic?.decimalOdds ?? null;
+                                    return generic?.price ?? null;
                               };
 
                               // BTTS
                               const bttsMarket = findMarketFromAnyBookmaker('btts');
                               const bttsYes = bttsMarket?.outcomes?.find((o: any) => String(o.name || '').toLowerCase() === 'yes');
                               const bttsNo = bttsMarket?.outcomes?.find((o: any) => String(o.name || '').toLowerCase() === 'no');
+
+                              // Spreads
+                              const spreadsMarket = findMarketFromAnyBookmaker('spreads');
+                              const findSpreadOutcomeOdds = (isHome: boolean) => {
+                                    if (!spreadsMarket?.outcomes) return null;
+                                    const outcomes = spreadsMarket.outcomes;
+                                    const homeTeam = game.home_team;
+                                    const awayTeam = game.away_team;
+
+                                    const outcome = outcomes.find((o: any) => {
+                                          const name = String(o.name || '').toLowerCase();
+                                          const teamName = isHome ? homeTeam.toLowerCase() : awayTeam.toLowerCase();
+                                          return name.includes(teamName);
+                                    });
+                                    return outcome?.price ?? null;
+                              };
 
                               // DEBUG: Log details for Tottenham vs Bournemouth
                               if (game.home_team?.toLowerCase().includes('tottenham') || game.away_team?.toLowerCase().includes('tottenham')) {
@@ -164,26 +182,26 @@ class GamesService {
                                     console.log('Double Chance market found:', dcMarket ? 'YES' : 'NO');
                                     console.log('BTTS market found:', bttsMarket ? 'YES' : 'NO');
                                     if (dcMarket) {
-                                          console.log('Double Chance outcomes:', dcMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.decimalOdds })));
+                                          console.log('Double Chance outcomes:', dcMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.price })));
                                     }
                                     if (bttsMarket) {
-                                          console.log('BTTS outcomes:', bttsMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.decimalOdds })));
+                                          console.log('BTTS outcomes:', bttsMarket.outcomes?.map((o: any) => ({ name: o.name, odds: o.price })));
                                     }
                               }
 
                               const hasValidOdds = Boolean(
-                                    homeOutcome?.decimalOdds &&
-                                    awayOutcome?.decimalOdds &&
-                                    drawOutcome?.decimalOdds
+                                    homeOutcome?.price &&
+                                    awayOutcome?.price &&
+                                    drawOutcome?.price
                               );
 
                               const transformed: Game = {
                                     id: game.id,
                                     homeTeam: game.home_team,
                                     awayTeam: game.away_team,
-                                    homeOdds: homeOutcome?.decimalOdds ?? null,
-                                    drawOdds: drawOutcome?.decimalOdds ?? null,
-                                    awayOdds: awayOutcome?.decimalOdds ?? null,
+                                    homeOdds: homeOutcome?.price ?? null,
+                                    drawOdds: drawOutcome?.price ?? null,
+                                    awayOdds: awayOutcome?.price ?? null,
                                     matchTime: game.commence_time,
                                     league: game.sport_title,
                                     sportKey: game.sport_key || 'soccer_epl',
@@ -198,15 +216,15 @@ class GamesService {
                                           under25: findTotalsOutcomeOdds(false, 2.5),
                                     },
                                     bothTeamsToScore: {
-                                          yes: bttsYes?.decimalOdds ?? null,
-                                          no: bttsNo?.decimalOdds ?? null,
+                                          yes: bttsYes?.price ?? null,
+                                          no: bttsNo?.price ?? null,
                                     },
                                     spreads: {
                                           homeSpread: null,
                                           awaySpread: null,
-                                          homeSpreadOdds: null,
-                                          awaySpreadOdds: null,
-                                          spreadLine: null,
+                                          homeSpreadOdds: findSpreadOutcomeOdds(true),
+                                          awaySpreadOdds: findSpreadOutcomeOdds(false),
+                                          spreadLine: spreadsMarket?.outcomes?.[0]?.point ?? null,
                                     },
                                     hasValidOdds,
                               };
@@ -217,14 +235,25 @@ class GamesService {
 
                   return games;
             } catch (error: any) {
-                  // If UEFA endpoint is not available, provide helpful message
+                  // If specific endpoints are not available, provide helpful messages
                   if (leagueKey === 'soccer_uefa_world_cup_qualifiers') {
                         console.log('UEFA World Cup Qualifiers endpoint not available yet');
                         console.log('Expected endpoint: /api/uefa-world-cup-qualifiers/odds');
                         console.log('Please ensure the backend server implements this endpoint');
+                        return [];
+                  }
 
-                        // Return empty array instead of throwing error
-                        // This allows the UI to show "No games available" instead of crashing
+                  if (leagueKey === 'soccer_bundesliga') {
+                        console.log('Bundesliga endpoint not available yet');
+                        console.log('Expected endpoint: /api/bundesliga/odds');
+                        console.log('Please ensure the backend server implements this endpoint');
+                        return [];
+                  }
+
+                  if (leagueKey === 'soccer_laliga') {
+                        console.log('La Liga endpoint not available yet');
+                        console.log('Expected endpoint: /api/laliga/odds');
+                        console.log('Please ensure the backend server implements this endpoint');
                         return [];
                   }
 
@@ -240,6 +269,14 @@ class GamesService {
 
       static async fetchUefaWorldCupQualifiersOdds(): Promise<Game[]> {
             return this.fetchOdds('soccer_uefa_world_cup_qualifiers');
+      }
+
+      static async fetchBundesligaOdds(): Promise<Game[]> {
+            return this.fetchOdds('soccer_bundesliga');
+      }
+
+      static async fetchLaligaOdds(): Promise<Game[]> {
+            return this.fetchOdds('soccer_laliga');
       }
 }
 

@@ -59,6 +59,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   // Filter states
   const [betStatusFilter, setBetStatusFilter] = useState("all");
   const [betTypeFilter, setBetTypeFilter] = useState("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -138,6 +139,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
                 countryCode: "+211",
                 role: "user",
               },
+              paymentStatus: bet.paymentStatus,
             }) as DisplayBet
         )
         .concat(
@@ -173,6 +175,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
                   countryCode: "+211",
                   role: "user",
                 },
+                paymentStatus: bet.paymentStatus,
               }) as DisplayBet
           )
         );
@@ -228,6 +231,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       filtered = filtered.filter((bet) => bet.betType === betTypeFilter);
     }
 
+    // Apply payment status filter
+    if (paymentStatusFilter !== "all") {
+      filtered = filtered.filter((bet) => {
+        if (!bet.paymentStatus) {
+          return paymentStatusFilter === "no_payout";
+        }
+        return bet.paymentStatus.status === paymentStatusFilter;
+      });
+    }
+
     // Apply date filters
     if (dateFrom) {
       filtered = filtered.filter((bet) => new Date(bet.createdAt) >= dateFrom);
@@ -242,6 +255,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     debouncedSearchTerm,
     betStatusFilter,
     betTypeFilter,
+    paymentStatusFilter,
     dateFrom,
     dateTo,
   ]);
@@ -269,6 +283,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const handleClearFilters = () => {
     setBetStatusFilter("all");
     setBetTypeFilter("all");
+    setPaymentStatusFilter("all");
     setDateFrom(null);
     setDateTo(null);
     setSearchTerm("");
@@ -305,6 +320,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       "Bet ID",
       "Type",
       "Status",
+      "Payment Status",
+      "Payout ID",
+      "Payment Amount",
+      "Payment Method",
       "Total Stake",
       "Potential Winnings",
       "Created At",
@@ -315,6 +334,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       bet.id,
       bet.betType,
       bet.status,
+      bet.paymentStatus?.status || "No payment info",
+      bet.paymentStatus?.payoutId || "",
+      bet.paymentStatus?.payoutAmount || "",
+      bet.paymentStatus?.paymentMethod || "",
       bet.totalStake,
       bet.potentialWinnings,
       bet.createdAt,
@@ -447,6 +470,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           setBetStatusFilter={setBetStatusFilter}
           betTypeFilter={betTypeFilter}
           setBetTypeFilter={setBetTypeFilter}
+          paymentStatusFilter={paymentStatusFilter}
+          setPaymentStatusFilter={setPaymentStatusFilter}
           dateFrom={dateFrom}
           setDateFrom={setDateFrom}
           dateTo={dateTo}

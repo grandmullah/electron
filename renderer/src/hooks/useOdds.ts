@@ -5,9 +5,15 @@ import GamesService from '../services/gamesService';
 // Fetcher function for SWR
 const oddsFetcher = async (url: string): Promise<Game[]> => {
       // Extract league key from URL to use with GamesService
-      const leagueKey = url.includes('/uefa-world-cup-qualifiers/')
-            ? 'soccer_uefa_world_cup_qualifiers'
-            : 'soccer_epl';
+      let leagueKey = 'soccer_epl'; // default
+
+      if (url.includes('/uefa-world-cup-qualifiers/')) {
+            leagueKey = 'soccer_uefa_world_cup_qualifiers';
+      } else if (url.includes('/bundesliga/')) {
+            leagueKey = 'soccer_bundesliga';
+      } else if (url.includes('/laliga/')) {
+            leagueKey = 'soccer_laliga';
+      }
 
       // Use the existing GamesService to get properly processed data
       return await GamesService.fetchOdds(leagueKey);
@@ -20,10 +26,12 @@ export const useOdds = (leagueKey: string) => {
             const leaguePathMap: Record<string, string> = {
                   soccer_epl: '/epl/odds',
                   soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
+                  soccer_bundesliga: '/bundesliga/odds',
+                  soccer_laliga: '/laliga/odds',
             };
 
             const path = leaguePathMap[key];
-            return path ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}${path}` : null;
+            return path ? `${process.env['REACT_APP_API_URL'] || 'http://localhost:8000/api'}${path}` : null;
       };
 
       const endpoint = getEndpoint(leagueKey);

@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
       build: {
             outDir: 'dist/renderer',
             sourcemap: mode !== 'production', // Disable sourcemaps in prod
+            chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
             rollupOptions: {
                   input: {
                         main: resolve(__dirname, 'renderer/src/main.tsx'),
@@ -18,7 +19,19 @@ export default defineConfig(({ mode }) => ({
                   output: {
                         entryFileNames: 'src/[name].js',
                         chunkFileNames: 'src/[name].js',
-                        assetFileNames: 'assets/[name].[ext]'
+                        assetFileNames: 'assets/[name].[ext]',
+                        manualChunks: {
+                              // Vendor chunks for better caching
+                              'vendor-react': ['react', 'react-dom'],
+                              'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+                              'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
+                              'vendor-utils': ['axios', 'dayjs', 'swr'],
+                              // Service chunks for lazy loading
+                              'services-print': ['renderer/src/services/printService.ts'],
+                              'services-api': ['renderer/src/services/apiConfig.ts', 'renderer/src/services/betHistoryService.ts'],
+                              'services-games': ['renderer/src/services/gamesService.ts'],
+                              'services-agent': ['renderer/src/services/agentService.ts']
+                        }
                   }
             },
             // Copy JavaScript files to build output

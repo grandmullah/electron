@@ -5,6 +5,7 @@ import { EmptyState } from "./shared/EmptyState";
 import { PayoutStatsCard } from "./shared/PayoutStatsCard";
 import { CompletePayoutModal } from "./shared/CompletePayoutModal";
 import { usePayoutStats } from "../../hooks/usePayoutStats";
+import { usePayoutSummary } from "../../hooks/usePayoutSummary";
 import { PendingPayout } from "../../services/pendingPayoutsService";
 import {
   Paper,
@@ -67,10 +68,21 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
   const { payoutStats, isLoadingStats, statsError, loadPayoutStats } =
     usePayoutStats();
 
+  // Load payout summary
+  const {
+    payoutSummary,
+    isLoadingSummary,
+    summaryError,
+    loadPayoutSummary,
+    formatCurrency,
+    getTrendDirection,
+  } = usePayoutSummary();
+
   // Load stats when component mounts
   React.useEffect(() => {
     loadPayoutStats();
-  }, [loadPayoutStats]);
+    loadPayoutSummary();
+  }, [loadPayoutStats, loadPayoutSummary]);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -163,6 +175,116 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
           </Button>
         </Box>
       </Paper>
+
+      {/* Payout Summary Section */}
+      {isLoadingSummary ? (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <LoadingState message="Loading payout summary..." size="small" />
+        </Paper>
+      ) : summaryError ? (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <ErrorState
+            title="Error Loading Summary"
+            message={summaryError}
+            onRetry={loadPayoutSummary}
+            retryText="Retry"
+          />
+        </Paper>
+      ) : payoutSummary ? (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" gutterBottom fontWeight="bold">
+            📊 Payout Summary
+          </Typography>
+          <Box display="flex" gap={3} flexWrap="wrap">
+            {/* Today's Stats */}
+            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+              <Typography variant="h6" gutterBottom color="primary">
+                Today
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Payouts:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {payoutSummary.today.totalPayouts}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Amount:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {formatCurrency(payoutSummary.today.totalAmount)}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between">
+                <Typography variant="body2">Completed:</Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="success.main"
+                >
+                  {payoutSummary.today.completedPayouts}
+                </Typography>
+              </Box>
+            </Paper>
+
+            {/* This Week's Stats */}
+            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+              <Typography variant="h6" gutterBottom color="primary">
+                This Week
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Payouts:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {payoutSummary.thisWeek.totalPayouts}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Amount:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {formatCurrency(payoutSummary.thisWeek.totalAmount)}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between">
+                <Typography variant="body2">Completed:</Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="success.main"
+                >
+                  {payoutSummary.thisWeek.completedPayouts}
+                </Typography>
+              </Box>
+            </Paper>
+
+            {/* This Month's Stats */}
+            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+              <Typography variant="h6" gutterBottom color="primary">
+                This Month
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Payouts:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {payoutSummary.thisMonth.totalPayouts}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total Amount:</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {formatCurrency(payoutSummary.thisMonth.totalAmount)}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between">
+                <Typography variant="body2">Completed:</Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="success.main"
+                >
+                  {payoutSummary.thisMonth.completedPayouts}
+                </Typography>
+              </Box>
+            </Paper>
+          </Box>
+        </Paper>
+      ) : null}
 
       {/* Payout Statistics Section */}
       {isLoadingStats ? (
