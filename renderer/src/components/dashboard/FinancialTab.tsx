@@ -79,7 +79,15 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   return (
     <Box>
       {/* Section Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 3,
+          backgroundColor: "rgba(26, 29, 41, 0.8)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          color: "white",
+        }}
+      >
         <Box display="flex" alignItems="center" gap={2}>
           <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
           <Box>
@@ -96,7 +104,16 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
       {/* Period Summary Cards */}
       <Box display="flex" gap={3} mb={3} flexWrap="wrap">
         {/* Today */}
-        <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+        <Paper
+          sx={{
+            p: 2,
+            flex: 1,
+            minWidth: 200,
+            backgroundColor: "rgba(26, 29, 41, 0.8)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "white",
+          }}
+        >
           <Typography variant="h6" gutterBottom color="primary">
             Today
           </Typography>
@@ -126,14 +143,23 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </Box>
             </Stack>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
               No data available
             </Typography>
           )}
         </Paper>
 
         {/* This Week */}
-        <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+        <Paper
+          sx={{
+            p: 2,
+            flex: 1,
+            minWidth: 200,
+            backgroundColor: "rgba(26, 29, 41, 0.8)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "white",
+          }}
+        >
           <Typography variant="h6" gutterBottom color="primary">
             This Week
           </Typography>
@@ -165,14 +191,23 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </Box>
             </Stack>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
               No data available
             </Typography>
           )}
         </Paper>
 
         {/* This Month */}
-        <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+        <Paper
+          sx={{
+            p: 2,
+            flex: 1,
+            minWidth: 200,
+            backgroundColor: "rgba(26, 29, 41, 0.8)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "white",
+          }}
+        >
           <Typography variant="h6" gutterBottom color="primary">
             This Month
           </Typography>
@@ -204,7 +239,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </Box>
             </Stack>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
               No data available
             </Typography>
           )}
@@ -215,7 +250,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
       <Grid container spacing={3}>
         {/* Revenue Section */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(26, 29, 41, 0.8)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "white",
+            }}
+          >
             <Typography variant="h5" gutterBottom fontWeight="bold">
               💰 Revenue Analysis
             </Typography>
@@ -273,7 +315,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
         {/* Expenses Section */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(26, 29, 41, 0.8)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "white",
+            }}
+          >
             <Typography variant="h5" gutterBottom fontWeight="bold">
               💸 Expense Analysis
             </Typography>
@@ -304,7 +353,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
         {/* Profit Analysis */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(26, 29, 41, 0.8)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "white",
+            }}
+          >
             <Typography variant="h5" gutterBottom fontWeight="bold">
               📈 Profit Analysis
             </Typography>
@@ -353,7 +409,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
         {/* Performance Metrics */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(26, 29, 41, 0.8)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "white",
+            }}
+          >
             <Typography variant="h5" gutterBottom fontWeight="bold">
               🎯 Performance Metrics
             </Typography>

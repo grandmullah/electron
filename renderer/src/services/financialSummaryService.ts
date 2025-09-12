@@ -64,7 +64,7 @@ class FinancialSummaryService {
             try {
                   console.log(`🔄 Fetching financial summary for ${days} days...`);
 
-                  const token = localStorage.getItem('token');
+                  const token = localStorage.getItem('authToken');
                   if (!token) {
                         throw new Error('No authentication token found. Please log in again.');
                   }
@@ -85,8 +85,8 @@ class FinancialSummaryService {
                         console.error('❌ API Error Response:', data);
                         if (data.error === 'Invalid or expired token') {
                               // Clear invalid token and redirect to login
-                              localStorage.removeItem('token');
-                              localStorage.removeItem('user');
+                              localStorage.removeItem('authToken');
+                              localStorage.removeItem('authUser');
                               throw new Error('Your session has expired. Please log in again.');
                         }
                         throw new Error(data.message || `HTTP error! status: ${response.status}`);

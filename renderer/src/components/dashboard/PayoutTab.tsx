@@ -146,7 +146,15 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
   return (
     <Box>
       {/* Section Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 3,
+          backgroundColor: "rgba(26, 29, 41, 0.8)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          color: "white",
+        }}
+      >
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box display="flex" alignItems="center" gap={2}>
             <MoneyIcon color="primary" sx={{ fontSize: 32 }} />
@@ -191,13 +199,30 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
           />
         </Paper>
       ) : payoutSummary ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: "rgba(26, 29, 41, 0.8)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "white",
+          }}
+        >
           <Typography variant="h5" gutterBottom fontWeight="bold">
             📊 Payout Summary
           </Typography>
           <Box display="flex" gap={3} flexWrap="wrap">
             {/* Today's Stats */}
-            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                minWidth: 200,
+                backgroundColor: "rgba(26, 29, 41, 0.8)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "white",
+              }}
+            >
               <Typography variant="h6" gutterBottom color="primary">
                 Today
               </Typography>
@@ -226,7 +251,16 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             </Paper>
 
             {/* This Week's Stats */}
-            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                minWidth: 200,
+                backgroundColor: "rgba(26, 29, 41, 0.8)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "white",
+              }}
+            >
               <Typography variant="h6" gutterBottom color="primary">
                 This Week
               </Typography>
@@ -255,7 +289,16 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             </Paper>
 
             {/* This Month's Stats */}
-            <Paper sx={{ p: 2, flex: 1, minWidth: 200 }}>
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                minWidth: 200,
+                backgroundColor: "rgba(26, 29, 41, 0.8)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "white",
+              }}
+            >
               <Typography variant="h6" gutterBottom color="primary">
                 This Month
               </Typography>
