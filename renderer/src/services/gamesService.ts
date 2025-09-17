@@ -42,8 +42,10 @@ class GamesService {
                   const leaguePathMap: Record<string, string> = {
                         soccer_epl: '/epl/odds',
                         soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
+                        soccer_uefa_champions_league: '/uefa-champions-league/odds',
                         soccer_bundesliga: '/bundesliga/odds',
                         soccer_laliga: '/laliga/odds',
+                        soccer_serie_a: '/games/leagues/soccer_serie_a/games',
                   };
 
                   const path = leaguePathMap[leagueKey] || `/epl/odds`; // default to EPL if unknown for now

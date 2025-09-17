@@ -79,15 +79,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     useOdds(leagueKey);
   const { refresh } = useRefreshOdds();
 
-  // Function to apply 4% reduction to odds
-  const applyOddsReduction = (
-    odds: number | null | undefined
-  ): number | null | undefined => {
-    if (!odds || odds <= 0) return odds;
-    // Apply 4% reduction: multiply by 0.96
-    return Math.round(odds * 0.96 * 100) / 100; // Round to 2 decimal places
-  };
-
   // Agent-specific state
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
@@ -429,13 +420,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </div>
                     <div class="betting-option-values">
                       <div class="betting-option-value ${game.homeOdds ? "clickable" : ""}">
-                        ${applyOddsReduction(game.homeOdds) || "-"}
+                        ${game.homeOdds || "-"}
                       </div>
                       <div class="betting-option-value ${game.drawOdds ? "clickable" : ""}">
-                        ${applyOddsReduction(game.drawOdds) || "-"}
+                        ${game.drawOdds || "-"}
                       </div>
                       <div class="betting-option-value ${game.awayOdds ? "clickable" : ""}">
-                        ${applyOddsReduction(game.awayOdds) || "-"}
+                        ${game.awayOdds || "-"}
                       </div>
                     </div>
                   </div>
@@ -450,13 +441,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </div>
                     <div class="betting-option-values">
                       <div class="betting-option-value ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance?.homeOrDraw) || "-"}
+                        ${game.doubleChance?.homeOrDraw || "-"}
                       </div>
                       <div class="betting-option-value ${game.doubleChance?.drawOrAway ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance?.drawOrAway) || "-"}
+                        ${game.doubleChance?.drawOrAway || "-"}
                       </div>
                       <div class="betting-option-value ${game.doubleChance?.homeOrAway ? "clickable" : ""}">
-                        ${applyOddsReduction(game.doubleChance?.homeOrAway) || "-"}
+                        ${game.doubleChance?.homeOrAway || "-"}
                       </div>
                     </div>
                   </div>
@@ -470,10 +461,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </div>
                     <div class="betting-option-values">
                       <div class="betting-option-value ${game.overUnder?.over25 ? "clickable" : ""}">
-                        ${applyOddsReduction(game.overUnder?.over25) || "-"}
+                        ${game.overUnder?.over25 || "-"}
                       </div>
                       <div class="betting-option-value ${game.overUnder?.under25 ? "clickable" : ""}">
-                        ${applyOddsReduction(game.overUnder?.under25) || "-"}
+                        ${game.overUnder?.under25 || "-"}
                       </div>
                     </div>
                   </div>
@@ -487,10 +478,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </div>
                     <div class="betting-option-values">
                       <div class="betting-option-value ${game.bothTeamsToScore?.yes ? "clickable" : ""}">
-                        ${applyOddsReduction(game.bothTeamsToScore?.yes) || "-"}
+                        ${game.bothTeamsToScore?.yes || "-"}
                       </div>
                       <div class="betting-option-value ${game.bothTeamsToScore?.no ? "clickable" : ""}">
-                        ${applyOddsReduction(game.bothTeamsToScore?.no) || "-"}
+                        ${game.bothTeamsToScore?.no || "-"}
                       </div>
                     </div>
                   </div>
@@ -543,10 +534,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
     const odds =
       selectedBet === "home"
-        ? applyOddsReduction(selectedGame.homeOdds)
+        ? selectedGame.homeOdds
         : selectedBet === "draw"
-          ? applyOddsReduction(selectedGame.drawOdds)
-          : applyOddsReduction(selectedGame.awayOdds);
+          ? selectedGame.drawOdds
+          : selectedGame.awayOdds;
 
     if (!odds) {
       alert("Odds not available for this bet");
@@ -620,8 +611,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     selection: string,
     odds: number
   ) => {
-    // Apply 4% reduction to odds before adding to bet slip
-    const reducedOdds = applyOddsReduction(odds) || odds;
+    // Use original odds without reduction
+    const reducedOdds = odds;
     // If agent mode and no user selected, show user selector
     if (isAgentMode && !selectedUser) {
       setShowUserSelector(true);
@@ -673,8 +664,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       return;
     }
 
-    // Apply 4% reduction to odds before placing bet
-    const reducedOdds = applyOddsReduction(odds) || odds;
+    // Use original odds without reduction
+    const reducedOdds = odds;
 
     try {
       const bet = await AgentService.placeBetForUser({
@@ -1026,15 +1017,15 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               />
               <Chip
                 icon={<TrophyIcon />}
-                label="UEFA WCQ"
-                onClick={() => setLeagueKey("soccer_uefa_world_cup_qualifiers")}
+                label="UEFA Champions League"
+                onClick={() => setLeagueKey("soccer_uefa_champions_league")}
                 color={
-                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                  leagueKey === "soccer_uefa_champions_league"
                     ? "primary"
                     : "default"
                 }
                 variant={
-                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                  leagueKey === "soccer_uefa_champions_league"
                     ? "filled"
                     : "outlined"
                 }
@@ -1043,18 +1034,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   width: "100%",
                   justifyContent: "flex-start",
                   backgroundColor:
-                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    leagueKey === "soccer_uefa_champions_league"
                       ? "#667eea"
                       : "rgba(255,255,255,0.1)",
                   color:
-                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    leagueKey === "soccer_uefa_champions_league"
                       ? "white"
                       : "rgba(255,255,255,0.8)",
                   borderColor: "rgba(255,255,255,0.2)",
                   "&:hover": {
                     transform: "translateY(-2px)",
                     backgroundColor:
-                      leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      leagueKey === "soccer_uefa_champions_league"
                         ? "#5a6fd8"
                         : "rgba(255,255,255,0.2)",
                   },
@@ -1115,6 +1106,70 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     transform: "translateY(-2px)",
                     backgroundColor:
                       leagueKey === "soccer_laliga"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+              <Chip
+                icon={<SoccerIcon />}
+                label="Serie A"
+                onClick={() => setLeagueKey("soccer_serie_a")}
+                color={leagueKey === "soccer_serie_a" ? "primary" : "default"}
+                variant={leagueKey === "soccer_serie_a" ? "filled" : "outlined"}
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
+                    leagueKey === "soccer_serie_a"
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    leagueKey === "soccer_serie_a"
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_serie_a"
+                        ? "#5a6fd8"
+                        : "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+              <Chip
+                icon={<TrophyIcon />}
+                label="UEFA WCQ"
+                onClick={() => setLeagueKey("soccer_uefa_world_cup_qualifiers")}
+                color={
+                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    ? "primary"
+                    : "default"
+                }
+                variant={
+                  leagueKey === "soccer_uefa_world_cup_qualifiers"
+                    ? "filled"
+                    : "outlined"
+                }
+                sx={{
+                  fontWeight: 600,
+                  width: "100%",
+                  justifyContent: "flex-start",
+                  backgroundColor:
+                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "#667eea"
+                      : "rgba(255,255,255,0.1)",
+                  color:
+                    leagueKey === "soccer_uefa_world_cup_qualifiers"
+                      ? "white"
+                      : "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    backgroundColor:
+                      leagueKey === "soccer_uefa_world_cup_qualifiers"
                         ? "#5a6fd8"
                         : "rgba(255,255,255,0.2)",
                   },
@@ -1328,7 +1383,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         onSelect={setSelectedGame}
                         onAddToBetSlip={handleAddToBetSlip}
                         isSelectionInBetSlip={isSelectionInBetSlip}
-                        applyOddsReduction={applyOddsReduction}
                         expandedGames={expandedGames}
                         onToggleExpanded={toggleExpanded}
                       />

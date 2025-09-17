@@ -252,20 +252,34 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       fullWidth={false}
       PaperProps={{
         sx: {
-          minHeight: "80vh",
-          maxHeight: "90vh",
-          width: "420px",
-          background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
-          border: "1px solid #2a2d3a",
+          minHeight: "70vh",
+          maxHeight: "85vh",
+          width: "480px",
+          background: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: "16px",
           boxShadow:
-            "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+            "0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
+          },
         },
       }}
     >
       <DialogTitle
         sx={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "rgba(102, 126, 234, 0.2)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(102, 126, 234, 0.3)",
           color: "white",
           display: "flex",
           alignItems: "center",
@@ -274,6 +288,17 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           px: 3,
           borderRadius: "16px 16px 0 0",
           boxShadow: "0 4px 20px rgba(102, 126, 234, 0.3)",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.5) 50%, transparent 100%)",
+          },
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -299,7 +324,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, background: "#0e1220" }}>
+      <DialogContent sx={{ p: 0, background: "rgba(255, 255, 255, 0.02)" }}>
         {!betSlipItems || (betSlipItems?.length || 0) === 0 ? (
           <Box
             display="flex"
@@ -453,8 +478,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                   >
                     Multibet Information
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                  <Box display="flex" gap={2} flexWrap="wrap">
+                    <Box sx={{ flex: "1 1 150px", minWidth: "150px" }}>
                       <Box textAlign="center">
                         <Typography
                           variant="body2"
@@ -471,8 +496,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                           {calculateCombinedOdds(betSlipItems).toFixed(2)}
                         </Typography>
                       </Box>
-                    </Grid>
-                    <Grid item xs={6}>
+                    </Box>
+                    <Box sx={{ flex: "1 1 150px", minWidth: "150px" }}>
                       <Box textAlign="center">
                         <Typography
                           variant="body2"
@@ -486,15 +511,15 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                           fontWeight="bold"
                           sx={{ color: "rgba(255,255,255,0.9)" }}
                         >
-                          $
+                          SSP{" "}
                           {calculateMultibetWinnings(
                             betSlipItems,
                             multibetStake
                           ).toFixed(2)}
                         </Typography>
                       </Box>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                   <Box mt={2}>
                     <TextField
                       fullWidth
@@ -764,7 +789,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                 variant="body2"
                                 sx={{ color: "rgba(255,255,255,0.6)" }}
                               >
-                                Potential: ${bet.potentialWinnings.toFixed(2)}
+                                Potential: SSP{" "}
+                                {bet.potentialWinnings.toFixed(2)}
                               </Typography>
                             </Box>
                           )}
@@ -790,7 +816,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, background: "#0e1220" }}>
+      <DialogActions sx={{ p: 3, background: "rgba(255, 255, 255, 0.02)" }}>
         <Button
           onClick={onClose}
           sx={{

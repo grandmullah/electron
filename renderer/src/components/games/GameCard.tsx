@@ -26,9 +26,6 @@ interface GameCardProps {
     betType: string,
     selection: string
   ) => boolean;
-  applyOddsReduction: (
-    odds: number | null | undefined
-  ) => number | null | undefined;
   expandedGames: Set<string>;
   onToggleExpanded: (gameId: string, event: React.MouseEvent) => void;
 }
@@ -39,7 +36,6 @@ export const GameCard: React.FC<GameCardProps> = ({
   onSelect,
   onAddToBetSlip,
   isSelectionInBetSlip,
-  applyOddsReduction,
   expandedGames,
   onToggleExpanded,
 }) => {
@@ -56,7 +52,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   }) => {
     const isClickable = !!odds;
     const isSelected = isSelectionInBetSlip(game.id, betType, selection);
-    const reducedOdds = applyOddsReduction(odds);
+    const reducedOdds = odds;
 
     return (
       <Button

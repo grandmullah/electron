@@ -252,7 +252,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
       });
 
       alert(
-        `Balance ${balanceUpdateData.type} of $${balanceUpdateData.amount} successful!`
+        `Balance ${balanceUpdateData.type} of SSP ${balanceUpdateData.amount} successful!`
       );
     } catch (error: any) {
       dispatch(setError(error.message));
@@ -473,7 +473,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                       </div>
                       <div className="table-col col-balance">
                         <span className="balance-amount">
-                          ${user.balance.toFixed(2)}
+                          SSP {user.balance.toFixed(2)}
                         </span>
                       </div>
                       <div className="table-col col-status">
@@ -674,12 +674,12 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                         </div>
                         <div className="table-col col-stake">
                           <span className="stake-amount">
-                            ${bet.totalStake}
+                            SSP {bet.totalStake}
                           </span>
                         </div>
                         <div className="table-col col-potential">
                           <span className="potential-amount">
-                            ${bet.potentialWinnings.toFixed(2)}
+                            SSP {bet.potentialWinnings.toFixed(2)}
                           </span>
                         </div>
                         <div className="table-col col-status">
@@ -765,7 +765,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                                 Stake: SSP ${bet.totalStake}
                               </span>
                               <span className="bet-potential">
-                                Potential: SSP $
+                                Potential: SSP{" "}
                                 {bet.potentialWinnings.toFixed(2)}
                               </span>
                               {bet.betType === "multibet" && (
@@ -832,7 +832,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                                           Stake:
                                         </span>
                                         <span className="stake-value">
-                                          ${selection.stake.toFixed(2)}
+                                          SSP {selection.stake.toFixed(2)}
                                         </span>
                                       </div>
                                     )}
@@ -928,7 +928,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                     <div className="commission-amount">
-                      +${transaction.amount.toFixed(2)}
+                      +SSP {transaction.amount.toFixed(2)}
                     </div>
                   </div>
                   <div className="commission-card-body">
@@ -1148,13 +1148,13 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                 <div className="ticket-row">
                   <span>Total Stake:</span>
                   <span className="amount">
-                    ${selectedBetTicket.totalStake}
+                    SSP {selectedBetTicket.totalStake}
                   </span>
                 </div>
                 <div className="ticket-row">
                   <span>Potential Winnings:</span>
                   <span className="amount potential">
-                    ${selectedBetTicket.potentialWinnings}
+                    SSP {selectedBetTicket.potentialWinnings}
                   </span>
                 </div>
               </div>
@@ -1177,7 +1177,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                     <div className="selection-stake">
-                      Stake: SSP ${selection.stake} → Potential: SSP
+                      Stake: SSP {selection.stake} → Potential: SSP{" "}
                       {selection.potentialWinnings}
                     </div>
                   </div>
@@ -1285,7 +1285,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                   <p>
                     Current Balance:{" "}
                     <strong>
-                      ${selectedUserForBalance.balance.toFixed(2)}
+                      SSP {selectedUserForBalance.balance.toFixed(2)}
                     </strong>
                   </p>
                 </div>
@@ -1312,7 +1312,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                 </div>
 
                 <div className="form-group">
-                  <label>Amount ($)</label>
+                  <label>Amount (SSP)</label>
                   <input
                     type="number"
                     value={balanceUpdateData.amount}
@@ -1348,7 +1348,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                 <div className="balance-preview">
                   <div className="preview-row">
                     <span>Current Balance:</span>
-                    <span>${selectedUserForBalance.balance.toFixed(2)}</span>
+                    <span>SSP {selectedUserForBalance.balance.toFixed(2)}</span>
                   </div>
                   <div className="preview-row">
                     <span>

@@ -9,10 +9,14 @@ const oddsFetcher = async (url: string): Promise<Game[]> => {
 
       if (url.includes('/uefa-world-cup-qualifiers/')) {
             leagueKey = 'soccer_uefa_world_cup_qualifiers';
+      } else if (url.includes('/uefa-champions-league/')) {
+            leagueKey = 'soccer_uefa_champions_league';
       } else if (url.includes('/bundesliga/')) {
             leagueKey = 'soccer_bundesliga';
       } else if (url.includes('/laliga/')) {
             leagueKey = 'soccer_laliga';
+      } else if (url.includes('/serie-a/')) {
+            leagueKey = 'soccer_serie_a';
       }
 
       // Use the existing GamesService to get properly processed data
@@ -26,8 +30,10 @@ export const useOdds = (leagueKey: string) => {
             const leaguePathMap: Record<string, string> = {
                   soccer_epl: '/epl/odds',
                   soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
+                  soccer_uefa_champions_league: '/uefa-champions-league/odds',
                   soccer_bundesliga: '/bundesliga/odds',
                   soccer_laliga: '/laliga/odds',
+                  soccer_serie_a: '/serie-a/odds',
             };
 
             const path = leaguePathMap[key];
