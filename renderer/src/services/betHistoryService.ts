@@ -6,78 +6,11 @@ import {
       ShopInfo,
       UserInfo,
       ShopSummary,
-      EnhancedUserBetsResponse,
-      PaymentStatus
+      PaymentStatus,
+      NewBetHistoryResponse
 } from '../types/history';
 
-// Types for bet history API (keeping for backward compatibility)
-export interface SingleBet {
-      betId: string;
-      gameId: string;
-      homeTeam: string;
-      awayTeam: string;
-      betType: string;
-      selection: string;
-      odds: number;
-      stake: number;
-      potentialWinnings: number;
-      taxPercentage?: number;
-      taxAmount?: number;
-      netWinnings?: number;
-      userId: string;
-      userInfo: UserInfo;
-      shopId: string;
-      timestamp: string;
-      status: 'pending' | 'accepted' | 'rejected' | 'settled' | 'cancelled';
-      betCategory: 'single';
-      settledAt?: string;
-      cancelledAt?: string;
-      result?: 'won' | 'lost' | 'pending';
-      actualWinnings?: number;
-      paymentStatus?: PaymentStatus;
-}
-
-export interface Multibet {
-      betId: string;
-      bets: Array<{
-            betId: string;
-            gameId: string;
-            homeTeam: string;
-            awayTeam: string;
-            betType: string;
-            selection: string;
-            odds: number;
-            stake: number;
-            potentialWinnings: number;
-      }>;
-      totalStake: number;
-      combinedOdds: number;
-      potentialWinnings: number;
-      taxPercentage?: number;
-      taxAmount?: number;
-      netWinnings?: number;
-      userId: string;
-      userInfo: UserInfo;
-      shopId: string;
-      timestamp: string;
-      status: 'pending' | 'accepted' | 'rejected' | 'settled' | 'cancelled';
-      betType: 'multibet';
-      settledAt?: string;
-      cancelledAt?: string;
-      result?: 'won' | 'lost' | 'pending';
-      actualWinnings?: number;
-      paymentStatus?: PaymentStatus;
-}
-
-export interface UserBetsResponse {
-      success: boolean;
-      data: {
-            singleBets: SingleBet[];
-            multibets: Multibet[];
-            total: number;
-            shopSummary?: ShopSummary;
-      };
-}
+// Types for bet history API
 
 export interface BetHistoryFilters {
       status?: 'pending' | 'accepted' | 'rejected' | 'settled' | 'cancelled';
@@ -112,8 +45,9 @@ export class BetHistoryService {
             return userId;
       }
 
-      // Fetch user bet history with optional filters
-      static async getUserBets(filters?: BetHistoryFilters): Promise<UserBetsResponse> {
+
+      // Fetch user bet history
+      static async getUserBets(filters?: BetHistoryFilters): Promise<NewBetHistoryResponse> {
             try {
                   const userId = this.getUserId();
                   const token = this.getAuthToken();
@@ -144,7 +78,7 @@ export class BetHistoryService {
 
                   const url = `${API_BASE_URL}/bets/history/${userId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-                  console.log('Fetching user bets from:', url);
+                  console.log('Fetching user bets (new structure) from:', url);
 
                   const response = await axios.get(url, {
                         headers: {
@@ -154,9 +88,21 @@ export class BetHistoryService {
                         timeout: 10000, // 10 second timeout
                   });
 
-                  return response.data;
+                  // Debug the actual API response
+                  console.log('Raw API response:', response.data);
+                  console.log('Response structure:', {
+                        success: response.data?.success,
+                        hasData: !!response.data?.data,
+                        singleBets: response.data?.data?.singleBets,
+                        multibets: response.data?.data?.multibets,
+                        total: response.data?.data?.total
+                  });
+
+                  // Transform the response to match our DisplayBet interface
+                  const transformedData = this.transformBetHistoryResponse(response.data);
+                  return transformedData;
             } catch (error: any) {
-                  console.error('Error fetching user bets:', error);
+                  console.error('Error fetching user bets (new structure):', error);
 
                   // Return empty response for development/offline mode
                   if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error') || error.code === 'ECONNABORTED') {
@@ -175,8 +121,123 @@ export class BetHistoryService {
             }
       }
 
+
+      // Transform new API response to DisplayBet format
+      private static transformBetHistoryResponse(apiResponse: any): NewBetHistoryResponse {
+            console.log('Transforming API response:', apiResponse);
+
+            // Ensure we have the expected structure
+            if (!apiResponse || !apiResponse.data) {
+                  console.warn('Invalid API response structure:', apiResponse);
+                  return {
+                        success: false,
+                        data: {
+                              singleBets: [],
+                              multibets: [],
+                              total: 0
+                        }
+                  };
+            }
+
+            const singleBetsArray = Array.isArray(apiResponse.data.singleBets) ? apiResponse.data.singleBets : [];
+            const multibetsArray = Array.isArray(apiResponse.data.multibets) ? apiResponse.data.multibets : [];
+
+            console.log('Processing arrays:', {
+                  singleBetsCount: singleBetsArray.length,
+                  multibetsCount: multibetsArray.length
+            });
+
+            const transformedSingleBets: DisplayBet[] = singleBetsArray.map((bet: any) => {
+                  const betId = bet.betId;
+
+                  // Transform selections array - only map fields that exist in the API response
+                  const transformedSelections = bet.selections.map((selection: any) => ({
+                        selectionId: selection.selectionId,
+                        betId: betId, // Parent bet ID
+                        gameId: selection.gameId,
+                        homeTeam: selection.homeTeam,
+                        awayTeam: selection.awayTeam,
+                        betType: selection.betType,
+                        selection: selection.selection,
+                        gameScore: selection.gameScore,
+                        // Only include odds, stake, potentialWinnings if they exist in the selection object
+                        ...(selection.odds !== undefined && { odds: selection.odds }),
+                        ...(selection.stake !== undefined && { stake: selection.stake }),
+                        ...(selection.potentialWinnings !== undefined && { potentialWinnings: selection.potentialWinnings }),
+                        ...(selection.result !== undefined && { result: selection.result })
+                  }));
+
+                  return {
+                        betId,
+                        betType: 'single' as const,
+                        totalStake: bet.totalStake,
+                        potentialWinnings: bet.potentialWinnings,
+                        actualWinnings: bet.actualWinnings,
+                        createdAt: bet.timestamp,
+                        settledAt: bet.settledAt,
+                        status: bet.status,
+                        result: bet.result,
+                        selections: transformedSelections,
+                        taxPercentage: bet.taxPercentage,
+                        taxAmount: bet.taxAmount,
+                        netWinnings: bet.netWinnings,
+                        paymentStatus: bet.paymentStatus,
+                        shop: bet.shop,
+                        user: bet.user,
+                        combinedOdds: bet.combinedOdds
+                  };
+            });
+
+            const transformedMultibets: DisplayBet[] = multibetsArray.map((bet: any) => {
+                  const betId = bet.betId;
+
+                  return {
+                        betId,
+                        betType: 'multibet' as const,
+                        totalStake: bet.totalStake,
+                        potentialWinnings: bet.potentialWinnings,
+                        actualWinnings: bet.actualWinnings,
+                        createdAt: bet.timestamp,
+                        settledAt: bet.settledAt,
+                        status: bet.status,
+                        result: bet.result,
+                        selections: bet.selections.map((selection: any) => ({
+                              selectionId: selection.selectionId,
+                              betId: betId, // Parent bet ID
+                              gameId: selection.gameId,
+                              homeTeam: selection.homeTeam,
+                              awayTeam: selection.awayTeam,
+                              betType: selection.betType,
+                              selection: selection.selection,
+                              gameScore: selection.gameScore,
+                              // Only include odds, stake, potentialWinnings if they exist in the selection object
+                              ...(selection.odds !== undefined && { odds: selection.odds }),
+                              ...(selection.stake !== undefined && { stake: selection.stake }),
+                              ...(selection.potentialWinnings !== undefined && { potentialWinnings: selection.potentialWinnings }),
+                              ...(selection.result !== undefined && { result: selection.result })
+                        })),
+                        taxPercentage: bet.taxPercentage,
+                        taxAmount: bet.taxAmount,
+                        netWinnings: bet.netWinnings,
+                        paymentStatus: bet.paymentStatus,
+                        shop: bet.shop,
+                        user: bet.user,
+                        combinedOdds: bet.combinedOdds
+                  };
+            });
+
+            return {
+                  success: apiResponse.success,
+                  data: {
+                        singleBets: transformedSingleBets,
+                        multibets: transformedMultibets,
+                        total: apiResponse.data.total
+                  }
+            };
+      }
+
       // Get individual bet details
-      static async getBetDetails(betId: string): Promise<SingleBet | Multibet> {
+      static async getBetDetails(betId: string): Promise<any> {
             try {
                   const token = this.getAuthToken();
 
@@ -196,7 +257,7 @@ export class BetHistoryService {
       }
 
       // Get active bets for a user
-      static async getActiveBets(): Promise<UserBetsResponse> {
+      static async getActiveBets(): Promise<NewBetHistoryResponse> {
             try {
                   const userId = this.getUserId();
                   const token = this.getAuthToken();

@@ -152,7 +152,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
               Bet Ticket
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              ID: {bet.id.substring(0, 8)}...
+              ID: {bet.betId ? bet.betId.substring(0, 8) + "..." : "Unknown"}
             </Typography>
           </Box>
         </Box>
@@ -360,13 +360,8 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                     sx={{ color: "#ff9800" }}
                   >
                     {bet.betType === "single"
-                      ? bet.selections[0]?.odds?.toFixed(2) || "N/A"
-                      : bet.selections
-                          .reduce(
-                            (total, selection) => total * (selection.odds || 1),
-                            1
-                          )
-                          .toFixed(2)}
+                      ? bet.combinedOdds?.toFixed(2) || "N/A"
+                      : bet.combinedOdds?.toFixed(2) || "N/A"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -560,7 +555,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                       </Typography>
                     </Box>
                     <Chip
-                      label={`@ ${selection.odds}`}
+                      label={`@ ${bet.combinedOdds?.toFixed(2) || 'N/A'}`}
                       variant="outlined"
                       size="small"
                       sx={{

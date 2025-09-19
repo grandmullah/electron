@@ -1,23 +1,13 @@
 import useSWR from 'swr';
 import { Game } from '../services/gamesService';
 import GamesService from '../services/gamesService';
+import { API_BASE_URL } from '../services/apiConfig';
 
 // Fetcher function for SWR
 const oddsFetcher = async (url: string): Promise<Game[]> => {
-      // Extract league key from URL to use with GamesService
-      let leagueKey = 'soccer_epl'; // default
-
-      if (url.includes('/uefa-world-cup-qualifiers/')) {
-            leagueKey = 'soccer_uefa_world_cup_qualifiers';
-      } else if (url.includes('/uefa-champions-league/')) {
-            leagueKey = 'soccer_uefa_champions_league';
-      } else if (url.includes('/bundesliga/')) {
-            leagueKey = 'soccer_bundesliga';
-      } else if (url.includes('/laliga/')) {
-            leagueKey = 'soccer_laliga';
-      } else if (url.includes('/serie-a/')) {
-            leagueKey = 'soccer_serie_a';
-      }
+      // Extract league key from URL - the URL format is /api/{leagueKey}/odds
+      const urlParts = url.split('/');
+      const leagueKey = urlParts[urlParts.length - 2]; // Get the league key from the URL
 
       // Use the existing GamesService to get properly processed data
       return await GamesService.fetchOdds(leagueKey);
@@ -25,22 +15,8 @@ const oddsFetcher = async (url: string): Promise<Game[]> => {
 
 // Custom hook for fetching odds with SWR
 export const useOdds = (leagueKey: string) => {
-      // Map league keys to API endpoints
-      const getEndpoint = (key: string): string | null => {
-            const leaguePathMap: Record<string, string> = {
-                  soccer_epl: '/epl/odds',
-                  soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
-                  soccer_uefa_champions_league: '/uefa-champions-league/odds',
-                  soccer_bundesliga: '/bundesliga/odds',
-                  soccer_laliga: '/laliga/odds',
-                  soccer_serie_a: '/serie-a/odds',
-            };
-
-            const path = leaguePathMap[key];
-            return path ? `${process.env['REACT_APP_API_URL'] || 'http://localhost:8000/api'}${path}` : null;
-      };
-
-      const endpoint = getEndpoint(leagueKey);
+      // Use the league key directly as the API endpoint
+      const endpoint = `${API_BASE_URL}/${leagueKey}/odds`;
 
       const { data, error, isLoading, mutate } = useSWR<Game[]>(
             endpoint,

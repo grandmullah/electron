@@ -198,7 +198,9 @@ export const BetsTab: React.FC<BetsTabProps> = ({
                       title={bet.betId || bet.id}
                       sx={{ color: "rgba(255,255,255,0.8)" }}
                     >
-                      {(bet.betId || bet.id).substring(0, 8)}...
+                      {bet.betId || bet.id
+                        ? (bet.betId || bet.id).substring(0, 8) + "..."
+                        : "Unknown"}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>

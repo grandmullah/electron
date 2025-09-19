@@ -1,3 +1,17 @@
+/* Performance Optimization */
+* {
+  /* Optimize rendering performance */
+  will-change: auto;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Reduce memory usage for complex elements */
+.dialog-paper, .gradient-bg, .backdrop-blur {
+  /* Use simpler backgrounds instead of complex gradients */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 /* CSS Variables - App Theme Colors */
 :root {
   /* Primary Colors */

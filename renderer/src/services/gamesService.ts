@@ -5,50 +5,42 @@ export interface Game {
       id: string;
       homeTeam: string;
       awayTeam: string;
-      homeOdds: number | null;
-      drawOdds: number | null;
-      awayOdds: number | null;
+      homeOdds: number | string | null;
+      drawOdds: number | string | null;
+      awayOdds: number | string | null;
       matchTime: string;
       league: string;
       sportKey: string;
       status: 'upcoming' | 'live' | 'finished';
       doubleChance: {
-            homeOrDraw: number | null;
-            homeOrAway: number | null;
-            drawOrAway: number | null;
+            homeOrDraw: number | string | null;
+            homeOrAway: number | string | null;
+            drawOrAway: number | string | null;
       };
       overUnder: {
-            over25: number | null;
-            under25: number | null;
+            over25: number | string | null;
+            under25: number | string | null;
       };
       bothTeamsToScore: {
-            yes: number | null;
-            no: number | null;
+            yes: number | string | null;
+            no: number | string | null;
       };
       spreads: {
-            homeSpread: number | null;
-            awaySpread: number | null;
-            homeSpreadOdds: number | null;
-            awaySpreadOdds: number | null;
-            spreadLine: number | null;
+            homeSpread: number | string | null;
+            awaySpread: number | string | null;
+            homeSpreadOdds: number | string | null;
+            awaySpreadOdds: number | string | null;
+            spreadLine: number | string | null;
       };
       hasValidOdds: boolean;
 }
 
 class GamesService {
-      static async fetchOdds(leagueKey: string = 'soccer_epl'): Promise<Game[]> {
+      static async fetchOdds(leagueKey: string = 'epl'): Promise<Game[]> {
             try {
-                  // Map known league keys to backend endpoints
-                  const leaguePathMap: Record<string, string> = {
-                        soccer_epl: '/epl/odds',
-                        soccer_uefa_world_cup_qualifiers: '/uefa-world-cup-qualifiers/odds',
-                        soccer_uefa_champions_league: '/uefa-champions-league/odds',
-                        soccer_bundesliga: '/bundesliga/odds',
-                        soccer_laliga: '/laliga/odds',
-                        soccer_serie_a: '/games/leagues/soccer_serie_a/games',
-                  };
-
-                  const path = leaguePathMap[leagueKey] || `/epl/odds`; // default to EPL if unknown for now
+                  // Use the league key directly as the API endpoint
+                  // The API expects endpoints like /epl/odds, /laliga/odds, etc.
+                  const path = `/${leagueKey}/odds`;
 
                   // Make the API call
                   const response = await axios.get(`${API_BASE_URL}${path}`);

@@ -28,8 +28,6 @@ import {
 import "../../styles/mui/history.css";
 import {
   BetHistoryService,
-  SingleBet,
-  Multibet,
   BetHistoryFilters,
 } from "../../services/betHistoryService";
 
@@ -100,85 +98,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       };
 
       const response = await BetHistoryService.getUserBets(filters);
-      console.log("Bet history response:", response);
+      console.log("Bet history response (new structure):", response);
       console.log("Single bets:", response.data.singleBets);
       console.log("Multibets:", response.data.multibets);
 
-      const displayBets = response.data.singleBets
-        .map(
-          (bet) =>
-            ({
-              id: bet.betId,
-              betType: "single" as const,
-              totalStake: bet.stake,
-              potentialWinnings: bet.potentialWinnings,
-              actualWinnings: bet.actualWinnings || 0,
-              createdAt: bet.timestamp,
-              status: bet.status,
-              selections: [
-                {
-                  gameId: bet.gameId,
-                  homeTeam: bet.homeTeam,
-                  awayTeam: bet.awayTeam,
-                  betType: bet.betType,
-                  selection: bet.selection,
-                  odds: bet.odds,
-                  stake: bet.stake,
-                  potentialWinnings: bet.potentialWinnings,
-                  result: bet.result || "pending",
-                },
-              ],
-              shop: {
-                id: bet.shopId,
-                shopName: "Unknown Shop",
-                shopCode: bet.shopId,
-              },
-              user: {
-                id: bet.userId,
-                phoneNumber: bet.userInfo?.phoneNumber || "",
-                countryCode: "+211",
-                role: "user",
-              },
-              paymentStatus: bet.paymentStatus,
-            }) as DisplayBet
-        )
-        .concat(
-          response.data.multibets.map(
-            (bet) =>
-              ({
-                id: bet.betId,
-                betType: "multibet" as const,
-                totalStake: bet.totalStake,
-                potentialWinnings: bet.potentialWinnings,
-                actualWinnings: bet.actualWinnings || 0,
-                createdAt: bet.timestamp,
-                status: bet.status,
-                selections: bet.bets.map((b) => ({
-                  gameId: b.gameId,
-                  homeTeam: b.homeTeam,
-                  awayTeam: b.awayTeam,
-                  betType: b.betType,
-                  selection: b.selection,
-                  odds: b.odds,
-                  stake: b.stake,
-                  potentialWinnings: b.potentialWinnings,
-                  result: "pending",
-                })),
-                shop: {
-                  id: bet.shopId,
-                  shopName: "Unknown Shop",
-                  shopCode: bet.shopId,
-                },
-                user: {
-                  id: bet.userId,
-                  phoneNumber: bet.userInfo?.phoneNumber || "",
-                  countryCode: "+211",
-                  role: "user",
-                },
-                paymentStatus: bet.paymentStatus,
-              }) as DisplayBet
-          )
-        );
+      // Combine single bets and multibets into a single array
+      const displayBets = [
+        ...response.data.singleBets,
+        ...response.data.multibets,
+      ];
 
       console.log("Mapped display bets:", displayBets);
       setBets(displayBets);
@@ -209,7 +137,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           const homeTeam = selection.homeTeam.toLowerCase();
           const awayTeam = selection.awayTeam.toLowerCase();
           const selectionText = selection.selection.toLowerCase();
-          const betId = bet.id.toLowerCase();
+          const betId = bet.betId.toLowerCase();
 
           return (
             homeTeam.startsWith(searchTerm) ||
@@ -331,7 +259,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     ];
 
     const rows = bets.map((bet) => [
-      bet.id,
+      bet.betId,
       bet.betType,
       bet.status,
       bet.paymentStatus?.status || "No payment info",
@@ -351,7 +279,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   // Print handler
   const printThermalTicket = async (bet: DisplayBet) => {
-    console.log("Printing thermal ticket for bet:", bet.id);
+    console.log("Printing thermal ticket for bet:", bet.betId);
     try {
       const { printThermalTicket: printTicket } = await import(
         "../../services/printService"
@@ -365,7 +293,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   // Payout handler
   const openPayoutModal = (bet: DisplayBet) => {
-    console.log("Opening payout modal for bet:", bet.id);
+    console.log("Opening payout modal for bet:", bet.betId);
     setSelectedPayoutBet(bet);
     setShowPayoutModal(true);
   };

@@ -31,8 +31,8 @@ export const BetRow: React.FC<BetRowProps> = ({
   return (
     <div className="bet-row">
       <div className="table-col col-bet-id" data-label="Bet ID">
-        <span className="bet-id-short" title={bet.id}>
-          {bet.id.substring(0, 8)}...
+        <span className="bet-id-short" title={bet.betId || "Unknown"}>
+          {bet.betId ? bet.betId.substring(0, 8) + "..." : "Unknown"}
         </span>
       </div>
       <div className="table-col col-game" data-label="Game">
@@ -60,7 +60,9 @@ export const BetRow: React.FC<BetRowProps> = ({
           {firstSelection && (
             <>
               <span className="selection-text">{firstSelection.selection}</span>
-              <span className="odds">{firstSelection.odds}x</span>
+              <span className="odds">
+                {bet.combinedOdds?.toFixed(2) || "N/A"}x
+              </span>
             </>
           )}
         </div>

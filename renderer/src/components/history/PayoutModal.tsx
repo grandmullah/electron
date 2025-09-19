@@ -267,9 +267,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                   fontWeight="bold"
                   sx={{ color: "#667eea" }}
                 >
-                  {bet.selections
-                    .reduce((acc, selection) => acc * selection.odds, 1)
-                    .toFixed(2)}
+                  {bet.combinedOdds?.toFixed(2) || 'N/A'}
                   x
                 </Typography>
               </Box>

@@ -36,6 +36,12 @@ if (process.platform === 'win32' && process.env['ELECTRON_RUN_AS_NODE']) {
 const electronModule = require('electron') as typeof import('electron');
 const { app, BrowserWindow } = electronModule;
 
+// Ensure app object is available
+if (!app) {
+      console.error('Electron app object is not available');
+      process.exit(1);
+}
+
 // Keep a global reference of the window object to prevent GC closing it
 let mainWindow: BrowserWindowType | null = null;
 let isShuttingDown = false;
@@ -45,8 +51,12 @@ let healthCheckInterval: NodeJS.Timeout | null = null;
 
 // Handle ICU data issues
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
 // Prefer API-based GPU disable over many fragile switches
-app.disableHardwareAcceleration();
+// Only call if app is available
+if (app && typeof app.disableHardwareAcceleration === 'function') {
+      app.disableHardwareAcceleration();
+}
 
 // Windows-specific configurations for Electron 37
 if (process.platform === 'win32') {
@@ -130,7 +140,18 @@ async function createWindow(): Promise<void> {
                         allowRunningInsecureContent: true,
                         experimentalFeatures: false,
                         backgroundThrottling: false, // Prevent background throttling
-                        preload: path.join(__dirname, 'preload.js') // Add preload script
+                        preload: path.join(__dirname, 'preload.js'), // Add preload script
+                        // Memory optimization settings
+                        offscreen: false,
+                        enableRemoteModule: false,
+                        // Increase memory limits for complex UI
+                        additionalArguments: [
+                              '--max-old-space-size=4096',
+                              '--max-tile-memory=512',
+                              '--disable-background-timer-throttling',
+                              '--disable-backgrounding-occluded-windows',
+                              '--disable-renderer-backgrounding'
+                        ]
                   }
             };
 

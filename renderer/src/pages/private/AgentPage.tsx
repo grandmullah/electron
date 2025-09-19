@@ -616,8 +616,13 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                             <button className="expand-btn">
                               {expandedBets.has(bet.id) ? "▼" : "▶"}
                             </button>
-                            <span className="bet-id-short" title={bet.id}>
-                              {bet.id.substring(0, 8)}...
+                            <span
+                              className="bet-id-short"
+                              title={bet.id || "Unknown"}
+                            >
+                              {bet.id
+                                ? bet.id.substring(0, 8) + "..."
+                                : "Unknown"}
                             </span>
                           </div>
                         </div>

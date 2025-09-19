@@ -116,6 +116,12 @@ class AuthService {
             if (!payload) return null;
             return (payload['sub'] as string) || (payload['userId'] as string) || (payload['id'] as string) || null;
       }
+
+      static getPhoneNumberFromToken(): string | null {
+            const payload = this.decodeTokenPayload();
+            if (!payload) return null;
+            return (payload['phone_number'] as string) || (payload['phoneNumber'] as string) || null;
+      }
       private static getAuthHeaders(): Record<string, string> {
             const token = localStorage.getItem('authToken');
             return {

@@ -1,6 +1,6 @@
 {
   "name": "Betzone",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Betzone desktop app",
   "main": "dist/main/index.js",
   "author": "grandmullah",
@@ -10,8 +10,8 @@
     "build": "tsc -p tsconfig.main.json && vite build && shx mkdir -p dist/renderer && shx cp -r renderer/*.html dist/renderer/ && shx cp -r renderer/styles dist/renderer/ && shx cp -r renderer/src/styles dist/renderer/src-styles && shx cp -r renderer/public dist/renderer/ && shx cp -r resources dist/",
     "build:windows": "tsc -p tsconfig.main.json && vite build && shx mkdir -p dist/renderer && shx cp -r renderer/*.html dist/renderer/ && shx cp -r renderer/styles dist/renderer/ && shx cp -r renderer/public dist/renderer/ && shx cp -r resources dist/ && node fix-windows-renderer.js",
     "postbuild": "node fix-windows-renderer.js",
-    "start": "yarn build && node ./node_modules/electron/cli.js .",
-    "dev": "concurrently -k -c auto \"vite build --watch\" \"tsc -p tsconfig.main.json --watch\" \"node ./node_modules/electron/cli.js .\"",
+    "start": "yarn build && electron .",
+    "dev": "concurrently -k -c auto \"vite build --watch\" \"tsc -p tsconfig.main.json --watch\" \"electron . --max-old-space-size=4096 --max-tile-memory=512\"",
     "watch": "tsc -p tsconfig.main.json --watch",
     "package": "electron-forge package",
     "premake": "yarn build",

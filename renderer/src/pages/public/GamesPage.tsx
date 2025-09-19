@@ -7,7 +7,9 @@ import AgentService from "../../services/agentService";
 import GamesService, { Game } from "../../services/gamesService";
 // Dynamic import for printService to enable code splitting
 import settingsService from "../../services/settingsService";
+import { API_BASE_URL } from "../../services/apiConfig";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
+import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
 import {
   Container,
@@ -72,12 +74,85 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   >(null);
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
-  const [leagueKey, setLeagueKey] = useState<string>("soccer_epl");
+  const [leagueKey, setLeagueKey] = useState<string>("epl");
 
   // Use SWR for odds fetching
   const { games, isLoading, error, mutate, isError, isEmpty } =
     useOdds(leagueKey);
   const { refresh } = useRefreshOdds();
+
+  // League interface
+  interface League {
+    key: string;
+    sportKey: string;
+    name: string;
+    displayName: string;
+  }
+
+  // SWR fetcher function for leagues
+  const leaguesFetcher = async (url: string): Promise<League[]> => {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.success) {
+      return data.data;
+    } else {
+      throw new Error(data.message || "Failed to fetch leagues");
+    }
+  };
+
+  // SWR hook for leagues with fallback data
+  const {
+    data: supportedLeagues = [
+      {
+        key: "epl",
+        sportKey: "soccer_epl",
+        name: "English Premier League",
+        displayName: "EPL",
+      },
+      {
+        key: "laliga",
+        sportKey: "soccer_la_liga",
+        name: "Spanish La Liga",
+        displayName: "La Liga",
+      },
+      {
+        key: "bundesliga",
+        sportKey: "soccer_bundesliga",
+        name: "German Bundesliga",
+        displayName: "Bundesliga",
+      },
+      {
+        key: "serie-a",
+        sportKey: "soccer_serie_a",
+        name: "Italian Serie A",
+        displayName: "Serie A",
+      },
+      {
+        key: "uefa-champions-league",
+        sportKey: "soccer_uefa_champions_league",
+        name: "UEFA Champions League",
+        displayName: "UEFA Champions League",
+      },
+      {
+        key: "uefa-world-cup-qualifiers",
+        sportKey: "soccer_uefa_world_cup_qualifiers",
+        name: "UEFA World Cup Qualifiers",
+        displayName: "UEFA WCQ",
+      },
+    ],
+    error: leaguesError,
+    isLoading: leaguesLoading,
+    mutate: mutateLeagues,
+  } = useSWR<League[]>(`${API_BASE_URL}/leagues/supported`, leaguesFetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 60000, // Dedupe requests for 1 minute
+    errorRetryCount: 2,
+    onError: (error) => {
+      console.error("Error fetching leagues:", error);
+    },
+  });
 
   // Agent-specific state
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
@@ -86,6 +161,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
+
+  // Set default league when leagues are loaded
+  useEffect(() => {
+    if (supportedLeagues.length > 0 && !leagueKey) {
+      setLeagueKey(supportedLeagues[0]?.key || "epl");
+    }
+  }, [supportedLeagues, leagueKey]);
 
   // Check if user is an agent and load managed users
   useEffect(() => {
@@ -387,15 +469,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         <body>
           <div class="print-header">
             <h1>⚽ Betzone Games & Odds</h1>
-            <p class="subtitle">${
-              leagueKey === "soccer_uefa_world_cup_qualifiers"
-                ? "UEFA World Cup Qualifiers"
-                : leagueKey === "soccer_bundesliga"
-                  ? "Bundesliga"
-                  : leagueKey === "soccer_laliga"
-                    ? "La Liga"
-                    : "Premier League"
-            } - ${new Date().toLocaleDateString()}</p>
+            <p class="subtitle">${getLeagueDisplayName(leagueKey)} - ${new Date().toLocaleDateString()}</p>
             <p class="timestamp">Last Updated: ${lastUpdated.toLocaleString()}</p>
           </div>
           
@@ -544,7 +618,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       return;
     }
 
-    const potentialWinnings = betAmount * odds;
+    const potentialWinnings = betAmount * Number(odds);
 
     alert(`Bet placed successfully!
     Game: ${selectedGame.homeTeam} vs ${selectedGame.awayTeam}
@@ -579,6 +653,24 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       default:
         return "UPCOMING";
     }
+  };
+
+  const getLeagueIcon = (leagueKey: string) => {
+    if (
+      leagueKey.includes("uefa") ||
+      leagueKey.includes("champions") ||
+      leagueKey.includes("world_cup")
+    ) {
+      return <TrophyIcon />;
+    }
+    return <SoccerIcon />;
+  };
+
+  const getLeagueDisplayName = (leagueKey: string) => {
+    const league = supportedLeagues.find((l) => l.key === leagueKey);
+    return league
+      ? league.name
+      : leagueKey.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const toggleExpanded = (gameId: string, event: React.MouseEvent) => {
@@ -987,194 +1079,62 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             </Typography>
 
             <Stack spacing={2} mb={3}>
-              <Chip
-                icon={<SoccerIcon />}
-                label="EPL"
-                onClick={() => setLeagueKey("soccer_epl")}
-                color={leagueKey === "soccer_epl" ? "primary" : "default"}
-                variant={leagueKey === "soccer_epl" ? "filled" : "outlined"}
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_epl"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_epl"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_epl"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
-              <Chip
-                icon={<TrophyIcon />}
-                label="UEFA Champions League"
-                onClick={() => setLeagueKey("soccer_uefa_champions_league")}
-                color={
-                  leagueKey === "soccer_uefa_champions_league"
-                    ? "primary"
-                    : "default"
-                }
-                variant={
-                  leagueKey === "soccer_uefa_champions_league"
-                    ? "filled"
-                    : "outlined"
-                }
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_uefa_champions_league"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_uefa_champions_league"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_uefa_champions_league"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
-              <Chip
-                icon={<SoccerIcon />}
-                label="Bundesliga"
-                onClick={() => setLeagueKey("soccer_bundesliga")}
-                color={
-                  leagueKey === "soccer_bundesliga" ? "primary" : "default"
-                }
-                variant={
-                  leagueKey === "soccer_bundesliga" ? "filled" : "outlined"
-                }
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_bundesliga"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_bundesliga"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_bundesliga"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
-              <Chip
-                icon={<SoccerIcon />}
-                label="La Liga"
-                onClick={() => setLeagueKey("soccer_laliga")}
-                color={leagueKey === "soccer_laliga" ? "primary" : "default"}
-                variant={leagueKey === "soccer_laliga" ? "filled" : "outlined"}
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_laliga"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_laliga"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_laliga"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
-              <Chip
-                icon={<SoccerIcon />}
-                label="Serie A"
-                onClick={() => setLeagueKey("soccer_serie_a")}
-                color={leagueKey === "soccer_serie_a" ? "primary" : "default"}
-                variant={leagueKey === "soccer_serie_a" ? "filled" : "outlined"}
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_serie_a"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_serie_a"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_serie_a"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
-              <Chip
-                icon={<TrophyIcon />}
-                label="UEFA WCQ"
-                onClick={() => setLeagueKey("soccer_uefa_world_cup_qualifiers")}
-                color={
-                  leagueKey === "soccer_uefa_world_cup_qualifiers"
-                    ? "primary"
-                    : "default"
-                }
-                variant={
-                  leagueKey === "soccer_uefa_world_cup_qualifiers"
-                    ? "filled"
-                    : "outlined"
-                }
-                sx={{
-                  fontWeight: 600,
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  backgroundColor:
-                    leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "#667eea"
-                      : "rgba(255,255,255,0.1)",
-                  color:
-                    leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "white"
-                      : "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    backgroundColor:
-                      leagueKey === "soccer_uefa_world_cup_qualifiers"
-                        ? "#5a6fd8"
-                        : "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
+              {leaguesLoading ? (
+                <Box sx={{ textAlign: "center", py: 2 }}>
+                  <CircularProgress
+                    size={24}
+                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "rgba(255,255,255,0.6)",
+                      mt: 1,
+                      display: "block",
+                    }}
+                  >
+                    Loading leagues...
+                  </Typography>
+                </Box>
+              ) : leaguesError ? (
+                <Box sx={{ textAlign: "center", py: 2 }}>
+                  <Typography variant="caption" sx={{ color: "error.main" }}>
+                    Failed to load leagues
+                  </Typography>
+                </Box>
+              ) : (
+                supportedLeagues.map((league) => (
+                  <Chip
+                    key={league.key}
+                    icon={getLeagueIcon(league.key)}
+                    label={league.displayName}
+                    onClick={() => setLeagueKey(league.key)}
+                    color={leagueKey === league.key ? "primary" : "default"}
+                    variant={leagueKey === league.key ? "filled" : "outlined"}
+                    sx={{
+                      fontWeight: 600,
+                      width: "100%",
+                      justifyContent: "flex-start",
+                      backgroundColor:
+                        leagueKey === league.key
+                          ? "#667eea"
+                          : "rgba(255,255,255,0.1)",
+                      color:
+                        leagueKey === league.key
+                          ? "white"
+                          : "rgba(255,255,255,0.8)",
+                      borderColor: "rgba(255,255,255,0.2)",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        backgroundColor:
+                          leagueKey === league.key
+                            ? "#5a6fd8"
+                            : "rgba(255,255,255,0.2)",
+                      },
+                    }}
+                  />
+                ))
+              )}
             </Stack>
 
             {/* Agent Mode Indicator */}
@@ -1312,34 +1272,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     color="primary.main"
                     gutterBottom
                   >
-                    {leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "UEFA World Cup Qualifiers"
-                      : leagueKey === "soccer_bundesliga"
-                        ? "Bundesliga"
-                        : "La Liga"}
+                    {getLeagueDisplayName(leagueKey)}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" paragraph>
                     No games available at the moment
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    The{" "}
-                    {leagueKey === "soccer_uefa_world_cup_qualifiers"
-                      ? "UEFA World Cup Qualifiers"
-                      : leagueKey === "soccer_bundesliga"
-                        ? "Bundesliga"
-                        : "La Liga"}{" "}
-                    endpoint is not yet implemented on the backend.
+                    The {getLeagueDisplayName(leagueKey)} endpoint is not yet
+                    implemented on the backend.
                     <br />
-                    Expected endpoint:{" "}
-                    <code>
-                      /api/
-                      {leagueKey === "soccer_uefa_world_cup_qualifiers"
-                        ? "uefa-world-cup-qualifiers"
-                        : leagueKey === "soccer_bundesliga"
-                          ? "bundesliga"
-                          : "laliga"}
-                      /odds
-                    </code>
+                    Expected endpoint: <code>/api/{leagueKey}/odds</code>
                   </Typography>
                 </Paper>
               ) : isEmpty ? (

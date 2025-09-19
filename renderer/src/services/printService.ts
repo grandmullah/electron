@@ -8,6 +8,7 @@
 */
 
 import settingsService from './settingsService';
+import AuthService from './authService';
 
 type AnyBet = any;
 
@@ -71,27 +72,27 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
             const separatorLine = "----------------------------------------\n";
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
-            // Print cashier information (use actual user data from API)
-            // Format cashier name as "Cashier {last 3 digits}"
-            const phoneNumber = bet?.user?.phoneNumber || bet?.userInfo?.phoneNumber || '';
-            const cashierName = phoneNumber ? `Cashier ${phoneNumber.slice(-3)}` : 'Unknown Cashier';
+            // Print cashier information (get phone number from auth storage)
+            // Format cashier name as "Teller {last 3 digits}"
+            const phoneNumber = AuthService.getPhoneNumberFromToken();
+            const cashierName = phoneNumber ? `Teller  ${phoneNumber.slice(-3)}` : 'Teller Unknown';
             win.printText("Teller: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
             // Print ticket ID (replace dashes with spaces to avoid printer issues)
-            const rawTicketId = bet?.id || 'N/A';
+            const rawTicketId = bet.id;
             const ticketId = rawTicketId.replace(/-/g, ' '); // Replace dashes with spaces
             win.printText("Ticket ID: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${ticketId}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
             // Print shop information (use actual shop data from API)
-            const shopName = bet?.shop?.shopName || bet?.shop?.shop_name || 'Unknown Shop';
-            const shopCode = bet?.shop?.shopCode || bet?.shop?.shop_code || '';
+            const shopName = bet.shop.shopName;
+            const shopCode = bet.shop.shopCode;
             win.printText("Shop: ", 0, 0, true, false, false, 0, 0); // Bold label
-            win.printText(`${shopName}${shopCode ? ` (${shopCode})` : ''}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+            win.printText(`${shopName} (${shopCode})\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
             // Print date and time (use actual bet creation time from API)
-            const betDate = bet?.createdAt || bet?.timestamp || new Date();
+            const betDate = bet.createdAt;
             const betDateTime = new Date(betDate);
             const betDateStr = betDateTime.toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -111,114 +112,70 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
             win.printText("\n", 0, 0, false, false, false, 0, 0);
 
             // Print bet type and stake (use actual bet data from API)
-            const betType = `Bet Type: ${String(bet?.betType ?? 'SINGLE').toUpperCase()}\n`;
-            const stake = `Stake: SSP ${formatMoney(bet?.totalStake || bet?.stake || 0)}\n`;
+            const betType = `Bet Type: ${bet.betType.toUpperCase()}\n`;
+            const stake = `Stake: SSP ${formatMoney(bet.totalStake)}\n`;
 
             // Print total odds (use parameter or actual bet data from API)
-            let totalOdds = combinedOdds || bet?.combinedOdds || bet?.totalOdds || bet?.odds || 0;
-
-            // Additional fallback: check if bet has bets array and calculate from there
-            if (totalOdds === 0 && bet?.bets && Array.isArray(bet.bets) && bet.bets.length > 0) {
-                  totalOdds = bet.bets.reduce((total: number, betItem: any) => {
-                        const odds = betItem?.odds || 0;
-                        return total * odds;
-                  }, 1);
-                  console.log('🖨️ Calculated combined odds from bets array:', totalOdds);
-            }
-
-            // Fallback: calculate combined odds from selections if still 0
-            if (totalOdds === 0 && bet?.selections && Array.isArray(bet.selections) && bet.selections.length > 0) {
-                  totalOdds = bet.selections.reduce((total: number, selection: any) => {
-                        const odds = selection?.odds || 0;
-                        return total * odds;
-                  }, 1);
-                  console.log('🖨️ Calculated combined odds from selections:', totalOdds);
-            }
-            console.log('🖨️ Odds calculation:', {
-                  combinedOddsParam: combinedOdds,
-                  betCombinedOdds: bet?.combinedOdds,
-                  betTotalOdds: bet?.totalOdds,
-                  betOdds: bet?.odds,
-                  finalTotalOdds: totalOdds
-            });
-            const oddsText = `Total Odds: ${totalOdds > 0 ? totalOdds.toFixed(2) : 'N/A'}\n`;
+            const totalOdds = combinedOdds || bet.combinedOdds;
+            const oddsText = `Total Odds: ${totalOdds.toFixed(2)}\n`;
 
             win.printText(betType, 0, 0, false, false, false, 0, 0);
             win.printText(stake, 0, 0, false, false, false, 0, 0);
             win.printText(oddsText, 0, 0, false, false, false, 0, 0);
 
-            // Print potential winnings if available (use actual bet data from API)
-            const potentialWinnings = bet?.potentialWinnings || bet?.actualWinnings || 0;
-            if (potentialWinnings > 0) {
-                  const potential = `Potential: SSP ${formatMoney(potentialWinnings)}\n`;
-                  win.printText(potential, 0, 0, false, false, false, 0, 0);
-            }
+            // Print potential winnings (use actual bet data from API)
+            const potential = `Potential: SSP ${formatMoney(bet.potentialWinnings)}\n`;
+            win.printText(potential, 0, 0, false, false, false, 0, 0);
 
             // Print tax if available (use actual bet data from API)
-            if (bet?.taxPercentage && bet?.taxAmount) {
+            if (bet.taxPercentage && bet.taxAmount) {
                   const tax = `Tax (${bet.taxPercentage}%): -SSP ${formatMoney(bet.taxAmount)}\n`;
                   win.printText(tax, 0, 0, false, false, false, 0, 0);
             }
 
             // Print net winnings if available (use actual bet data from API)
-            if (bet?.netWinnings != null && bet.netWinnings > 0) {
+            if (bet.netWinnings != null && bet.netWinnings > 0) {
                   const net = `Net: SSP ${formatMoney(bet.netWinnings)}\n`;
                   win.printText(net, 0, 0, false, false, false, 0, 0);
             }
 
-            // Print status if available (use actual bet data from API)
-            if (bet?.status) {
-                  const status = `Status: ${String(bet.status).toUpperCase()}\n`;
-                  win.printText(status, 0, 0, false, false, false, 0, 0);
-            }
+            // Print status (use actual bet data from API)
+            const status = `Status: ${bet.status.toUpperCase()}\n`;
+            win.printText(status, 0, 0, false, false, false, 0, 0);
 
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
 
             // Print selections (use actual bet data from API)
             win.printText("SELECTIONS:\n", 0, 0, true, false, false, 0, 0);
 
-            if (bet?.selections && Array.isArray(bet.selections)) {
-                  bet.selections.forEach((selection: any, index: number) => {
-                        const homeTeam = String(selection?.homeTeam ?? '').replace(/[^\w\s]/g, '');
-                        const awayTeam = String(selection?.awayTeam ?? '').replace(/[^\w\s]/g, '');
-                        const betType = String(selection?.betType ?? '').replace(/[^\w\s]/g, '');
-                        const sel = String(selection?.selection ?? '').replace(/[^\w\s]/g, '');
-                        const odds = selection?.odds ?? '';
-                        const gameId = selection?.gameId ? String(selection.gameId).replace(/[^\w]/g, '') : '';
+            bet.selections.forEach((selection: any, index: number) => {
+                  const homeTeam = String(selection.homeTeam).replace(/[^\w\s]/g, '');
+                  const awayTeam = String(selection.awayTeam).replace(/[^\w\s]/g, '');
+                  const betType = String(selection.betType).replace(/[^\w\s]/g, '');
+                  const sel = String(selection.selection).replace(/[^\w\s]/g, '');
+                  const odds = selection.odds;
+                  const gameId = String(selection.gameId).replace(/[^\w]/g, '');
 
-                        // Add game start time and result type (FT/HT) - use actual game data from API
-                        const gameStartTime = selection?.gameStartTime ? new Date(selection.gameStartTime).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                        }) : '';
-                        const resultType = selection?.resultType ? String(selection.resultType).toUpperCase() : 'FT'; // Default to FT if not specified
+                  // Add game start time and result type (FT/HT) - use actual game data from API
+                  const gameStartTime = selection.gameStartTime ? new Date(selection.gameStartTime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                  }) : '';
+                  const resultType = selection.resultType ? String(selection.resultType).toUpperCase() : 'FT'; // Default to FT if not specified
 
-                        const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
-                        const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
-                        win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
+                  const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
+                  const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
+                  win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
 
-                        const betTypeText = `   ${betType}: ${sel}\n`;
-                        win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
+                  const betTypeText = `   ${betType}: ${sel}\n`;
+                  win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
 
-                        const oddsText = `   Odds: ${odds}\n`;
-                        win.printText(oddsText, 0, 0, false, false, false, 0, 0);
+                  const oddsText = `   Odds: ${odds}\n`;
+                  win.printText(oddsText, 0, 0, false, false, false, 0, 0);
 
-                        // Add stake for each selection if available
-                        // if (selection?.stake) {
-                        //       const stakeText = `   Stake: SSP ${formatMoney(selection.stake)}\n`;
-                        //       win.printText(stakeText, 0, 0, false, false, false, 0, 0);
-                        // }
-
-                        // Add potential winnings for each selection if available
-                        // if (selection?.potentialWinnings) {
-                        //       const potentialText = `   Potential: SSP ${formatMoney(selection.potentialWinnings)}\n`;
-                        //       win.printText(potentialText, 0, 0, false, false, false, 0, 0);
-                        // }
-
-                        win.printText("\n", 0, 0, false, false, false, 0, 0);
-                  });
-            }
+                  win.printText("\n", 0, 0, false, false, false, 0, 0);
+            });
 
             // Print footer
             win.printText(separatorLine, 0, 0, false, false, false, 0, 0);
@@ -231,7 +188,7 @@ export async function printThermalTicket(bet: AnyBet, combinedOdds?: number, pri
             win.printText("\n", 0, 0, false, false, false, 0, 0);
 
             // Print barcode (ticket ID) - use actual bet ID from API, remove dashes
-            const rawBarcodeId = bet?.id ?? bet?.betId ?? '';
+            const rawBarcodeId = bet.id;
             const barcodeData = `BET${String(rawBarcodeId).replace(/-/g, '')}`;
             win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
 
