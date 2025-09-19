@@ -122,6 +122,18 @@ class AuthService {
             if (!payload) return null;
             return (payload['phone_number'] as string) || (payload['phoneNumber'] as string) || null;
       }
+
+      static getShopNameFromToken(): string | null {
+            const payload = this.decodeTokenPayload();
+            if (!payload) return null;
+            return (payload['shop_name'] as string) || (payload['shopName'] as string) || null;
+      }
+
+      static getShopCodeFromToken(): string | null {
+            const payload = this.decodeTokenPayload();
+            if (!payload) return null;
+            return (payload['shop_code'] as string) || (payload['shopCode'] as string) || null;
+      }
       private static getAuthHeaders(): Record<string, string> {
             const token = localStorage.getItem('authToken');
             return {

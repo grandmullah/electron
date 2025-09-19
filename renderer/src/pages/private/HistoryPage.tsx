@@ -284,7 +284,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       const { printThermalTicket: printTicket } = await import(
         "../../services/printService"
       );
-      await printTicket(bet);
+      // Pass user data from Redux store to print service
+      await printTicket(bet, user);
     } catch (error) {
       console.error("Error importing print service:", error);
       alert("Error: Unable to load print service. Please try again.");

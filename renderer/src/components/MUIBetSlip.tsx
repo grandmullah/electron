@@ -159,7 +159,11 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
 
     setIsPrinting(true);
     try {
-      await printThermalTicket(successBetData, successBetData.combinedOdds);
+      await printThermalTicket(
+        successBetData,
+        user,
+        successBetData.combinedOdds
+      );
     } catch (error) {
       console.error("Print error:", error);
     } finally {
@@ -240,10 +244,10 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           );
         }
 
-        // Prepare bet data for success dialog and printing (matching actual API response)
+        // Prepare bet data for success dialog and printing (using actual API response)
         const betData = {
-          // Bet slip data (matching API response structure)
-          betSlip: {
+          // Use actual API response data if available, otherwise fallback to calculated values
+          betSlip: (result as any)?.data?.betSlip || {
             id: betId, // BET-1758282080334-PUBXVCLBP format
             userId: user?.id,
             selections: betSlipItems.map((item) => ({
@@ -272,7 +276,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               (isMultibet
                 ? calculateCombinedOdds(betSlipItems)
                 : betSlipItems[0]?.odds || 1),
-            taxAmount: 0, // Placeholder - should come from API
+            taxAmount: 0, // Fallback if not in API response
             netWinnings:
               stake *
               (isMultibet
@@ -296,8 +300,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             createdAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
           },
-          // Summary data (matching API response structure)
-          summary: {
+          // Use actual API response summary if available
+          summary: (result as any)?.data?.summary || {
             totalSelections: betSlipItems.length,
             totalStake: stake,
             potentialWinnings:
@@ -310,7 +314,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               (isMultibet
                 ? calculateCombinedOdds(betSlipItems)
                 : betSlipItems[0]?.odds || 1),
-            taxAmount: 0, // Placeholder - should come from API
+            taxAmount: 0, // Fallback if not in API response
           },
           // Additional fields for print service compatibility
           id: betId, // For print service
