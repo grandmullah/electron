@@ -171,18 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {user && (
             <div className="user-section" ref={dropdownRef}>
-              <div className="user-info-display">
-                <div className="user-name-role">
-                  <span className="user-name">{user.name}</span>
-                  <span className="user-role-badge">{user.role}</span>
-                </div>
-                <div className="user-balance-display">
-                  <span className="balance-label">Balance:</span>
-                  <span className="balance-amount">
-                    {user.currency} {user.balance.toFixed(2)}
-                  </span>
-                </div>
-              </div>
+
 
               <div
                 className="user-avatar-container"

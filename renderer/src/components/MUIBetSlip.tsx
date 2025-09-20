@@ -199,13 +199,23 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       if (Array.isArray(result)) {
         // Single bets - result is an array
         success = result.length > 0 && result.every((bet) => bet?.success);
-        betId = result.length > 0 ? result[0]?.betId || "" : "";
+        betId =
+          result.length > 0
+            ? result[0]?.betId ||
+              (result[0] as any)?.data?.betSlip?.id ||
+              (result[0] as any)?.data?.betSlip?.betId ||
+              ""
+            : "";
         error =
           result.length > 0 ? result[0]?.message || "" : "No bets returned";
       } else {
         // Multibet - result is a single object
         success = result?.success || false;
-        betId = result?.betId || "";
+        betId =
+          result?.betId ||
+          (result as any)?.data?.betSlip?.id ||
+          (result as any)?.data?.betSlip?.betId ||
+          "";
         error = result?.message || "";
       }
 

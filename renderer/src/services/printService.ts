@@ -79,9 +79,9 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             win.printText("Teller: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${cashierName}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
-            // Print ticket ID (replace dashes with spaces to avoid printer issues)
+            // Print ticket ID (only first section before first dash)
             const rawTicketId = bet.id || bet.betId || bet.betSlip?.id || bet.betSlip?.betId;
-            const ticketId = rawTicketId.replace(/-/g, ' '); // Replace dashes with spaces
+            const ticketId = rawTicketId.split('-')[0]; // Get only the first section before first dash
             win.printText("Ticket ID: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${ticketId}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
@@ -125,22 +125,22 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             win.printText(oddsText, 0, 0, false, false, false, 0, 0);
 
             // Print potential winnings (use actual bet data from API)
-            const potentialWinnings = bet.betSlip?.potentialWinnings || bet.potentialWinnings;
+            const potentialWinnings = bet.summary?.potentialWinnings || bet.potentialWinnings;
             const potential = `Potential: SSP ${formatMoney(potentialWinnings)}\n`;
             win.printText(potential, 0, 0, false, false, false, 0, 0);
 
             // Print tax if available (use actual bet data from API)
-            const taxAmount = bet.betSlip?.taxAmount || bet.taxAmount;
+            const taxAmount = bet.summary?.taxAmount || bet.taxAmount || bet.betSlip?.taxAmount;
             if (taxAmount && taxAmount > 0) {
                   // Calculate tax percentage from tax amount and potential winnings
-                  const potentialWinnings = bet.betSlip?.potentialWinnings || bet.potentialWinnings;
+                  const potentialWinnings = bet.summary?.potentialWinnings || bet.potentialWinnings;
                   const taxPercentage = potentialWinnings > 0 ? ((taxAmount / potentialWinnings) * 100).toFixed(1) : '0.0';
                   const tax = `Tax (${taxPercentage}%): -SSP ${formatMoney(taxAmount)}\n`;
                   win.printText(tax, 0, 0, false, false, false, 0, 0);
             }
 
             // Print net winnings if available (use actual bet data from API)
-            const netWinnings = bet.betSlip?.netWinnings || bet.netWinnings;
+            const netWinnings = bet.summary?.netWinnings || bet.netWinnings;
             if (netWinnings != null && netWinnings > 0) {
                   const net = `Net: SSP ${formatMoney(netWinnings)}\n`;
                   win.printText(net, 0, 0, false, false, false, 0, 0);
@@ -195,7 +195,7 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             win.printText("\n", 0, 0, false, false, false, 0, 0);
 
             // Print barcode (ticket ID) - use actual bet ID from API, remove dashes
-            const rawBarcodeId = bet.id || bet.betId;
+            const rawBarcodeId = bet.id || bet.betId || bet.betSlip?.id || bet.betSlip?.betId;
             const barcodeData = `BET${String(rawBarcodeId).replace(/-/g, '')}`;
             win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
 
