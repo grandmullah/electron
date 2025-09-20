@@ -359,9 +359,20 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                     fontWeight="bold"
                     sx={{ color: "#ff9800" }}
                   >
+                    {bet.combinedOdds?.toFixed(2) || "N/A"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
                     {bet.betType === "single"
-                      ? bet.combinedOdds?.toFixed(2) || "N/A"
-                      : bet.combinedOdds?.toFixed(2) || "N/A"}
+                      ? "Selection Odds"
+                      : "Combined Odds"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -555,7 +566,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                       </Typography>
                     </Box>
                     <Chip
-                      label={`@ ${bet.combinedOdds?.toFixed(2) || 'N/A'}`}
+                      label={`@ ${selection.odds?.decimal?.toFixed(2) || "N/A"}`}
                       variant="outlined"
                       size="small"
                       sx={{
@@ -587,6 +598,36 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                     >
                       {selection.selection}
                     </Typography>
+
+                    {/* Individual Selection Odds Details */}
+                    {selection.odds && (
+                      <Box sx={{ mt: 1.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.6)",
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          Selection Odds
+                        </Typography>
+                        <Chip
+                          label={` ${selection.odds.decimal?.toFixed(2) || "N/A"}`}
+                          size="small"
+                          sx={{
+                            background: "rgba(255, 193, 7, 0.2)",
+                            color: "#ffc107",
+                            border: "1px solid rgba(255, 193, 7, 0.3)",
+                            fontSize: "0.65rem",
+                            height: "20px",
+                          }}
+                        />
+                      </Box>
+                    )}
                   </Box>
                 </CardContent>
               </Card>
