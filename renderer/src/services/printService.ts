@@ -160,7 +160,10 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
                   const awayTeam = String(selection.awayTeam).replace(/[^\w\s]/g, '');
                   const betType = String(selection.betType).replace(/[^\w\s]/g, '');
                   const sel = String(selection.selection).replace(/[^\w\s]/g, '');
-                  const odds = selection.odds;
+                  // Handle new odds structure (object with decimal, american, multiplier)
+                  const odds = typeof selection.odds === 'object' && selection.odds !== null
+                        ? selection.odds.decimal || selection.odds.multiplier || selection.odds
+                        : selection.odds;
                   const gameId = String(selection.gameId).replace(/[^\w]/g, '');
 
                   // Add game start time and result type (FT/HT) - use actual game data from API

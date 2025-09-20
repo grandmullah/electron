@@ -300,9 +300,9 @@ export class BetSlipService {
                                     marketType: marketType,
                                     outcome: outcome,
                                     odds: {
-                                          decimal: bet.odds,
+                                          decimal: parseFloat(bet.odds.toFixed(2)),
                                           american: this.decimalToAmerican(bet.odds),
-                                          multiplier: bet.odds
+                                          multiplier: parseFloat(bet.odds.toFixed(2))
                                     },
                                     bookmaker: 'Betzone',
                                     gameTime: bet.gameTime || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -463,8 +463,8 @@ export class BetSlipService {
                   });
 
                   // Calculate combined odds
-                  const combinedOdds = bets.reduce((total, bet) => total * bet.odds, 1);
-                  const potentialWinnings = totalStake * combinedOdds;
+                  const combinedOdds = parseFloat(bets.reduce((total, bet) => total * bet.odds, 1).toFixed(2));
+                  const potentialWinnings = parseFloat((totalStake * combinedOdds).toFixed(2));
 
                   console.log('Calculated values:', {
                         combinedOdds,
