@@ -600,7 +600,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                     </Typography>
 
                     {/* Individual Selection Odds Details */}
-                    {selection.odds && (
+                    {/* {selection.odds && (
                       <Box sx={{ mt: 1.5 }}>
                         <Typography
                           variant="caption"
@@ -627,7 +627,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                           }}
                         />
                       </Box>
-                    )}
+                    )} */}
                   </Box>
                 </CardContent>
               </Card>
