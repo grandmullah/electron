@@ -47,12 +47,13 @@ export const GameCard: React.FC<GameCardProps> = ({
   }: {
     betType: string;
     selection: string;
-    odds: number | null | undefined;
+    odds: number | string | null | undefined;
     label: string;
   }) => {
-    const isClickable = !!odds;
+    const numericOdds = typeof odds === "string" ? parseFloat(odds) : odds;
+    const isClickable = !!numericOdds && !isNaN(numericOdds);
     const isSelected = isSelectionInBetSlip(game.id, betType, selection);
-    const reducedOdds = odds;
+    const reducedOdds = numericOdds;
 
     return (
       <Button
@@ -60,16 +61,17 @@ export const GameCard: React.FC<GameCardProps> = ({
         size="small"
         disabled={!isClickable}
         onClick={() =>
-          isClickable && onAddToBetSlip(game, betType, selection, odds!)
+          isClickable && onAddToBetSlip(game, betType, selection, numericOdds!)
         }
         sx={{
-          minWidth: 50,
-          height: 32,
-          fontSize: "0.75rem",
+          minWidth: "fit-content",
+          height: "auto",
+          fontSize: { xs: "0.5rem", sm: "0.6rem", md: "0.65rem" },
           fontWeight: 600,
           color: isSelected ? "white" : "white",
           borderColor: isClickable ? "primary.main" : "rgba(255,255,255,0.3)",
           bgcolor: isSelected ? "primary.main" : "rgba(255,255,255,0.1)",
+          padding: { xs: "4px 6px", sm: "6px 8px", md: "8px 10px" },
           "&:hover": {
             transform: "scale(1.05)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
@@ -101,308 +103,202 @@ export const GameCard: React.FC<GameCardProps> = ({
       onClick={() => onSelect(game)}
     >
       <CardContent sx={{ p: 3 }}>
-        {/* Game Header and Odds in One Row */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          spacing={2}
-          mb={2}
+        {/* Game Header and Odds in One Row - Responsive with Horizontal Scroll */}
+        <Box
+          sx={{
+            overflowX: "auto",
+            overflowY: "hidden",
+            mb: 2,
+            "&::-webkit-scrollbar": {
+              height: "4px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "rgba(255,255,255,0.1)",
+              borderRadius: "2px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "rgba(255,255,255,0.3)",
+              borderRadius: "2px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "rgba(255,255,255,0.5)",
+            },
+          }}
         >
-          {/* Home Team */}
-          <Box textAlign="center" flex={1}>
-            <Typography variant="h6" fontWeight="bold" color="white">
-              {game.homeTeam}
-            </Typography>
-            <Typography variant="body2" color="rgba(255,255,255,0.6)">
-              {new Date(game.matchTime).toLocaleDateString()}
-            </Typography>
-          </Box>
-
-          {/* VS Divider */}
-          <Box
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 0.25, sm: 0.5, md: 0.75 }}
             sx={{
-              px: 2,
-              py: 0.5,
-              bgcolor: "rgba(255,255,255,0.1)",
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "rgba(255,255,255,0.2)",
+              width: "100%",
+              px: 0.5,
             }}
           >
-            <Typography variant="body2" fontWeight="bold" color="white">
-              VS
-            </Typography>
-          </Box>
+            {/* Home Team */}
+            <Box
+              textAlign="center"
+              sx={{
+                flex: "0 0 auto",
+                minWidth: {
+                  xs: "60px",
+                  sm: "70px",
+                  md: "65px",
+                },
+                maxWidth: {
+                  xs: "70px",
+                  sm: "80px",
+                  md: "75px",
+                },
+                px: 0.5,
+              }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                color="white"
+                sx={{
+                  fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.75rem" },
+                  lineHeight: 1.1,
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                  hyphens: "auto",
+                }}
+              >
+                {game.homeTeam}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="rgba(255,255,255,0.6)"
+                sx={{
+                  fontSize: { xs: "0.5rem", sm: "0.6rem", md: "0.55rem" },
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                }}
+              >
+                {new Date(game.matchTime).toLocaleDateString()}
+              </Typography>
+            </Box>
 
-          {/* Away Team */}
-          <Box textAlign="center" flex={1}>
-            <Typography variant="h6" fontWeight="bold" color="white">
-              {game.awayTeam}
-            </Typography>
-            <Typography variant="body2" color="rgba(255,255,255,0.6)">
-              {new Date(game.matchTime).toLocaleTimeString()}
-            </Typography>
-          </Box>
-
-          {/* No Odds Available Indicator */}
-          {!game.hasValidOdds && (
+            {/* VS Divider */}
             <Box
               sx={{
-                textAlign: "center",
-                py: 2,
-                mb: 2,
-                bgcolor: "rgba(255,193,7,0.1)",
-                border: "1px solid rgba(255,193,7,0.3)",
+                flex: "0 0 auto",
+                px: { xs: 0.5, sm: 0.75, md: 0.75 },
+                py: { xs: 0.15, sm: 0.25, md: 0.25 },
+                bgcolor: "rgba(255,255,255,0.1)",
                 borderRadius: 2,
+                border: "1px solid",
+                borderColor: "rgba(255,255,255,0.2)",
+                minWidth: {
+                  xs: "30px",
+                  sm: "35px",
+                  md: "32px",
+                },
+                maxWidth: {
+                  xs: "35px",
+                  sm: "40px",
+                  md: "38px",
+                },
               }}
             >
               <Typography
                 variant="body2"
-                color="warning.main"
                 fontWeight="bold"
+                color="white"
+                sx={{ fontSize: { xs: "0.6rem", sm: "0.7rem", md: "0.8rem" } }}
               >
-                ⚠️ Odds Not Available
-              </Typography>
-              <Typography variant="caption" color="rgba(255,193,7,0.8)">
-                This game is scheduled but betting odds are not yet available
+                VS
               </Typography>
             </Box>
-          )}
 
-          {/* 3 Way Odds */}
-          <Box textAlign="center" minWidth={120}>
-            <Typography
-              variant="caption"
-              fontWeight="bold"
-              color="rgba(255,255,255,0.8)"
-              gutterBottom
-              display="block"
+            {/* Away Team */}
+            <Box
+              textAlign="center"
+              sx={{
+                flex: "0 0 auto",
+                minWidth: {
+                  xs: "60px",
+                  sm: "70px",
+                  md: "65px",
+                },
+                maxWidth: {
+                  xs: "70px",
+                  sm: "80px",
+                  md: "75px",
+                },
+                px: 0.5,
+              }}
             >
-              3 WAY
-            </Typography>
-            <Stack direction="row" spacing={1} justifyContent="center">
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  1
-                </Typography>
-                <BettingOption
-                  betType="3 Way"
-                  selection="Home"
-                  odds={game.homeOdds}
-                  label="1"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  X
-                </Typography>
-                <BettingOption
-                  betType="3 Way"
-                  selection="Draw"
-                  odds={game.drawOdds}
-                  label="X"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  2
-                </Typography>
-                <BettingOption
-                  betType="3 Way"
-                  selection="Away"
-                  odds={game.awayOdds}
-                  label="2"
-                />
-              </Box>
-            </Stack>
-          </Box>
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                color="white"
+                sx={{
+                  fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.75rem" },
+                  lineHeight: 1.1,
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                  hyphens: "auto",
+                }}
+              >
+                {game.awayTeam}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="rgba(255,255,255,0.6)"
+                sx={{
+                  fontSize: { xs: "0.5rem", sm: "0.6rem", md: "0.55rem" },
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                }}
+              >
+                {new Date(game.matchTime).toLocaleTimeString()}
+              </Typography>
+            </Box>
 
-          {/* Double Chance Odds */}
-          <Box textAlign="center" minWidth={120}>
-            <Typography
-              variant="caption"
-              fontWeight="bold"
-              color="rgba(255,255,255,0.8)"
-              gutterBottom
-              display="block"
+            {/* No Odds Available Indicator */}
+            {!game.hasValidOdds && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 2,
+                  mb: 2,
+                  bgcolor: "rgba(255,193,7,0.1)",
+                  border: "1px solid rgba(255,193,7,0.3)",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  color="warning.main"
+                  fontWeight="bold"
+                >
+                  ⚠️ Odds Not Available
+                </Typography>
+                <Typography variant="caption" color="rgba(255,193,7,0.8)">
+                  This game is scheduled but betting odds are not yet available
+                </Typography>
+              </Box>
+            )}
+
+            {/* 3 Way Odds */}
+            <Box
+              textAlign="center"
+              sx={{
+                flex: "1 1 0",
+                minWidth: 0,
+                px: 0.5,
+              }}
             >
-              DOUBLE CHANCE
-            </Typography>
-            <Stack direction="row" spacing={1} justifyContent="center">
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  1X
-                </Typography>
-                <BettingOption
-                  betType="Double Chance"
-                  selection="1 or X"
-                  odds={game.doubleChance?.homeOrDraw}
-                  label="1X"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  X2
-                </Typography>
-                <BettingOption
-                  betType="Double Chance"
-                  selection="X or 2"
-                  odds={game.doubleChance?.drawOrAway}
-                  label="X2"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  12
-                </Typography>
-                <BettingOption
-                  betType="Double Chance"
-                  selection="1 or 2"
-                  odds={game.doubleChance?.homeOrAway}
-                  label="12"
-                />
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Over/Under Odds */}
-          <Box textAlign="center" minWidth={100}>
-            <Typography
-              variant="caption"
-              fontWeight="bold"
-              color="rgba(255,255,255,0.8)"
-              gutterBottom
-              display="block"
-            >
-              O/U 2.5
-            </Typography>
-            <Stack direction="row" spacing={1} justifyContent="center">
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  Over
-                </Typography>
-                <BettingOption
-                  betType="Over/Under 2.5"
-                  selection="Over"
-                  odds={game.overUnder?.over25}
-                  label="Over"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  Under
-                </Typography>
-                <BettingOption
-                  betType="Over/Under 2.5"
-                  selection="Under"
-                  odds={game.overUnder?.under25}
-                  label="Under"
-                />
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Both Teams to Score Odds */}
-          <Box textAlign="center" minWidth={100}>
-            <Typography
-              variant="caption"
-              fontWeight="bold"
-              color="rgba(255,255,255,0.8)"
-              gutterBottom
-              display="block"
-            >
-              BTTS
-            </Typography>
-            <Stack direction="row" spacing={1} justifyContent="center">
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  Yes
-                </Typography>
-                <BettingOption
-                  betType="Both Teams To Score"
-                  selection="Yes"
-                  odds={game.bothTeamsToScore?.yes}
-                  label="Yes"
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="caption"
-                  color="rgba(255,255,255,0.6)"
-                  display="block"
-                  mb={0.5}
-                >
-                  No
-                </Typography>
-                <BettingOption
-                  betType="Both Teams To Score"
-                  selection="No"
-                  odds={game.bothTeamsToScore?.no}
-                  label="No"
-                />
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Spreads Odds */}
-          {(game.spreads?.homeSpreadOdds || game.spreads?.awaySpreadOdds) && (
-            <Box textAlign="center" minWidth={100}>
               <Typography
                 variant="caption"
                 fontWeight="bold"
                 color="rgba(255,255,255,0.8)"
                 gutterBottom
                 display="block"
+                sx={{ fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" } }}
               >
-                {game.spreads?.spreadLine
-                  ? `SPREAD ${game.spreads?.spreadLine > 0 ? `+${game.spreads?.spreadLine}` : game.spreads?.spreadLine}`
-                  : "SPREAD"}
+                3 WAY
               </Typography>
               <Stack direction="row" spacing={1} justifyContent="center">
                 <Box textAlign="center">
@@ -412,13 +308,13 @@ export const GameCard: React.FC<GameCardProps> = ({
                     display="block"
                     mb={0.5}
                   >
-                    Home
+                    1
                   </Typography>
                   <BettingOption
-                    betType="Spread"
+                    betType="3 Way"
                     selection="Home"
-                    odds={game.spreads?.homeSpreadOdds}
-                    label="Home"
+                    odds={game.homeOdds}
+                    label="1"
                   />
                 </Box>
                 <Box textAlign="center">
@@ -428,34 +324,345 @@ export const GameCard: React.FC<GameCardProps> = ({
                     display="block"
                     mb={0.5}
                   >
-                    Away
+                    X
                   </Typography>
                   <BettingOption
-                    betType="Spread"
+                    betType="3 Way"
+                    selection="Draw"
+                    odds={game.drawOdds}
+                    label="X"
+                  />
+                </Box>
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    2
+                  </Typography>
+                  <BettingOption
+                    betType="3 Way"
                     selection="Away"
-                    odds={game.spreads?.awaySpreadOdds}
-                    label="Away"
+                    odds={game.awayOdds}
+                    label="2"
                   />
                 </Box>
               </Stack>
             </Box>
-          )}
 
-          {/* Expand Arrow */}
-          <Box textAlign="center" mt={2}>
-            <IconButton
-              onClick={(e) => onToggleExpanded(game.id, e)}
+            {/* Double Chance Odds */}
+            <Box
+              textAlign="center"
               sx={{
-                transform: expandedGames.has(game.id)
-                  ? "rotate(180deg)"
-                  : "rotate(0deg)",
-                transition: "transform 0.3s ease",
+                flex: "1 1 0",
+                minWidth: 0,
+                px: 0.5,
               }}
             >
-              <ExpandMoreIcon />
-            </IconButton>
-          </Box>
-        </Stack>
+              <Typography
+                variant="caption"
+                fontWeight="bold"
+                color="rgba(255,255,255,0.8)"
+                gutterBottom
+                display="block"
+                sx={{ fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" } }}
+              >
+                DOUBLE CHANCE
+              </Typography>
+              <Stack direction="row" spacing={1} justifyContent="center">
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    1X
+                  </Typography>
+                  <BettingOption
+                    betType="Double Chance"
+                    selection="1 or X"
+                    odds={game.doubleChance?.homeOrDraw}
+                    label="1X"
+                  />
+                </Box>
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    X2
+                  </Typography>
+                  <BettingOption
+                    betType="Double Chance"
+                    selection="X or 2"
+                    odds={game.doubleChance?.drawOrAway}
+                    label="X2"
+                  />
+                </Box>
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    12
+                  </Typography>
+                  <BettingOption
+                    betType="Double Chance"
+                    selection="1 or 2"
+                    odds={game.doubleChance?.homeOrAway}
+                    label="12"
+                  />
+                </Box>
+              </Stack>
+            </Box>
+
+            {/* Totals Odds - Dynamic width based on content */}
+            {game.totals && game.totals.length > 0 && (
+              <Box
+                textAlign="center"
+                sx={{
+                  flex: "0 0 auto",
+                  minWidth: "fit-content",
+                  maxWidth: {
+                    xs: "280px",
+                    sm: "350px",
+                    md: "400px",
+                  },
+                  px: 0.5,
+                  overflow: "hidden",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  fontWeight="bold"
+                  color="rgba(255,255,255,0.8)"
+                  gutterBottom
+                  display="block"
+                  mb={0.5}
+                  sx={{
+                    fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                  }}
+                >
+                  TOTALS
+                </Typography>
+
+                {/* Totals layout: 3 points per row */}
+                <Box sx={{ overflow: "hidden" }}>
+                  {/* Create rows of 3 totals each */}
+                  {Array.from(
+                    { length: Math.ceil(game.totals.length / 3) },
+                    (_, rowIndex) => (
+                      <Stack
+                        key={rowIndex}
+                        direction="row"
+                        spacing={{ xs: 0.4, sm: 0.5, md: 0.6 }}
+                        justifyContent="space-between"
+                        mb={
+                          rowIndex < Math.ceil(game.totals.length / 3) - 1
+                            ? 0.5
+                            : 0
+                        }
+                        sx={{ overflow: "hidden", width: "100%" }}
+                      >
+                        {game.totals
+                          .sort((a, b) => a.point - b.point) // Sort by point value ascending
+                          .slice(rowIndex * 3, (rowIndex + 1) * 3)
+                          .map((total, index) => (
+                            <Box
+                              key={rowIndex * 3 + index}
+                              textAlign="center"
+                              sx={{
+                                flex: "1 1 0",
+                                minWidth: 0,
+                                overflow: "hidden",
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                color="rgba(255,255,255,0.6)"
+                                display="block"
+                                mb={0.1}
+                                sx={{
+                                  fontSize: {
+                                    xs: "0.45rem",
+                                    sm: "0.5rem",
+                                    md: "0.55rem",
+                                  },
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {total.point}
+                              </Typography>
+                              <Stack
+                                direction="row"
+                                spacing={{ xs: 0.5, sm: 0.6, md: 0.7 }}
+                                justifyContent="center"
+                              >
+                                <Box
+                                  textAlign="center"
+                                  sx={{
+                                    flex: "1 1 0",
+                                    minWidth: {
+                                      xs: "24px",
+                                      sm: "28px",
+                                      md: "32px",
+                                    },
+                                    maxWidth: {
+                                      xs: "35px",
+                                      sm: "40px",
+                                      md: "45px",
+                                    },
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.4)"
+                                    display="block"
+                                    mb={0.05}
+                                    sx={{
+                                      fontSize: {
+                                        xs: "0.35rem",
+                                        sm: "0.4rem",
+                                        md: "0.45rem",
+                                      },
+                                    }}
+                                  >
+                                    O
+                                  </Typography>
+                                  <BettingOption
+                                    betType={`Over/Under ${total.point}`}
+                                    selection={`Over ${total.point}`}
+                                    odds={total.over}
+                                    label="Over"
+                                  />
+                                </Box>
+                                <Box
+                                  textAlign="center"
+                                  sx={{
+                                    flex: "1 1 0",
+                                    minWidth: {
+                                      xs: "24px",
+                                      sm: "28px",
+                                      md: "32px",
+                                    },
+                                    maxWidth: {
+                                      xs: "35px",
+                                      sm: "40px",
+                                      md: "45px",
+                                    },
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.4)"
+                                    display="block"
+                                    mb={0.05}
+                                    sx={{
+                                      fontSize: {
+                                        xs: "0.35rem",
+                                        sm: "0.4rem",
+                                        md: "0.45rem",
+                                      },
+                                    }}
+                                  >
+                                    U
+                                  </Typography>
+                                  <BettingOption
+                                    betType={`Over/Under ${total.point}`}
+                                    selection={`Under ${total.point}`}
+                                    odds={total.under}
+                                    label="Under"
+                                  />
+                                </Box>
+                              </Stack>
+                            </Box>
+                          ))}
+                      </Stack>
+                    )
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Both Teams to Score Odds */}
+            <Box
+              textAlign="center"
+              sx={{
+                flex: "1 1 0",
+                minWidth: 0,
+                px: 0.5,
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight="bold"
+                color="rgba(255,255,255,0.8)"
+                gutterBottom
+                display="block"
+                sx={{ fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" } }}
+              >
+                BTTS
+              </Typography>
+              <Stack direction="row" spacing={1} justifyContent="center">
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    Yes
+                  </Typography>
+                  <BettingOption
+                    betType="Both Teams To Score"
+                    selection="Yes"
+                    odds={game.bothTeamsToScore?.yes}
+                    label="Yes"
+                  />
+                </Box>
+                <Box textAlign="center">
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.6)"
+                    display="block"
+                    mb={0.5}
+                  >
+                    No
+                  </Typography>
+                  <BettingOption
+                    betType="Both Teams To Score"
+                    selection="No"
+                    odds={game.bothTeamsToScore?.no}
+                    label="No"
+                  />
+                </Box>
+              </Stack>
+            </Box>
+            {/* Expand Arrow */}
+            <Box textAlign="center" mt={2}>
+              <IconButton
+                onClick={(e) => onToggleExpanded(game.id, e)}
+                sx={{
+                  transform: expandedGames.has(game.id)
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+                  transition: "transform 0.3s ease",
+                }}
+              >
+                <ExpandMoreIcon />
+              </IconButton>
+            </Box>
+          </Stack>
+        </Box>
       </CardContent>
     </Card>
   );

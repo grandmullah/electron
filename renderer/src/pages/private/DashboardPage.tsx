@@ -39,19 +39,29 @@ import {
   Timeline as TimelineIcon,
 } from "@mui/icons-material";
 
-interface DashboardPageProps {
-  onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
-  ) => void;
+interface NavigationParams {
+  tab?: string;
+  [key: string]: any;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+interface DashboardPageProps {
+  onNavigate: (
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history",
+    params?: NavigationParams
+  ) => void;
+  navigationParams?: NavigationParams;
+}
+
+export const DashboardPage: React.FC<DashboardPageProps> = ({
+  onNavigate,
+  navigationParams,
+}) => {
   const { user } = useAppSelector((state) => state.auth);
 
-  // Tab state
+  // Tab state - initialize with navigation params if provided
   const [activeTab, setActiveTab] = useState<
     "user" | "shop" | "payout" | "financial" | "bets"
-  >("user");
+  >((navigationParams?.tab as any) || "user");
 
   // Use custom hooks for data management
   const {
@@ -126,6 +136,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     loadPayoutSummary();
   }, [loadPayoutSummary]);
+
+  // Handle navigation parameters
+  useEffect(() => {
+    if (navigationParams?.tab) {
+      setActiveTab(navigationParams.tab as any);
+    }
+  }, [navigationParams]);
 
   // Validate payouts when pending payouts are loaded
   useEffect(() => {

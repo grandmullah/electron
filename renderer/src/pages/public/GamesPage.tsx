@@ -11,6 +11,8 @@ import { API_BASE_URL } from "../../services/apiConfig";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
+import { GameDataGrid } from "../../components/games/GameDataGrid";
+import { GameDataGridCompact } from "../../components/games/GameDataGridCompact";
 import {
   Container,
   Paper,
@@ -39,6 +41,8 @@ import {
   Snackbar,
   Divider,
   Badge,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   SportsSoccer as SoccerIcon,
@@ -74,6 +78,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   >(null);
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
+  const [viewMode, setViewMode] = useState<number>(0); // 0: Card view, 1: Simple DataGrid, 2: Compact DataGrid
   const [leagueKey, setLeagueKey] = useState<string>("epl");
 
   // Use SWR for odds fetching
@@ -308,7 +313,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             
             .team {
               text-align: center;
-              flex: 1;
+              flex: 0 0 auto;
+              min-width: 70px;
+              max-width: 85px;
             }
             
             .team-name {
@@ -422,6 +429,102 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               border-color: #ddd;
             }
             
+            .betting-option-additional {
+              margin-top: 4px;
+              text-align: center;
+            }
+            
+            .betting-option-additional small {
+              font-size: 9px;
+              color: #6c757d;
+              font-style: italic;
+            }
+            
+            .totals-section {
+              margin-bottom: 8px;
+              padding-bottom: 6px;
+              border-bottom: 1px solid #e9ecef;
+            }
+            
+            .totals-section:last-child {
+              border-bottom: none;
+              margin-bottom: 0;
+            }
+            
+            .totals-point-label {
+              font-size: 10px;
+              font-weight: 600;
+              color: #495057;
+              text-align: center;
+              margin-bottom: 4px;
+              background: #f8f9fa;
+              padding: 2px 4px;
+              border-radius: 3px;
+            }
+            
+            .totals-horizontal {
+              display: flex;
+              gap: 4px;
+              justify-content: center;
+              flex-wrap: wrap;
+              max-width: 100%;
+              overflow: hidden;
+            }
+            
+            .totals-point-group {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              min-width: 24px;
+              max-width: 40px;
+              flex: 1 1 auto;
+              flex-shrink: 1;
+            }
+            
+            .totals-point-group .betting-option-sub-labels {
+              display: flex;
+              gap: 1px;
+              margin-bottom: 1px;
+            }
+            
+            .totals-point-group .betting-option-sub-label {
+              font-size: 7px;
+              color: #6c757d;
+              text-align: center;
+              min-width: 10px;
+            }
+            
+            .totals-point-group .betting-option-values {
+              display: flex;
+              gap: 1px;
+            }
+            
+            .totals-point-group .betting-option-value {
+              font-size: 8px;
+              padding: 2px 4px;
+              min-width: 16px;
+              text-align: center;
+              border-radius: 2px;
+            }
+            
+            @media print {
+              .totals-horizontal {
+                gap: 2px;
+              }
+              
+              .totals-point-group {
+                min-width: 20px;
+                max-width: 35px;
+                flex: 1 1 auto;
+              }
+              
+              .totals-point-group .betting-option-value {
+                font-size: 7px;
+                padding: 2px 3px;
+                min-width: 14px;
+              }
+            }
+            
             /* Over/Under and Both Teams to Score have only 2 options */
             .betting-option-column:nth-child(3) .betting-option-sub-labels,
             .betting-option-column:nth-child(4) .betting-option-sub-labels {
@@ -526,21 +629,47 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </div>
                   </div>
                   
-                  <!-- Over/Under Column -->
-                  <div class="betting-option-column ${game.overUnder?.over25 || game.overUnder?.under25 ? "" : "disabled"}">
-                    <div class="betting-option-label">Over/Under 2.5</div>
-                    <div class="betting-option-sub-labels">
-                      <div class="betting-option-sub-label">Over</div>
-                      <div class="betting-option-sub-label">Under</div>
-                    </div>
-                    <div class="betting-option-values">
-                      <div class="betting-option-value ${game.overUnder?.over25 ? "clickable" : ""}">
-                        ${game.overUnder?.over25 || "-"}
+                  <!-- Totals Column - Show ALL point values horizontally -->
+                  <div class="betting-option-column ${game.totals && game.totals.length > 0 ? "" : "disabled"}">
+                    <div class="betting-option-label">Totals</div>
+                    ${
+                      game.totals && game.totals.length > 0
+                        ? `
+                      <div class="totals-horizontal">
+                        ${game.totals
+                          .map(
+                            (total) => `
+                          <div class="totals-point-group">
+                            <div class="totals-point-label">${total.point}</div>
+                            <div class="betting-option-sub-labels">
+                              <div class="betting-option-sub-label">O</div>
+                              <div class="betting-option-sub-label">U</div>
+                            </div>
+                            <div class="betting-option-values">
+                              <div class="betting-option-value ${total.over ? "clickable" : ""}">
+                                ${total.over || "-"}
+                              </div>
+                              <div class="betting-option-value ${total.under ? "clickable" : ""}">
+                                ${total.under || "-"}
+                              </div>
+                            </div>
+                          </div>
+                        `
+                          )
+                          .join("")}
                       </div>
-                      <div class="betting-option-value ${game.overUnder?.under25 ? "clickable" : ""}">
-                        ${game.overUnder?.under25 || "-"}
+                    `
+                        : `
+                      <div class="betting-option-sub-labels">
+                        <div class="betting-option-sub-label">Over</div>
+                        <div class="betting-option-sub-label">Under</div>
                       </div>
-                    </div>
+                      <div class="betting-option-values">
+                        <div class="betting-option-value">-</div>
+                        <div class="betting-option-value">-</div>
+                      </div>
+                    `
+                    }
                   </div>
                   
                   <!-- Both Teams to Score Column -->
@@ -1016,6 +1145,38 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           </Box>
         </Paper>
 
+        {/* View Mode Toggle */}
+        <Paper
+          sx={{
+            p: 2,
+            mb: 3,
+            backgroundColor: "#1a1d29",
+            border: "1px solid #2a2d3a",
+          }}
+        >
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+            <Tabs
+              value={viewMode}
+              onChange={(event, newValue) => setViewMode(newValue)}
+              sx={{
+                "& .MuiTab-root": {
+                  color: "rgba(255,255,255,0.7)",
+                  "&.Mui-selected": {
+                    color: "white",
+                  },
+                },
+                "& .MuiTabs-indicator": {
+                  backgroundColor: "primary.main",
+                },
+              }}
+            >
+              <Tab label="Card View" />
+              <Tab label="Simple Table" />
+              <Tab label="Compact Table" />
+            </Tabs>
+          </Box>
+        </Paper>
+
         {/* Main Content with Left Panel and Games */}
         <Box sx={{ display: "flex", gap: 3 }}>
           {/* Left Panel - League Selector and Controls */}
@@ -1317,18 +1478,45 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       (game) =>
                         game && game.id && game.homeTeam && game.awayTeam
                     )
-                    .map((game) => (
-                      <GameCard
-                        key={game.id}
-                        game={game}
-                        isSelected={selectedGame?.id === game.id}
-                        onSelect={setSelectedGame}
-                        onAddToBetSlip={handleAddToBetSlip}
-                        isSelectionInBetSlip={isSelectionInBetSlip}
-                        expandedGames={expandedGames}
-                        onToggleExpanded={toggleExpanded}
-                      />
-                    ))}
+                    .map((game) => {
+                      if (viewMode === 0) {
+                        // Card View
+                        return (
+                          <GameCard
+                            key={game.id}
+                            game={game}
+                            isSelected={selectedGame?.id === game.id}
+                            onSelect={setSelectedGame}
+                            onAddToBetSlip={handleAddToBetSlip}
+                            isSelectionInBetSlip={isSelectionInBetSlip}
+                            expandedGames={expandedGames}
+                            onToggleExpanded={toggleExpanded}
+                          />
+                        );
+                      } else if (viewMode === 1) {
+                        // Simple DataGrid View
+                        return (
+                          <Paper key={game.id} elevation={2} sx={{ p: 2 }}>
+                            <GameDataGrid
+                              game={game}
+                              onAddToBetSlip={handleAddToBetSlip}
+                              isSelectionInBetSlip={isSelectionInBetSlip}
+                            />
+                          </Paper>
+                        );
+                      } else {
+                        // Compact DataGrid View
+                        return (
+                          <Paper key={game.id} elevation={2} sx={{ p: 2 }}>
+                            <GameDataGridCompact
+                              game={game}
+                              onAddToBetSlip={handleAddToBetSlip}
+                              isSelectionInBetSlip={isSelectionInBetSlip}
+                            />
+                          </Paper>
+                        );
+                      }
+                    })}
                 </Stack>
               )}
             </Box>

@@ -17,8 +17,16 @@ import "./styles/index.css";
 
 type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history";
 
+interface NavigationParams {
+  tab?: string;
+  [key: string]: any;
+}
+
 const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [navigationParams, setNavigationParams] = useState<NavigationParams>(
+    {}
+  );
   const dispatch = useAppDispatch();
   const { user, isLoading } = useAppSelector((state) => state.auth);
 
@@ -58,7 +66,7 @@ const AppContent: React.FC = () => {
     }
   }, [user, isLoading]);
 
-  const navigateTo = (page: Page) => {
+  const navigateTo = (page: Page, params?: NavigationParams) => {
     // Check if user is trying to access private pages without being logged in
     if (
       (page === "dashboard" ||
@@ -69,9 +77,11 @@ const AppContent: React.FC = () => {
     ) {
       // Redirect to home page if not logged in
       setCurrentPage("home");
+      setNavigationParams({});
       return;
     }
     setCurrentPage(page);
+    setNavigationParams(params || {});
   };
 
   const renderPage = () => {
@@ -80,7 +90,10 @@ const AppContent: React.FC = () => {
         return <HomePage onNavigate={navigateTo} />;
       case "dashboard":
         return user ? (
-          <DashboardPage onNavigate={navigateTo} />
+          <DashboardPage
+            onNavigate={navigateTo}
+            navigationParams={navigationParams}
+          />
         ) : (
           <HomePage onNavigate={navigateTo} />
         );

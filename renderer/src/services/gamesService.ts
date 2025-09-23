@@ -21,6 +21,11 @@ export interface Game {
             over25: number | string | null;
             under25: number | string | null;
       };
+      totals: Array<{
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
       bothTeamsToScore: {
             yes: number | string | null;
             no: number | string | null;
@@ -71,6 +76,7 @@ class GamesService {
                                                 over25: null,
                                                 under25: null,
                                           },
+                                          totals: [],
                                           bothTeamsToScore: {
                                                 yes: null,
                                                 no: null,
@@ -95,13 +101,12 @@ class GamesService {
                                     return null;
                               };
 
-                              // H2H odds
+                              // H2H odds - Don't exclude games if H2H market is missing
                               const h2hMarket = findMarketFromAnyBookmaker('h2h');
-                              if (!h2hMarket) return null;
 
-                              const homeOutcome = h2hMarket.outcomes?.find((o: any) => o.name === game.home_team);
-                              const awayOutcome = h2hMarket.outcomes?.find((o: any) => o.name === game.away_team);
-                              const drawOutcome = h2hMarket.outcomes?.find((o: any) => o.name === 'Draw');
+                              const homeOutcome = h2hMarket?.outcomes?.find((o: any) => o.name === game.home_team);
+                              const awayOutcome = h2hMarket?.outcomes?.find((o: any) => o.name === game.away_team);
+                              const drawOutcome = h2hMarket?.outcomes?.find((o: any) => o.name === 'Draw');
 
                               // Double Chance
                               const dcMarket = findMarketFromAnyBookmaker('double_chance');
@@ -160,7 +165,7 @@ class GamesService {
                                     return outcomeContains?.price ?? null;
                               };
 
-                              // Totals (Over/Under 2.5)
+                              // Totals (Over/Under) - Extract all available point values
                               const totalsMarket = findMarketFromAnyBookmaker('totals');
                               const findTotalsOutcomeOdds = (isOver: boolean, targetPoint: number) => {
                                     if (!totalsMarket?.outcomes) return null;
@@ -180,6 +185,36 @@ class GamesService {
                                     // Last resort: first Over/Under
                                     const generic = outcomes.find((o: any) => String(o.name || '').toLowerCase().includes(isOver ? 'over' : 'under'));
                                     return generic?.price ?? null;
+                              };
+
+                              // Extract only existing totals with actual odds
+                              const extractExistingTotals = () => {
+                                    if (!totalsMarket?.outcomes) return [];
+
+                                    const totalsData: Array<{ point: number, over: number | null, under: number | null }> = [];
+
+                                    // Get unique point values from the actual outcomes
+                                    const uniquePoints = [...new Set(totalsMarket.outcomes.map((outcome: any) => outcome.point))];
+
+                                    // Only show points that have actual odds data
+                                    uniquePoints.forEach(point => {
+                                          const numericPoint = typeof point === 'number' ? point : parseFloat(String(point));
+                                          if (!isNaN(numericPoint)) {
+                                                const overOdds = findTotalsOutcomeOdds(true, numericPoint);
+                                                const underOdds = findTotalsOutcomeOdds(false, numericPoint);
+
+                                                // Only include if at least one odds value exists
+                                                if (overOdds !== null || underOdds !== null) {
+                                                      totalsData.push({
+                                                            point: numericPoint,
+                                                            over: overOdds,
+                                                            under: underOdds
+                                                      });
+                                                }
+                                          }
+                                    });
+
+                                    return totalsData;
                               };
 
                               // BTTS
@@ -219,10 +254,18 @@ class GamesService {
                                     }
                               }
 
+                              // Check if any betting options are available (not just 3-way odds)
                               const hasValidOdds = Boolean(
-                                    homeOutcome?.price &&
-                                    awayOutcome?.price &&
-                                    drawOutcome?.price
+                                    // Basic 3-way odds
+                                    (homeOutcome?.price && awayOutcome?.price && drawOutcome?.price) ||
+                                    // Double chance odds
+                                    (findDoubleChanceOutcomeOdds('home_draw') || findDoubleChanceOutcomeOdds('home_away') || findDoubleChanceOutcomeOdds('draw_away')) ||
+                                    // Totals odds
+                                    (extractExistingTotals().length > 0) ||
+                                    // BTTS odds
+                                    (bttsYes?.price || bttsNo?.price) ||
+                                    // Spreads odds
+                                    (findSpreadOutcomeOdds(true) || findSpreadOutcomeOdds(false))
                               );
 
                               const transformed: Game = {
@@ -245,6 +288,7 @@ class GamesService {
                                           over25: findTotalsOutcomeOdds(true, 2.5),
                                           under25: findTotalsOutcomeOdds(false, 2.5),
                                     },
+                                    totals: extractExistingTotals(),
                                     bothTeamsToScore: {
                                           yes: bttsYes?.price ?? null,
                                           no: bttsNo?.price ?? null,
@@ -261,7 +305,7 @@ class GamesService {
 
                               return transformed;
                         })
-                        .filter(Boolean);
+                        .filter((game: Game | null) => game !== null && game !== undefined);
 
                   return games;
             } catch (error: any) {

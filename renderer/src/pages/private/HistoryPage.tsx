@@ -33,7 +33,8 @@ import {
 
 interface HistoryPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history",
+    params?: { tab?: string; [key: string]: any }
   ) => void;
 }
 
@@ -519,6 +520,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           }}
           bet={selectedPayoutBet}
           onPayoutComplete={handlePayoutComplete}
+          onNavigateToDashboard={() => {
+            setShowPayoutModal(false);
+            setSelectedPayoutBet(null);
+            onNavigate("dashboard", { tab: "payout" });
+          }}
         />
       )}
     </div>

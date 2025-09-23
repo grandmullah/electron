@@ -20,6 +20,7 @@ import {
   CheckCircle as CheckIcon,
   Close as CloseIcon,
   Warning as WarningIcon,
+  Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
 import { payoutService } from "../../services/payoutService";
@@ -29,6 +30,7 @@ interface PayoutModalProps {
   onClose: () => void;
   bet: DisplayBet | null;
   onPayoutComplete: () => void;
+  onNavigateToDashboard?: () => void;
 }
 
 export const PayoutModal: React.FC<PayoutModalProps> = ({
@@ -36,6 +38,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
   onClose,
   bet,
   onPayoutComplete,
+  onNavigateToDashboard,
 }) => {
   const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -267,8 +270,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                   fontWeight="bold"
                   sx={{ color: "#667eea" }}
                 >
-                  {bet.combinedOdds?.toFixed(2) || 'N/A'}
-                  x
+                  {bet.combinedOdds?.toFixed(2) || "N/A"}x
                 </Typography>
               </Box>
             )}
@@ -623,6 +625,30 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
         >
           Cancel
         </Button>
+        {onNavigateToDashboard && (
+          <Button
+            onClick={onNavigateToDashboard}
+            disabled={isProcessing}
+            variant="outlined"
+            startIcon={<AssessmentIcon />}
+            sx={{
+              color: "rgba(33, 150, 243, 0.9)",
+              border: "1px solid rgba(33, 150, 243, 0.3)",
+              background: "rgba(33, 150, 243, 0.05)",
+              backdropFilter: "blur(10px)",
+              "&:hover": {
+                backgroundColor: "rgba(33, 150, 243, 0.1)",
+                border: "1px solid rgba(33, 150, 243, 0.5)",
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(33, 150, 243, 0.3)",
+              },
+              minWidth: 140,
+              transition: "all 0.3s ease",
+            }}
+          >
+            Go to Dashboard
+          </Button>
+        )}
         <Button
           onClick={handleCompletePayout}
           disabled={isProcessing}
