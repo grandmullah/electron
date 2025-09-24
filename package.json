@@ -92,8 +92,8 @@
         "overwrite": true,
         "executableName": "Betzone",
         "appCopyright": "Copyright © 2025 Betzone",
-        "appVersion": "1.0.0",
-        "icon": "resources/favicon.ico",
+        "appVersion": "1.0.16",
+        "icon": "resources/ball.png",
         "extraResource": [
           "resources"
         ],
@@ -119,7 +119,7 @@
             "darwin"
           ],
           "config": {
-            "icon": "resources/favicon.ico"
+            "icon": "resources/ball.png"
           }
         },
         {
@@ -129,7 +129,7 @@
             "win32"
           ],
           "config": {
-            "icon": "resources/favicon.ico"
+            "icon": "resources/ball.png"
           }
         },
         {
@@ -138,8 +138,8 @@
             "win32"
           ],
           "config": {
-            "icon": "resources/favicon.ico",
-            "setupIcon": "resources/favicon.ico"
+            "icon": "resources/ball.png",
+            "setupIcon": "resources/ball.png"
           }
         },
         {
@@ -148,7 +148,7 @@
             "linux"
           ],
           "config": {
-            "icon": "resources/favicon.ico"
+            "icon": "resources/ball.png"
           }
         },
         {
@@ -157,7 +157,7 @@
             "linux"
           ],
           "config": {
-            "icon": "resources/favicon.ico"
+            "icon": "resources/ball.png"
           }
         }
       ]
@@ -192,7 +192,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "resources/favicon.ico"
+      "icon": "resources/ball.png"
     },
     "nsis": {
       "oneClick": false,
