@@ -254,91 +254,28 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           );
         }
 
-        // Prepare bet data for success dialog and printing (using actual API response)
+        // Prepare bet data for success dialog and printing (using API response data directly)
         const betData = {
-          // Use actual API response data if available, otherwise fallback to calculated values
-          betSlip: (result as any)?.data?.betSlip || {
-            id: betId, // BET-1758282080334-PUBXVCLBP format
-            userId: user?.id,
-            selections: betSlipItems.map((item) => ({
-              gameId: item.gameId,
-              homeTeam: item.homeTeam,
-              awayTeam: item.awayTeam,
-              marketType: item.betType, // h2h, totals, etc.
-              outcome: item.selection, // Selected outcome
-              odds: {
-                decimal: item.odds,
-                american: Math.round((item.odds - 1) * 100), // Convert to American odds
-                multiplier: item.odds,
-              },
-              bookmaker: "Betzone",
-              gameTime: new Date().toISOString(), // Placeholder - should come from API
-              sportKey: "soccer_epl", // Placeholder - should come from API
-              validation: {
-                oddsVerified: true,
-                gameExists: true,
-                oddsMatch: true,
-              },
-            })),
-            stake: stake,
-            potentialWinnings:
-              stake *
-              (isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1),
-            taxAmount: 0, // Fallback if not in API response
-            netWinnings:
-              stake *
-              (isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1),
-            odds: {
-              decimal: isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1,
-              american: Math.round(
-                ((isMultibet
-                  ? calculateCombinedOdds(betSlipItems)
-                  : betSlipItems[0]?.odds || 1) -
-                  1) *
-                  100
-              ),
-              multiplier: isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1,
-            },
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
-          },
-          // Use actual API response summary if available
-          summary: (result as any)?.data?.summary || {
-            totalSelections: betSlipItems.length,
-            totalStake: stake,
-            potentialWinnings:
-              stake *
-              (isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1),
-            netWinnings:
-              stake *
-              (isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1),
-            taxAmount: 0, // Fallback if not in API response
-          },
+          // Use API response data directly
+          betSlip: (result as any)?.data?.betSlip,
+          summary: (result as any)?.data?.summary,
           // Additional fields for print service compatibility
           id: betId, // For print service
           betId: betId, // For print service
           betType: isMultibet ? "multibet" : "single",
           totalStake: stake,
           potentialWinnings:
-            stake *
-            (isMultibet
-              ? calculateCombinedOdds(betSlipItems)
-              : betSlipItems[0]?.odds || 1),
-          combinedOdds: isMultibet
-            ? calculateCombinedOdds(betSlipItems)
-            : betSlipItems[0]?.odds || 1,
+            (result as any)?.data?.summary?.potentialWinnings ||
+            (result as any)?.data?.betSlip?.potentialWinnings,
+          taxAmount:
+            (result as any)?.data?.summary?.taxAmount ||
+            (result as any)?.data?.betSlip?.taxAmount,
+          netWinnings:
+            (result as any)?.data?.summary?.netWinnings ||
+            (result as any)?.data?.betSlip?.netWinnings,
+          combinedOdds:
+            (result as any)?.data?.betSlip?.odds?.decimal ||
+            (result as any)?.data?.betSlip?.odds?.multiplier,
           selections: betSlipItems.map((item, index) => ({
             selectionId: `sel-${betId}-${index}`,
             betId: betId,
@@ -352,7 +289,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             potentialWinnings: item.stake * item.odds,
           })),
           user: user,
-          shop: user?.shop || { shopName: "Unknown Shop", shopCode: "unknown" },
+          shop: user?.shop,
           createdAt: new Date().toISOString(),
           timestamp: new Date().toISOString(),
           status: "accepted",
