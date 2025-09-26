@@ -41,11 +41,10 @@ export interface Game {
 }
 
 class GamesService {
-      static async fetchOdds(leagueKey: string = 'epl'): Promise<Game[]> {
+      static async fetchOdds(leagueKey: string): Promise<Game[]> {
             try {
-                  // Use the league key directly as the API endpoint
-                  // The API expects endpoints like /epl/odds, /laliga/odds, etc.
-                  const path = `/${leagueKey}/odds`;
+                  // Use the correct API endpoint format: /api/leagues/{league_key}/odds
+                  const path = `/leagues/${leagueKey}/odds`;
 
                   // Make the API call
                   const response = await axios.get(`${API_BASE_URL}${path}`);

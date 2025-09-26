@@ -79,7 +79,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
   const [viewMode, setViewMode] = useState<number>(0); // 0: Card view, 1: Simple DataGrid, 2: Compact DataGrid
-  const [leagueKey, setLeagueKey] = useState<string>("epl");
+  const [leagueKey, setLeagueKey] = useState<string>("");
 
   // Use SWR for odds fetching
   const { games, isLoading, error, mutate, isError, isEmpty } =
@@ -106,46 +106,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  // SWR hook for leagues with fallback data
+  // SWR hook for leagues - NO fallback data to force using API response
   const {
-    data: supportedLeagues = [
-      {
-        key: "epl",
-        sportKey: "soccer_epl",
-        name: "English Premier League",
-        displayName: "EPL",
-      },
-      {
-        key: "laliga",
-        sportKey: "soccer_la_liga",
-        name: "Spanish La Liga",
-        displayName: "La Liga",
-      },
-      {
-        key: "bundesliga",
-        sportKey: "soccer_bundesliga",
-        name: "German Bundesliga",
-        displayName: "Bundesliga",
-      },
-      {
-        key: "serie-a",
-        sportKey: "soccer_serie_a",
-        name: "Italian Serie A",
-        displayName: "Serie A",
-      },
-      {
-        key: "uefa-champions-league",
-        sportKey: "soccer_uefa_champions_league",
-        name: "UEFA Champions League",
-        displayName: "UEFA Champions League",
-      },
-      {
-        key: "uefa-world-cup-qualifiers",
-        sportKey: "soccer_uefa_world_cup_qualifiers",
-        name: "UEFA World Cup Qualifiers",
-        displayName: "UEFA WCQ",
-      },
-    ],
+    data: supportedLeagues,
     error: leaguesError,
     isLoading: leaguesLoading,
     mutate: mutateLeagues,
@@ -159,6 +122,23 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     },
   });
 
+  // Set default league key from supported leagues
+  useEffect(() => {
+    // Wait for leagues to load, then set default
+    if (!leaguesLoading && !leagueKey) {
+      if (supportedLeagues && supportedLeagues.length > 0) {
+        // Use API data - first league from supported leagues
+        const defaultLeague = supportedLeagues[0]?.key;
+        if (defaultLeague) {
+          setLeagueKey(defaultLeague);
+        }
+      } else if (leaguesError) {
+        // Fallback if API fails - use first league from API response structure
+        setLeagueKey("soccer_germany_bundesliga");
+      }
+    }
+  }, [supportedLeagues, leagueKey, leaguesLoading, leaguesError]);
+
   // Agent-specific state
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
@@ -166,13 +146,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
-
-  // Set default league when leagues are loaded
-  useEffect(() => {
-    if (supportedLeagues.length > 0 && !leagueKey) {
-      setLeagueKey(supportedLeagues[0]?.key || "epl");
-    }
-  }, [supportedLeagues, leagueKey]);
 
   // Check if user is an agent and load managed users
   useEffect(() => {
@@ -796,7 +769,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   };
 
   const getLeagueDisplayName = (leagueKey: string) => {
-    const league = supportedLeagues.find((l) => l.key === leagueKey);
+    const league = supportedLeagues?.find((l) => l.key === leagueKey);
     return league
       ? league.name
       : leagueKey.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -1264,7 +1237,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   </Typography>
                 </Box>
               ) : (
-                supportedLeagues.map((league) => (
+                supportedLeagues?.map((league) => (
                   <Chip
                     key={league.key}
                     icon={getLeagueIcon(league.key)}

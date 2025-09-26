@@ -15,6 +15,38 @@ import AuthService, {
 import ShopService, { Shop } from "../../services/shopService";
 import { convertAuthUserToUser } from "../../store/authSlice";
 import { getCountryCallingCode, getCountries } from "react-phone-number-input";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Alert,
+  Box,
+  Typography,
+  IconButton,
+  CircularProgress,
+  InputAdornment,
+  Container,
+  Paper,
+  Stack,
+  Card,
+  CardContent,
+} from "@mui/material";
+import {
+  Close as CloseIcon,
+  SportsEsports as GamesIcon,
+  Person as AgentIcon,
+  ExitToApp as LogoutIcon,
+  Login as LoginIcon,
+  Store as ShopIcon,
+  Security as LimitsIcon,
+} from "@mui/icons-material";
 
 type CountryCode = string;
 
@@ -294,272 +326,602 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div>
+    <Box
+      sx={{
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        minHeight: "100vh",
+        color: "#ffffff",
+      }}
+    >
       <Header onNavigate={onNavigate} currentPage="home" />
 
-      <div className="home-content">
+      <Container maxWidth="lg" sx={{ py: 4 }}>
         {user ? (
           // Logged in user view
-          <div className="hero-section">
-            <h1 className="hero-title">🚀 Welcome back, {user.name}!</h1>
-            <p className="hero-subtitle">Your Ultimate Betting Experience</p>
-            <div className="user-info">
-              <div className="user-balance">
-                <span className="balance-label">Balance:</span>
-                <span className="balance-amount">
-                  {user.currency} {user.balance.toFixed(2)}
-                </span>
-              </div>
-              <div className="user-role">
-                <span className="role-badge">{user.role}</span>
-              </div>
-              {user.shop && (
-                <div className="user-shop">
-                  <span className="shop-label">Shop:</span>
-                  <span className="shop-name">{user.shop.shop_name}</span>
-                </div>
-              )}
-              <div className="user-betting-limits">
-                <span className="limits-label">Betting Limits:</span>
-                <div className="limits-details">
-                  <div className="limit-item">
-                    <span className="limit-label">Stake Range:</span>
-                    <span className="limit-value">
-                      {user.currency}{" "}
-                      {user.bettingLimits.minStake.toLocaleString()} -{" "}
-                      {user.currency}{" "}
-                      {user.bettingLimits.maxStake.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="limit-item">
-                    <span className="limit-label">Daily Loss Limit:</span>
-                    <span className="limit-value">
-                      {user.currency}{" "}
-                      {user.bettingLimits.maxDailyLoss.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="limit-item">
-                    <span className="limit-label">Weekly Loss Limit:</span>
-                    <span className="limit-value">
-                      {user.currency}{" "}
-                      {user.bettingLimits.maxWeeklyLoss.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="hero-buttons">
-              <button
-                className="btn btn-primary"
-                onClick={() => onNavigate("games")}
+          <Stack spacing={4} alignItems="center">
+            <Paper
+              elevation={3}
+              sx={{
+                p: 4,
+                borderRadius: 3,
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "#ffffff",
+                textAlign: "center",
+                width: "100%",
+                maxWidth: 800,
+              }}
+            >
+              <Typography
+                variant="h3"
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontWeight: "bold",
+                  background: "linear-gradient(45deg, #1976d2, #42a5f5)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                }}
               >
-                🎮 View Games
-              </button>
-              {user.role === "agent" && (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => onNavigate("agent")}
+                🚀 Welcome back, {user.name}!
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+                Your Ultimate Betting Experience
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  mb: 4,
+                  justifyContent: "center",
+                }}
+              >
+                {/* Shop Card */}
+                {user.shop && (
+                  <Box sx={{ flex: "1 1 250px", maxWidth: 300 }}>
+                    <Card
+                      elevation={2}
+                      sx={{
+                        background:
+                          "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        color: "white",
+                        textAlign: "center",
+                      }}
+                    >
+                      <CardContent>
+                        <ShopIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h6" fontWeight="bold">
+                          Shop
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {user.shop.shop_name}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                )}
+
+                {/* Betting Limits Card */}
+                <Box sx={{ flex: "1 1 250px", maxWidth: 300 }}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      background:
+                        "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      color: "white",
+                      textAlign: "center",
+                    }}
+                  >
+                    <CardContent>
+                      <LimitsIcon sx={{ fontSize: 40, mb: 1 }} />
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Betting Limits
+                      </Typography>
+                      <Stack spacing={1}>
+                        <Typography variant="body2">
+                          <strong>Stake:</strong> {user.currency}{" "}
+                          {user.bettingLimits.minStake.toLocaleString()} -{" "}
+                          {user.currency}{" "}
+                          {user.bettingLimits.maxStake.toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Daily Loss:</strong> {user.currency}{" "}
+                          {user.bettingLimits.maxDailyLoss.toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Weekly Loss:</strong> {user.currency}{" "}
+                          {user.bettingLimits.maxWeeklyLoss.toLocaleString()}
+                        </Typography>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Box>
+              </Box>
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="center"
+                flexWrap="wrap"
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<GamesIcon />}
+                  onClick={() => onNavigate("games")}
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    background:
+                      "linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)",
+                    color: "white",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)",
+                    },
+                  }}
                 >
-                  👤 Agent Dashboard
-                </button>
-              )}
-              <button className="btn btn-outline" onClick={handleLogout}>
-                🚪 Logout
-              </button>
-            </div>
-          </div>
+                  View Games
+                </Button>
+                {user.role === "agent" && (
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<AgentIcon />}
+                    onClick={() => onNavigate("agent")}
+                    sx={{
+                      px: 3,
+                      py: 1.5,
+                      background:
+                        "linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)",
+                      color: "white",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)",
+                      },
+                    }}
+                  >
+                    Agent Dashboard
+                  </Button>
+                )}
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleLogout}
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    "&:hover": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Logout
+                </Button>
+              </Stack>
+            </Paper>
+          </Stack>
         ) : (
           // Guest user view
-          <div className="hero-section">
-            <h1 className="hero-title">🚀 Welcome to Betzone</h1>
-            <p className="hero-subtitle">Your Ultimate Betting Experience</p>
-            <div className="hero-buttons">
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowAuthForm(true)}
+          <Stack spacing={4} alignItems="center">
+            <Paper
+              elevation={3}
+              sx={{
+                p: 6,
+                borderRadius: 3,
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "#ffffff",
+                textAlign: "center",
+                width: "100%",
+                maxWidth: 600,
+              }}
+            >
+              <Typography
+                variant="h2"
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontWeight: "bold",
+                  background: "linear-gradient(45deg, #1976d2, #42a5f5)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                }}
               >
-                🔐 Login / Register
-              </button>
-              <button
-                className="btn btn-outline"
-                onClick={() => onNavigate("games")}
+                🚀 Welcome to Betzone
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{ mb: 4, color: "rgba(255, 255, 255, 0.7)" }}
               >
-                🎮 View Games (Guest)
-              </button>
-            </div>
-          </div>
+                Your Ultimate Betting Experience
+              </Typography>
+
+              <Stack
+                direction="row"
+                spacing={3}
+                justifyContent="center"
+                flexWrap="wrap"
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<LoginIcon />}
+                  onClick={() => setShowAuthForm(true)}
+                  sx={{
+                    px: 4,
+                    py: 2,
+                    fontSize: "1.1rem",
+                    background:
+                      "linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)",
+                    color: "white",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)",
+                    },
+                  }}
+                >
+                  Login / Register
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<GamesIcon />}
+                  onClick={() => onNavigate("games")}
+                  sx={{
+                    px: 4,
+                    py: 2,
+                    fontSize: "1.1rem",
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    "&:hover": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      color: "white",
+                    },
+                  }}
+                >
+                  View Games (Guest)
+                </Button>
+              </Stack>
+            </Paper>
+          </Stack>
         )}
 
-        {/* Authentication Modal */}
-        {showAuthForm && (
-          <div className="modal-overlay" onClick={() => setShowAuthForm(false)}>
-            <div
-              className="modal-content auth-modal"
-              onClick={(e) => e.stopPropagation()}
+        {/* MUI Authentication Modal */}
+        <Dialog
+          open={showAuthForm}
+          onClose={() => setShowAuthForm(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+              color: "white",
+              backgroundImage: "none",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              backdropFilter: "blur(10px)",
+            },
+          }}
+          sx={{
+            "& .MuiBackdrop-root": {
+              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+              backdropFilter: "blur(5px)",
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              pb: 2,
+              background: "transparent",
+              color: "white",
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold" color="white">
+              {isLoginMode ? "Login" : "Register"}
+            </Typography>
+            <IconButton
+              onClick={() => setShowAuthForm(false)}
+              sx={{
+                color: "rgba(255, 255, 255, 0.7)",
+                "&:hover": {
+                  color: "white",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                },
+              }}
             >
-              <div className="modal-header">
-                <h3>{isLoginMode ? "Login" : "Register"}</h3>
-                <button
-                  className="modal-close"
-                  onClick={() => setShowAuthForm(false)}
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent
+            sx={{
+              pt: 1,
+              background: "transparent",
+              color: "white",
+            }}
+          >
+            {error && (
+              <Alert
+                severity="error"
+                onClose={() => dispatch(clearError())}
+                sx={{ mb: 2 }}
+              >
+                {error}
+              </Alert>
+            )}
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              sx={{
+                mt: 2,
+                "& .MuiTextField-root": {
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#1976d2",
+                    },
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "rgba(255, 255, 255, 0.7)",
+                    "&.Mui-focused": {
+                      color: "#1976d2",
+                    },
+                  },
+                },
+                "& .MuiFormControl-root": {
+                  "& .MuiInputLabel-root": {
+                    color: "rgba(255, 255, 255, 0.7)",
+                    "&.Mui-focused": {
+                      color: "#1976d2",
+                    },
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#1976d2",
+                    },
+                  },
+                  "& .MuiSelect-icon": {
+                    color: "rgba(255, 255, 255, 0.7)",
+                  },
+                },
+              }}
+              id="auth-form"
+            >
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Country</InputLabel>
+                <Select
+                  value={selectedCountry}
+                  onChange={(e) =>
+                    setSelectedCountry(e.target.value as CountryCode)
+                  }
+                  disabled={isLoading}
+                  label="Country"
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "#2d3748",
+                        color: "white",
+                        "& .MuiMenuItem-root": {
+                          color: "white",
+                          "&:hover": {
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          },
+                          "&.Mui-selected": {
+                            backgroundColor: "rgba(25, 118, 210, 0.3)",
+                            "&:hover": {
+                              backgroundColor: "rgba(25, 118, 210, 0.4)",
+                            },
+                          },
+                        },
+                      },
+                    },
+                  }}
                 >
-                  ✕
-                </button>
-              </div>
-              <div className="modal-body">
-                {error && (
-                  <div className="error-message">
-                    <div className="error-icon">⚠️</div>
-                    <div className="error-content">
-                      <strong>Error:</strong>
-                      <p>{error}</p>
-                    </div>
-                    <button
-                      className="error-close"
-                      onClick={() => dispatch(clearError())}
-                      type="button"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-                <form onSubmit={handleSubmit} className="auth-form">
-                  <div className="form-group">
-                    <label htmlFor="countrySelect">Country</label>
-                    <select
-                      id="countrySelect"
-                      value={selectedCountry}
-                      onChange={(e) =>
-                        setSelectedCountry(e.target.value as CountryCode)
-                      }
-                      className="form-input country-select"
-                      disabled={isLoading}
-                    >
-                      {getCountries().map((country) => (
-                        <option key={country} value={country}>
-                          {getCountryFlag(country)} {country} (+
-                          {getCountryCallingCode(country)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="phoneNumber">Phone Number</label>
-                    <div className="phone-input-container">
-                      <div className="country-display">
-                        <span className="country-flag">
-                          {getCountryFlag(selectedCountry)}
-                        </span>
-                        <span className="country-code">
+                  {getCountries().map((country) => (
+                    <MenuItem key={country} value={country}>
+                      {getCountryFlag(country)} {country} (+
+                      {getCountryCallingCode(country)})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Phone Number"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) =>
+                  setPhoneNumber(e.target.value.replace(/\D/g, ""))
+                }
+                placeholder="Enter your phone number"
+                disabled={isLoading}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
+                        <span>{getCountryFlag(selectedCountry)}</span>
+                        <span>
                           +{getCountryCallingCode(selectedCountry as any)}
                         </span>
-                      </div>
-                      <input
-                        id="phoneNumber"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) =>
-                          setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                        }
-                        placeholder="Enter your phone number"
-                        className="phone-number-input"
-                        disabled={isLoading}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="password">Password</label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="Enter your password"
-                      required
-                      className="form-input"
-                    />
-                  </div>
-                  {!isLoginMode && (
-                    <>
-                      <div className="form-group">
-                        <label htmlFor="confirmPassword">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleInputChange}
-                          placeholder="Confirm your password"
-                          required
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="shopSelect">Shop</label>
-                        {shopError && (
-                          <div
-                            className="error-message"
-                            style={{ marginBottom: "0.5rem" }}
-                          >
-                            <div className="error-icon">⚠️</div>
-                            <div className="error-content">
-                              <p>{shopError}</p>
-                            </div>
-                          </div>
-                        )}
-                        <select
-                          id="shopSelect"
-                          value={selectedShop}
-                          onChange={handleShopChange}
-                          className="form-input"
-                          required
-                        >
-                          <option value="">Select a shop</option>
-                          {availableShops.map((shop) => (
-                            <option key={shop.id} value={shop.shop_code}>
-                              {shop.shop_name} ({shop.shop_code})
-                            </option>
-                          ))}
-                        </select>
-                        {availableShops.length === 0 && !shopError && (
-                          <div
-                            className="loading-shops"
-                            style={{
-                              marginTop: "0.5rem",
-                              color: "var(--color-text-secondary)",
-                            }}
-                          >
-                            Loading shops...
-                          </div>
-                        )}
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="country_code">Country Code</label>
-                        <select
-                          id="country_code"
-                          name="country_code"
-                          value={formData.country_code}
-                          onChange={handleInputChange}
-                          className="form-input"
-                          required
-                        >
-                          <option value="SS">SS - South Sudan</option>
-                          <option value="US">US - United States</option>
-                          <option value="KE">KE - Kenya</option>
-                          <option value="GB">GB - United Kingdom</option>
-                          <option value="DE">DE - Germany</option>
-                          <option value="FR">FR - France</option>
-                          <option value="CA">CA - Canada</option>
-                          <option value="AU">AU - Australia</option>
-                          <option value="NG">NG - Nigeria</option>
-                          <option value="ZA">ZA - South Africa</option>
-                        </select>
-                      </div>
-                      {/* <div className="form-group">
+                      </Box>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Password"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={(e) =>
+                  handleInputChange(e as React.ChangeEvent<HTMLInputElement>)
+                }
+                placeholder="Enter your password"
+                required
+                disabled={isLoading}
+              />
+              {!isLoginMode && (
+                <>
+                  <TextField
+                    fullWidth
+                    margin="normal"
+                    label="Confirm Password"
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e as React.ChangeEvent<HTMLInputElement>
+                      )
+                    }
+                    placeholder="Confirm your password"
+                    required
+                    disabled={isLoading}
+                  />
+                  {shopError && (
+                    <Alert severity="error" sx={{ mt: 2, mb: 1 }}>
+                      {shopError}
+                    </Alert>
+                  )}
+                  <FormControl fullWidth margin="normal" required>
+                    <InputLabel>Shop</InputLabel>
+                    <Select
+                      value={selectedShop}
+                      onChange={(e) => {
+                        const event = {
+                          target: { value: e.target.value },
+                        } as React.ChangeEvent<HTMLSelectElement>;
+                        handleShopChange(event);
+                      }}
+                      label="Shop"
+                      disabled={isLoading}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: "#2d3748",
+                            color: "white",
+                            "& .MuiMenuItem-root": {
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                              },
+                              "&.Mui-selected": {
+                                backgroundColor: "rgba(25, 118, 210, 0.3)",
+                                "&:hover": {
+                                  backgroundColor: "rgba(25, 118, 210, 0.4)",
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>Select a shop</em>
+                      </MenuItem>
+                      {availableShops.map((shop) => (
+                        <MenuItem key={shop.id} value={shop.shop_code}>
+                          {shop.shop_name} ({shop.shop_code})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {availableShops.length === 0 && !shopError && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                      >
+                        Loading shops...
+                      </Typography>
+                    )}
+                  </FormControl>
+                  <FormControl fullWidth margin="normal" required>
+                    <InputLabel>Country Code</InputLabel>
+                    <Select
+                      name="country_code"
+                      value={formData.country_code}
+                      onChange={(e) =>
+                        handleInputChange({
+                          target: {
+                            name: "country_code",
+                            value: e.target.value,
+                          },
+                        } as React.ChangeEvent<HTMLSelectElement>)
+                      }
+                      label="Country Code"
+                      disabled={isLoading}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: "#2d3748",
+                            color: "white",
+                            "& .MuiMenuItem-root": {
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                              },
+                              "&.Mui-selected": {
+                                backgroundColor: "rgba(25, 118, 210, 0.3)",
+                                "&:hover": {
+                                  backgroundColor: "rgba(25, 118, 210, 0.4)",
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="SS">SS - South Sudan</MenuItem>
+                      <MenuItem value="US">US - United States</MenuItem>
+                      <MenuItem value="KE">KE - Kenya</MenuItem>
+                      <MenuItem value="GB">GB - United Kingdom</MenuItem>
+                      <MenuItem value="DE">DE - Germany</MenuItem>
+                      <MenuItem value="FR">FR - France</MenuItem>
+                      <MenuItem value="CA">CA - Canada</MenuItem>
+                      <MenuItem value="AU">AU - Australia</MenuItem>
+                      <MenuItem value="NG">NG - Nigeria</MenuItem>
+                      <MenuItem value="ZA">ZA - South Africa</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {/* <div className="form-group">
                         <label htmlFor="role">Role</label>
                         <select
                           id="role"
@@ -573,7 +935,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           <option value="admin">Admin</option>
                         </select>
                       </div> */}
-                      {/* <div className="form-group">
+                  {/* <div className="form-group">
                         <label htmlFor="currency">Currency</label>
                         <select
                           id="currency"
@@ -604,37 +966,45 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                           </p>
                         </div>
                       </div> */}
-                    </>
-                  )}
-                  <div className="form-actions">
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={isLoading}
-                    >
-                      {isLoading && <span className="spinner-small"></span>}
-                      {isLoading
-                        ? `${isLoginMode ? "Logging in" : "Registering"}...`
-                        : isLoginMode
-                          ? "Login"
-                          : "Register"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={() => setIsLoginMode(!isLoginMode)}
-                    >
-                      {isLoginMode
-                        ? "Need an account? Register"
-                        : "Have an account? Login"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                </>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions
+            sx={{
+              px: 3,
+              pb: 3,
+              gap: 2,
+              background: "transparent",
+            }}
+          >
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isLoading}
+              startIcon={isLoading ? <CircularProgress size={20} /> : null}
+              sx={{ flex: 1 }}
+              form="auth-form"
+            >
+              {isLoading
+                ? `${isLoginMode ? "Logging in" : "Registering"}...`
+                : isLoginMode
+                  ? "Login"
+                  : "Register"}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setIsLoginMode(!isLoginMode)}
+              disabled={isLoading}
+              sx={{ flex: 1 }}
+            >
+              {isLoginMode
+                ? "Need an account? Register"
+                : "Have an account? Login"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 };

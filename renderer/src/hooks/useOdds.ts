@@ -5,18 +5,22 @@ import { API_BASE_URL } from '../services/apiConfig';
 
 // Fetcher function for SWR
 const oddsFetcher = async (url: string): Promise<Game[]> => {
-      // Extract league key from URL - the URL format is /api/{leagueKey}/odds
+      // Extract league key from URL - the URL format is /api/leagues/{leagueKey}/odds
       const urlParts = url.split('/');
       const leagueKey = urlParts[urlParts.length - 2]; // Get the league key from the URL
 
       // Use the existing GamesService to get properly processed data
+      if (!leagueKey) {
+            throw new Error('Invalid league key extracted from URL');
+      }
       return await GamesService.fetchOdds(leagueKey);
 };
 
 // Custom hook for fetching odds with SWR
 export const useOdds = (leagueKey: string) => {
-      // Use the league key directly as the API endpoint
-      const endpoint = `${API_BASE_URL}/${leagueKey}/odds`;
+      // Use the correct API endpoint format: /api/leagues/{league_key}/odds
+      // Don't fetch if leagueKey is empty
+      const endpoint = leagueKey ? `${API_BASE_URL}/leagues/${leagueKey}/odds` : null;
 
       const { data, error, isLoading, mutate } = useSWR<Game[]>(
             endpoint,
