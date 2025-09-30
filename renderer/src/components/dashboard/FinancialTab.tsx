@@ -2,6 +2,7 @@ import React from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
+import { FinancialAnalysisCard } from "./FinancialAnalysisCard";
 import { FinancialSummary } from "../../services/financialSummaryService";
 import {
   Paper,
@@ -38,6 +39,16 @@ interface FinancialTabProps {
   formatCurrency: (amount: number) => string;
   getProfitMarginColor: (margin: number) => string;
   getWinRateColor: (winRate: number) => string;
+  getFinancialAnalysis: (summary: FinancialSummary | null) => {
+    totalRevenue: number;
+    actualExpenses: number;
+    netProfit: number;
+    taxCollected: number;
+    formattedTotalRevenue: string;
+    formattedActualExpenses: string;
+    formattedNetProfit: string;
+    formattedTaxCollected: string;
+  };
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -51,6 +62,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   formatCurrency,
   getProfitMarginColor,
   getWinRateColor,
+  getFinancialAnalysis,
 }) => {
   if (isLoadingSummary) {
     return <LoadingState message="Loading financial summary..." />;
@@ -115,6 +127,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </Box>
         </Box>
       </Paper>
+
+      {/* Financial Analysis Card */}
+      <FinancialAnalysisCard
+        financialSummary={financialSummary}
+        getFinancialAnalysis={getFinancialAnalysis}
+      />
 
       {/* Period Summary Cards */}
       <Box display="flex" gap={3} mb={3} flexWrap="wrap">

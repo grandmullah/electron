@@ -729,26 +729,42 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                         >
                           <Box display="flex" alignItems="center" gap={1}>
                             <Box flex={1}>
-                              <Typography
-                                variant="body2"
-                                fontWeight={600}
-                                sx={{
-                                  color: "rgba(255,255,255,0.95)",
-                                  textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
-                                }}
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                                mb={0.5}
                               >
-                                {selection.homeTeam}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: "rgba(255,255,255,0.7)",
-                                  fontWeight: 500,
-                                  display: "block",
-                                }}
-                              >
-                                vs {selection.awayTeam}
-                              </Typography>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{
+                                    color: "rgba(255,255,255,0.95)",
+                                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+                                  }}
+                                >
+                                  {selection.homeTeam} vs {selection.awayTeam}
+                                </Typography>
+                                {/* Game Score Display */}
+                                {selection.gameScore &&
+                                  selection.gameScore.homeScore !== undefined &&
+                                  selection.gameScore.awayScore !==
+                                    undefined && (
+                                    <Chip
+                                      label={`${selection.gameScore.homeScore} - ${selection.gameScore.awayScore}`}
+                                      size="small"
+                                      sx={{
+                                        background: "rgba(76, 175, 80, 0.2)",
+                                        color: "#4caf50",
+                                        border:
+                                          "1px solid rgba(76, 175, 80, 0.3)",
+                                        fontSize: "0.65rem",
+                                        height: "20px",
+                                        fontWeight: 600,
+                                      }}
+                                    />
+                                  )}
+                              </Box>
                               <Typography
                                 variant="caption"
                                 sx={{
@@ -756,10 +772,54 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                                   fontSize: "0.7rem",
                                   textTransform: "uppercase",
                                   letterSpacing: "0.5px",
+                                  display: "block",
                                 }}
                               >
-                                {selection.selection}
+                                {selection.betType}: {selection.selection}
                               </Typography>
+                              {/* Selection Outcome */}
+                              {selection.selectionOutcome && (
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  gap={1}
+                                  mt={0.5}
+                                >
+                                  <Chip
+                                    label={selection.selectionOutcome}
+                                    size="small"
+                                    color={
+                                      selection.selectionOutcome === "won"
+                                        ? "success"
+                                        : selection.selectionOutcome === "lost"
+                                          ? "error"
+                                          : selection.selectionOutcome ===
+                                              "void"
+                                            ? "default"
+                                            : "warning"
+                                    }
+                                    sx={{
+                                      fontSize: "0.6rem",
+                                      height: "18px",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                    }}
+                                  />
+                                  {selection.odds && (
+                                    <Chip
+                                      label={`@ ${selection.odds.decimal?.toFixed(2) || "N/A"}`}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        fontSize: "0.6rem",
+                                        height: "18px",
+                                        color: "rgba(255,255,255,0.8)",
+                                        borderColor: "rgba(255,255,255,0.3)",
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              )}
                             </Box>
                           </Box>
                         </Card>
@@ -1087,7 +1147,7 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                           letterSpacing: "0.3px",
                         }}
                       >
-                        {formatDate(bet.createdAt)}
+                        {formatDate(bet.createdAt || bet.timestamp || "")}
                       </Typography>
                     </Box>
                   </TableCell>

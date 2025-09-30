@@ -110,6 +110,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     formatCurrency: formatFinancialCurrency,
     getProfitMarginColor,
     getWinRateColor,
+    getFinancialAnalysis,
   } = useFinancialSummary();
 
   // Load tab-specific data when tab changes
@@ -583,6 +584,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 formatCurrency={formatFinancialCurrency}
                 getProfitMarginColor={getProfitMarginColor}
                 getWinRateColor={getWinRateColor}
+                getFinancialAnalysis={getFinancialAnalysis}
               />
             )}
 

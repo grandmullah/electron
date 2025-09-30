@@ -2,6 +2,7 @@ import React from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
+import { DisplayBet } from "../../types/history";
 import {
   Paper,
   Typography,
@@ -25,7 +26,7 @@ import {
 } from "@mui/icons-material";
 
 interface BetsTabProps {
-  recentBets: any[];
+  recentBets: DisplayBet[];
   isLoadingBets: boolean;
   betsError: string | null;
   onLoadRecentBets: () => void;
@@ -85,6 +86,16 @@ export const BetsTab: React.FC<BetsTabProps> = ({
       default:
         return <BetsIcon />;
     }
+  };
+
+  // Helper function to safely extract odds value
+  const getOddsValue = (odds: any): string => {
+    if (typeof odds === "number") {
+      return `${odds}x`;
+    } else if (odds && typeof odds === "object") {
+      return `${odds.decimal || odds.multiplier || "N/A"}x`;
+    }
+    return "N/A";
   };
 
   return (
@@ -220,35 +231,39 @@ export const BetsTab: React.FC<BetsTabProps> = ({
                           color: "white",
                         }}
                       />
-                      {bet.selections && bet.selections[0] && (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                          {bet.selections[0].homeTeam} vs{" "}
-                          {bet.selections[0].awayTeam}
-                        </Typography>
-                      )}
+                      {bet.selections &&
+                        bet.selections.length > 0 &&
+                        bet.selections[0] && (
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "rgba(255,255,255,0.6)" }}
+                          >
+                            {bet.selections[0].homeTeam} vs{" "}
+                            {bet.selections[0].awayTeam}
+                          </Typography>
+                        )}
                     </Box>
                   </TableCell>
                   <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
-                    {bet.selections && bet.selections[0] && (
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                          sx={{ color: "rgba(255,255,255,0.9)" }}
-                        >
-                          {bet.selections[0].selection}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                          {bet.selections[0].odds}x
-                        </Typography>
-                      </Box>
-                    )}
+                    {bet.selections &&
+                      bet.selections.length > 0 &&
+                      bet.selections[0] && (
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            sx={{ color: "rgba(255,255,255,0.9)" }}
+                          >
+                            {bet.selections[0].selection}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "rgba(255,255,255,0.6)" }}
+                          >
+                            {getOddsValue(bet.selections[0].odds)}
+                          </Typography>
+                        </Box>
+                      )}
                   </TableCell>
                   <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
                     <Typography

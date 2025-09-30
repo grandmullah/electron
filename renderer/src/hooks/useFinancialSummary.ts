@@ -109,6 +109,45 @@ export const useFinancialSummary = () => {
             return 'error.main';
       };
 
+      // Financial Analysis Helpers - specific calculations for business metrics
+      const getFinancialAnalysis = (summary: FinancialSummary | null) => {
+            if (!summary) {
+                  return {
+                        totalRevenue: 0,
+                        actualExpenses: 0,
+                        netProfit: 0,
+                        taxCollected: 0,
+                        formattedTotalRevenue: formatCurrency(0),
+                        formattedActualExpenses: formatCurrency(0),
+                        formattedNetProfit: formatCurrency(0),
+                        formattedTaxCollected: formatCurrency(0),
+                  };
+            }
+
+            // Total Revenue: stakes from lost bets + tax
+            const totalRevenue = summary.revenue.stakesKeptFromLostBets + summary.tax.totalTaxCollected;
+
+            // Actual Expenses: net winnings paid to users
+            const actualExpenses = summary.expenses.actualWinningsPaid;
+
+            // Net Profit: Total Revenue - Actual Expenses
+            const netProfit = totalRevenue - actualExpenses;
+
+            // Tax Collected: kept by house
+            const taxCollected = summary.tax.totalTaxCollected;
+
+            return {
+                  totalRevenue,
+                  actualExpenses,
+                  netProfit,
+                  taxCollected,
+                  formattedTotalRevenue: formatCurrency(totalRevenue),
+                  formattedActualExpenses: formatCurrency(actualExpenses),
+                  formattedNetProfit: formatCurrency(netProfit),
+                  formattedTaxCollected: formatCurrency(taxCollected),
+            };
+      };
+
       return {
             // Data
             financialSummary,
@@ -132,5 +171,6 @@ export const useFinancialSummary = () => {
             getTrendDirection,
             getProfitMarginColor,
             getWinRateColor,
+            getFinancialAnalysis,
       };
 };

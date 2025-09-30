@@ -612,7 +612,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           PaperProps={{
             sx: {
               borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+              background:
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
               color: "white",
               backgroundImage: "none",
               border: "1px solid rgba(255, 255, 255, 0.1)",

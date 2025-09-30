@@ -76,13 +76,14 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
     <Dialog
       open={true}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth={false}
+      maxWidth="lg"
+      fullWidth={true}
       PaperProps={{
         sx: {
-          minHeight: "80vh",
-          maxHeight: "90vh",
-          width: "420px",
+          minHeight: "85vh",
+          maxHeight: "95vh",
+          width: "90vw",
+          maxWidth: "900px",
           borderRadius: 4,
           background: "rgba(0, 0, 0, 0.8)",
           backdropFilter: "blur(20px)",
@@ -281,40 +282,33 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             variant="h6"
             fontWeight="bold"
             gutterBottom
-            sx={{ color: "rgba(255,255,255,0.9)" }}
+            sx={{ color: "rgba(255,255,255,0.9)", mb: 3 }}
           >
             💰 Bet Details
           </Typography>
-          <Box display="flex" gap={3} flexWrap="wrap">
-            <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
-              <Card
-                sx={{
-                  background: "rgba(255, 255, 255, 0.06)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 3,
-                  boxShadow:
-                    "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                  color: "white",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow:
-                      "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 2 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <MoneyIcon color="primary" fontSize="small" />
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "rgba(255,255,255,0.6)" }}
-                    >
-                      Total Stake
-                    </Typography>
-                  </Box>
+
+          {/* Main Bet Stats - Single Row */}
+          <Box
+            sx={{
+              background:
+                "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: 4,
+              p: 3,
+              mb: 2,
+            }}
+          >
+            <Grid container spacing={4} alignItems="center">
+              <Grid item xs={12} sm={3}>
+                <Box textAlign="center">
+                  <MoneyIcon sx={{ color: "#667eea", fontSize: 32, mb: 1 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}
+                  >
+                    Stake
+                  </Typography>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
@@ -322,38 +316,20 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   >
                     SSP {bet.totalStake.toFixed(2)}
                   </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-            <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
-              <Card
-                sx={{
-                  background: "rgba(255, 255, 255, 0.06)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 3,
-                  boxShadow:
-                    "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                  color: "white",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow:
-                      "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 2 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <FunctionsIcon color="warning" fontSize="small" />
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "rgba(255,255,255,0.6)" }}
-                    >
-                      Total Odds
-                    </Typography>
-                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={3}>
+                <Box textAlign="center">
+                  <FunctionsIcon
+                    sx={{ color: "#ff9800", fontSize: 32, mb: 1 }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}
+                  >
+                    Odds
+                  </Typography>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
@@ -361,51 +337,20 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   >
                     {bet.combinedOdds?.toFixed(2) || "N/A"}
                   </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={3}>
+                <Box textAlign="center">
+                  <TrendingUpIcon
+                    sx={{ color: "#4caf50", fontSize: 32, mb: 1 }}
+                  />
                   <Typography
                     variant="caption"
-                    sx={{
-                      color: "rgba(255,255,255,0.5)",
-                      fontSize: "0.7rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
+                    sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}
                   >
-                    {bet.betType === "single"
-                      ? "Selection Odds"
-                      : "Combined Odds"}
+                    Potential
                   </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-            <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
-              <Card
-                sx={{
-                  background: "rgba(255, 255, 255, 0.06)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 3,
-                  boxShadow:
-                    "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                  color: "white",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow:
-                      "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 2 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <TrendingUpIcon color="success" fontSize="small" />
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "rgba(255,255,255,0.6)" }}
-                    >
-                      Potential Winnings
-                    </Typography>
-                  </Box>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
@@ -413,92 +358,163 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   >
                     SSP {bet.potentialWinnings.toFixed(2)}
                   </Typography>
-                </CardContent>
-              </Card>
-            </Box>
+                </Box>
+              </Grid>
+
+              {bet.actualWinnings && (
+                <Grid item xs={12} sm={3}>
+                  <Box textAlign="center">
+                    <CheckCircleIcon
+                      sx={{ color: "#4caf50", fontSize: 32, mb: 1 }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}
+                    >
+                      Won
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{ color: "#4caf50" }}
+                    >
+                      SSP {bet.actualWinnings.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
           </Box>
 
+          {/* Tax Information - Compact Row */}
           {bet.taxPercentage && bet.taxPercentage > 0 && (
-            <Box mt={2}>
-              <Box display="flex" gap={2} flexWrap="wrap">
-                <Box sx={{ flex: "1 1 150px", minWidth: "150px" }}>
-                  <Card
-                    sx={{
-                      background: "rgba(255, 255, 255, 0.06)",
-                      backdropFilter: "blur(20px)",
-                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                      borderRadius: 3,
-                      boxShadow:
-                        "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                      color: "white",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        boxShadow:
-                          "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                        border: "1px solid rgba(255, 255, 255, 0.18)",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.6)" }}
-                        gutterBottom
-                      >
-                        Tax ({bet.taxPercentage}%)
-                      </Typography>
-                      <Typography
-                        variant="h6"
-                        fontWeight="bold"
-                        sx={{ color: "#ff9800" }}
-                      >
-                        -SSP {bet.taxAmount?.toFixed(2) || "0.00"}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-                <Box sx={{ flex: "1 1 150px", minWidth: "150px" }}>
-                  <Card
-                    sx={{
-                      background: "rgba(255, 255, 255, 0.06)",
-                      backdropFilter: "blur(20px)",
-                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                      borderRadius: 3,
-                      boxShadow:
-                        "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                      color: "white",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        boxShadow:
-                          "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                        border: "1px solid rgba(255, 255, 255, 0.18)",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.6)" }}
-                        gutterBottom
-                      >
-                        Net Winnings
-                      </Typography>
-                      <Typography
-                        variant="h6"
-                        fontWeight="bold"
-                        sx={{ color: "#4caf50" }}
-                      >
-                        SSP {bet.netWinnings?.toFixed(2) || "0.00"}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-              </Box>
+            <Box
+              sx={{
+                background: "rgba(255, 152, 0, 0.1)",
+                border: "1px solid rgba(255, 152, 0, 0.2)",
+                borderRadius: 3,
+                p: 2,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{ color: "rgba(255,255,255,0.8)" }}
+              >
+                Tax ({bet.taxPercentage}%):{" "}
+                <strong>-SSP {bet.taxAmount?.toFixed(2) || "0.00"}</strong>
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "#4caf50", fontWeight: "bold" }}
+              >
+                Net: SSP {bet.netWinnings?.toFixed(2) || "0.00"}
+              </Typography>
             </Box>
           )}
         </Box>
+
+        <Divider />
+
+        {/* Settlement Information */}
+        {(bet.settlementReason || bet.settledAt || bet.paymentStatus) && (
+          <Box p={3}>
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              gutterBottom
+              sx={{ color: "rgba(255,255,255,0.9)", mb: 3 }}
+            >
+              📋 Settlement Info
+            </Typography>
+
+            <Box
+              sx={{
+                background: "rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: 3,
+                p: 3,
+              }}
+            >
+              <Stack spacing={2}>
+                {bet.settlementReason && (
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                    >
+                      Reason
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "rgba(255,255,255,0.95)" }}
+                    >
+                      {bet.settlementReason}
+                    </Typography>
+                  </Box>
+                )}
+
+                {bet.settledAt && (
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                    >
+                      Settled
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "rgba(255,255,255,0.95)" }}
+                    >
+                      {new Date(bet.settledAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                )}
+
+                {bet.paymentStatus && (
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "rgba(255,255,255,0.6)" }}
+                    >
+                      Payment
+                    </Typography>
+                    <Chip
+                      label={bet.paymentStatus.status
+                        .replace("_", " ")
+                        .toUpperCase()}
+                      size="small"
+                      color={
+                        bet.paymentStatus.status === "paid"
+                          ? "success"
+                          : bet.paymentStatus.status === "pending"
+                            ? "warning"
+                            : bet.paymentStatus.status === "failed"
+                              ? "error"
+                              : "default"
+                      }
+                      sx={{ fontSize: "0.7rem", fontWeight: 600 }}
+                    />
+                    {bet.paymentStatus.message && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "rgba(255,255,255,0.7)",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        {bet.paymentStatus.message}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          </Box>
+        )}
 
         <Divider />
 
@@ -508,129 +524,144 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             variant="h6"
             fontWeight="bold"
             gutterBottom
-            sx={{ color: "rgba(255,255,255,0.9)" }}
+            sx={{ color: "rgba(255,255,255,0.9)", mb: 3 }}
           >
-            🎯 Selections
+            🎯 Selections ({bet.selections.length})
           </Typography>
+
           <Stack spacing={2}>
             {bet.selections.map((selection, index) => (
-              <Card
+              <Box
                 key={index}
                 sx={{
-                  background: "rgba(255, 255, 255, 0.06)",
+                  background:
+                    "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)",
                   backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
                   borderRadius: 3,
-                  boxShadow:
-                    "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                  color: "white",
+                  p: 3,
                   transition: "all 0.3s ease",
                   "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow:
-                      "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    background:
+                      "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%)",
+                    transform: "translateX(8px)",
+                    borderColor: "rgba(255, 255, 255, 0.25)",
                   },
                 }}
               >
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <Avatar
-                      sx={{
-                        background:
-                          "linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(156, 39, 176, 0.8) 100%)",
-                        backdropFilter: "blur(10px)",
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-                        color: "white",
-                        width: 32,
-                        height: 32,
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      {index + 1}
-                    </Avatar>
-                    <Box flex={1}>
-                      <Typography
-                        variant="h6"
-                        fontWeight="bold"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {selection.homeTeam} vs {selection.awayTeam}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.6)" }}
-                      >
-                        {selection.betType}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={`@ ${selection.odds?.decimal?.toFixed(2) || "N/A"}`}
-                      variant="outlined"
-                      size="small"
-                      sx={{
-                        background: "rgba(102, 126, 234, 0.15)",
-                        backdropFilter: "blur(10px)",
-                        color: "#667eea",
-                        border: "1px solid rgba(102, 126, 234, 0.3)",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                        fontWeight: 500,
-                      }}
-                    />
-                  </Box>
-                  <Box
+                {/* Header Row */}
+                <Box display="flex" alignItems="center" gap={2} mb={2}>
+                  <Avatar
                     sx={{
-                      p: 2,
-                      background: "rgba(102, 126, 234, 0.2)",
-                      backdropFilter: "blur(10px)",
-                      border: "1px solid rgba(102, 126, 234, 0.3)",
-                      color: "white",
-                      borderRadius: 2,
-                      textAlign: "center",
-                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)",
+                      background:
+                        "linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(156, 39, 176, 0.8) 100%)",
+                      width: 28,
+                      height: 28,
+                      fontSize: "0.8rem",
+                      fontWeight: "bold",
                     }}
                   >
+                    {index + 1}
+                  </Avatar>
+
+                  <Box flex={1}>
                     <Typography
                       variant="h6"
                       fontWeight="bold"
-                      sx={{ color: "rgba(255,255,255,0.9)" }}
+                      sx={{ color: "rgba(255,255,255,0.95)", mb: 0.5 }}
                     >
+                      {selection.homeTeam} vs {selection.awayTeam}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255,255,255,0.7)" }}
+                    >
+                      {selection.betType?.replace("_", " ")} •{" "}
                       {selection.selection}
                     </Typography>
+                  </Box>
 
-                    {/* Individual Selection Odds Details */}
-                    {/* {selection.odds && (
-                      <Box sx={{ mt: 1.5 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "rgba(255,255,255,0.6)",
-                            fontSize: "0.7rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            display: "block",
-                            mb: 0.5,
-                          }}
-                        >
-                          Selection Odds
-                        </Typography>
+                  <Box textAlign="right">
+                    <Chip
+                      label={`@ ${selection.odds?.decimal?.toFixed(2) || "N/A"}`}
+                      size="small"
+                      sx={{
+                        background: "rgba(102, 126, 234, 0.2)",
+                        color: "#667eea",
+                        border: "1px solid rgba(102, 126, 234, 0.3)",
+                        fontWeight: 600,
+                        mb: 1,
+                      }}
+                    />
+
+                    {selection.selectionOutcome && (
+                      <Box>
                         <Chip
-                          label={` ${selection.odds.decimal?.toFixed(2) || "N/A"}`}
+                          label={selection.selectionOutcome}
                           size="small"
+                          color={
+                            selection.selectionOutcome === "won"
+                              ? "success"
+                              : selection.selectionOutcome === "lost"
+                                ? "error"
+                                : selection.selectionOutcome === "void"
+                                  ? "default"
+                                  : "warning"
+                          }
                           sx={{
-                            background: "rgba(255, 193, 7, 0.2)",
-                            color: "#ffc107",
-                            border: "1px solid rgba(255, 193, 7, 0.3)",
-                            fontSize: "0.65rem",
-                            height: "20px",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
                           }}
                         />
                       </Box>
-                    )} */}
+                    )}
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+
+                {/* Game Score & Settlement Row */}
+                <Box display="flex" alignItems="center" gap={3}>
+                  {/* Game Score */}
+                  {selection.gameScore &&
+                    selection.gameScore.homeScore !== undefined &&
+                    selection.gameScore.awayScore !== undefined && (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
+                          Score:
+                        </Typography>
+                        <Chip
+                          label={`${selection.gameScore.homeScore} - ${selection.gameScore.awayScore}`}
+                          size="small"
+                          sx={{
+                            background: "rgba(76, 175, 80, 0.2)",
+                            color: "#4caf50",
+                            border: "1px solid rgba(76, 175, 80, 0.3)",
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                  {/* Settlement Reason */}
+                  {selection.selectionSettlementReason && (
+                    <Box flex={1}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "rgba(255,255,255,0.7)",
+                          fontStyle: "italic",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        "{selection.selectionSettlementReason}"
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
             ))}
           </Stack>
         </Box>

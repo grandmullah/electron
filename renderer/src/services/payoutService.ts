@@ -265,6 +265,31 @@ class PayoutService {
       }
 
       /**
+       * Get payout by bet ID
+       */
+      async getPayoutByBetId(betId: string): Promise<Payout | null> {
+            try {
+                  const response = await fetch(`${this.baseUrl}/by-bet/${betId}`, {
+                        method: 'GET',
+                        headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        },
+                  });
+
+                  const data = await response.json();
+
+                  if (!response.ok) {
+                        throw new Error(data.message || 'Failed to get payout by bet ID');
+                  }
+
+                  return data.payout || null;
+            } catch (error: any) {
+                  console.error('Error getting payout by bet ID:', error);
+                  throw new Error(error.message || 'Failed to get payout by bet ID');
+            }
+      }
+
+      /**
        * Complete a payout
        */
       async completePayout(payoutId: string, notes?: string): Promise<PayoutResponse> {
@@ -409,6 +434,7 @@ export const {
       getUserPayoutHistory,
       getPayoutById,
       getPayouts,
+      getPayoutByBetId,
       completePayout,
       cancelPayout,
       getPendingPayouts,

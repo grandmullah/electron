@@ -59,8 +59,49 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
     setError(null);
 
     try {
-      // Use the payoutId from payment status if available, otherwise use bet ID
-      const payoutId = bet.paymentStatus?.payoutId || bet.id;
+      let payoutId: string | undefined;
+
+      // First, try to use the payoutId from payment status
+      if (bet.paymentStatus?.payoutId) {
+        payoutId = bet.paymentStatus.payoutId;
+      } else if (bet.betId) {
+        // If no payoutId in payment status, try to find payout by bet ID
+        console.log("🔄 Finding payout by bet ID:", bet.betId);
+        try {
+          const payout = await payoutService.getPayoutByBetId(bet.betId);
+          if (payout) {
+            payoutId = payout.id;
+            console.log("✅ Found payout ID:", payoutId);
+          }
+        } catch (betIdError) {
+          console.log(
+            "⚠️ getPayoutByBetId failed, trying alternative method..."
+          );
+          // Fallback: try to find payout using filters
+          try {
+            const payouts = await payoutService.getPayouts({}, 100, 0);
+            const matchingPayout = payouts.find(
+              (p) => p.betId === bet.betId && p.status === "pending"
+            );
+            if (matchingPayout) {
+              payoutId = matchingPayout.id;
+              console.log("✅ Found payout ID via fallback method:", payoutId);
+            }
+          } catch (fallbackError) {
+            console.error(
+              "❌ Both methods failed to find payout:",
+              fallbackError
+            );
+          }
+        }
+      }
+
+      if (!payoutId) {
+        throw new Error(
+          `No payout ID found for bet ${bet.betId}. This bet may not have a pending payout, or the payout may have already been processed.`
+        );
+      }
+
       const response = await payoutService.completePayout(payoutId, notes);
 
       if (response.success) {
