@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
-import { FinancialAnalysisCard } from "./FinancialAnalysisCard";
+import { TaxRevenueCard } from "./cards/TaxRevenueCard";
+import { StakesCollectedCard } from "./cards/StakesCollectedCard";
+import { TotalRevenueCard } from "./cards/TotalRevenueCard";
+import { ExpensesCard } from "./cards/ExpensesCard";
+import { NetProfitCard } from "./cards/NetProfitCard";
+import { PerformanceCard } from "./cards/PerformanceCard";
 import { FinancialSummary } from "../../services/financialSummaryService";
+import excelExportService from "../../services/excelExportService";
 import {
   Paper,
   Typography,
@@ -14,6 +20,17 @@ import {
   Stack,
   Chip,
   Divider,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   TrendingUp as TrendingUpIcon,
@@ -22,6 +39,7 @@ import {
   Assessment as AssessmentIcon,
   AccountBalance as BankIcon,
   Receipt as ReceiptIcon,
+  FileDownload as FileDownloadIcon,
 } from "@mui/icons-material";
 
 interface FinancialTabProps {
@@ -64,6 +82,40 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   getWinRateColor,
   getFinancialAnalysis,
 }) => {
+  // Excel export state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportDays, setExportDays] = useState(30);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Handle Excel export
+  const handleExportToExcel = async () => {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      // Get export data
+      const exportResponse = await excelExportService.getExportSummary(
+        exportDays,
+        "json"
+      );
+
+      // Generate Excel file
+      await excelExportService.generateExcelFile(
+        exportResponse.data,
+        exportDays
+      );
+
+      // Close dialog
+      setExportDialogOpen(false);
+    } catch (error: any) {
+      console.error("Export error:", error);
+      setExportError(error.message || "Failed to export data to Excel");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoadingSummary) {
     return <LoadingState message="Loading financial summary..." />;
   }
@@ -115,24 +167,144 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           },
         }}
       >
-        <Box display="flex" alignItems="center" gap={2}>
-          <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Financial Analytics
-            </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
-              Comprehensive financial overview and performance metrics
-            </Typography>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box display="flex" alignItems="center" gap={2}>
+            <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Typography variant="h4" gutterBottom>
+                Financial Analytics
+              </Typography>
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
+                Comprehensive financial overview and performance metrics
+              </Typography>
+            </Box>
           </Box>
+
+          {/* Export Button */}
+          <Button
+            variant="contained"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => setExportDialogOpen(true)}
+            sx={{
+              background: "linear-gradient(45deg, #4caf50, #45a049)",
+              color: "white",
+              fontWeight: "bold",
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                background: "linear-gradient(45deg, #45a049, #3d8b40)",
+                transform: "translateY(-1px)",
+                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)",
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            Export to Excel
+          </Button>
         </Box>
       </Paper>
 
-      {/* Financial Analysis Card */}
-      <FinancialAnalysisCard
-        financialSummary={financialSummary}
-        getFinancialAnalysis={getFinancialAnalysis}
-      />
+      {/* Independent Financial Cards - Single Row Layout */}
+      <Grid
+        container
+        spacing={2}
+        mb={3}
+        sx={{
+          display: "flex",
+          flexWrap: "nowrap",
+          overflowX: "auto",
+          "&::-webkit-scrollbar": {
+            height: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "rgba(255, 255, 255, 0.3)",
+            borderRadius: "4px",
+            "&:hover": {
+              background: "rgba(255, 255, 255, 0.5)",
+            },
+          },
+        }}
+      >
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <TaxRevenueCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <StakesCollectedCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <TotalRevenueCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <ExpensesCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <NetProfitCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <PerformanceCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
+      </Grid>
 
       {/* Period Summary Cards */}
       <Box display="flex" gap={3} mb={3} flexWrap="wrap">
@@ -583,6 +755,143 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Export Dialog */}
+      <Dialog
+        open={exportDialogOpen}
+        onClose={() => !isExporting && setExportDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: 3,
+            color: "white",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "white",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          Export Financial Data to Excel
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 3 }}>
+          {exportError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {exportError}
+            </Alert>
+          )}
+
+          <Typography
+            variant="body2"
+            sx={{ mb: 3, color: "rgba(255,255,255,0.7)" }}
+          >
+            Select the number of days to include in your export. The export will
+            include:
+          </Typography>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+            >
+              • Summary sheet with financial overview
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+            >
+              • Payouts sheet with detailed payout information
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+            >
+              • Bets sheet with bet details and selection counts
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+            >
+              • Selections sheet with game results and outcomes
+            </Typography>
+          </Box>
+
+          <FormControl fullWidth>
+            <InputLabel sx={{ color: "rgba(255,255,255,0.7)" }}>
+              Export Period
+            </InputLabel>
+            <Select
+              value={exportDays}
+              onChange={(e) => setExportDays(Number(e.target.value))}
+              label="Export Period"
+              disabled={isExporting}
+              sx={{
+                color: "white",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "rgba(255,255,255,0.3)",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "rgba(255,255,255,0.5)",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#4caf50",
+                },
+              }}
+            >
+              <MenuItem value={7}>Last 7 days</MenuItem>
+              <MenuItem value={14}>Last 14 days</MenuItem>
+              <MenuItem value={30}>Last 30 days</MenuItem>
+              <MenuItem value={60}>Last 60 days</MenuItem>
+              <MenuItem value={90}>Last 90 days</MenuItem>
+              <MenuItem value={180}>Last 6 months</MenuItem>
+              <MenuItem value={365}>Last year</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+
+        <DialogActions
+          sx={{ p: 3, borderTop: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          <Button
+            onClick={() => setExportDialogOpen(false)}
+            disabled={isExporting}
+            sx={{ color: "rgba(255,255,255,0.7)" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleExportToExcel}
+            disabled={isExporting}
+            variant="contained"
+            startIcon={
+              isExporting ? (
+                <CircularProgress size={20} />
+              ) : (
+                <FileDownloadIcon />
+              )
+            }
+            sx={{
+              background: "linear-gradient(45deg, #4caf50, #45a049)",
+              "&:hover": {
+                background: "linear-gradient(45deg, #45a049, #3d8b40)",
+              },
+              "&:disabled": {
+                background: "rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.3)",
+              },
+            }}
+          >
+            {isExporting ? "Exporting..." : "Export to Excel"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
