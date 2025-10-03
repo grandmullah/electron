@@ -7,9 +7,19 @@ export interface RevenueData {
       totalRevenue: number;
 }
 
+export interface PayoutBreakdown {
+      total: number;
+      completed: number;
+      pending: number;
+      totalCount: number;
+      completedCount: number;
+      pendingCount: number;
+}
+
 export interface ExpensesData {
       actualWinningsPaid: number;
       totalPayoutAmount: number;
+      payoutBreakdown: PayoutBreakdown;
 }
 
 export interface ProfitData {
@@ -18,10 +28,20 @@ export interface ProfitData {
       profitMargin: number;
 }
 
+export interface TaxBreakdown {
+      collected: number;
+      pending: number;
+      calculated: number;
+      uncollected: number;
+}
+
 export interface TaxData {
       totalTaxCollected: number;
+      totalTaxPending: number;
+      totalTaxCalculated: number;
       taxRate: number;
       effectiveTaxCollected: number;
+      taxBreakdown: TaxBreakdown;
 }
 
 export interface PerformanceData {
