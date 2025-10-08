@@ -26,6 +26,33 @@ export interface PendingPayoutsResponse {
       };
 }
 
+export interface AllPayoutsResponse {
+      success: boolean;
+      message: string;
+      data: {
+            payouts: PendingPayout[];
+            pendingPayouts: PendingPayout[];
+            completedPayouts: PendingPayout[];
+            summary: {
+                  total: number;
+                  pending: {
+                        count: number;
+                        totalAmount: number;
+                  };
+                  completed: {
+                        count: number;
+                        totalAmount: number;
+                  };
+            };
+            pagination: {
+                  limit: number;
+                  offset: number;
+                  hasMore: boolean;
+            };
+            shopId: string | null;
+      };
+}
+
 class PendingPayoutsService {
       private baseUrl = API_BASE_URL;
 
@@ -57,6 +84,45 @@ class PendingPayoutsService {
             } catch (error) {
                   console.error('Error fetching pending payouts:', error);
                   throw error;
+            }
+      }
+
+      /**
+       * Get all payouts (pending and completed) for the authenticated shop user
+       * GET /api/payout/my-payouts
+       */
+      async getAllPayouts(): Promise<AllPayoutsResponse> {
+            try {
+                  const token = PendingPayoutsService.getAuthToken();
+                  console.log('🔄 Fetching all payouts (pending & completed)...');
+
+                  const response = await fetch(`${this.baseUrl}/payout/my-payouts`, {
+                        method: 'GET',
+                        headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`,
+                        },
+                  });
+
+                  if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                  }
+
+                  const data: AllPayoutsResponse = await response.json();
+
+                  if (data.success) {
+                        console.log('✅ All payouts fetched successfully:', {
+                              total: data.data.summary.total,
+                              pending: data.data.summary.pending,
+                              completed: data.data.summary.completed,
+                        });
+                        return data;
+                  } else {
+                        throw new Error(data.message || 'Failed to fetch payouts');
+                  }
+            } catch (error: any) {
+                  console.error('❌ Error fetching all payouts:', error);
+                  throw new Error(error.message || 'Failed to fetch payouts');
             }
       }
 }

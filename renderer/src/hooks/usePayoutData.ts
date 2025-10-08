@@ -6,8 +6,19 @@ import { payoutService, PayoutValidationRequest } from '../services/payoutServic
 export const usePayoutData = () => {
       const { user } = useAppSelector((state) => state.auth);
 
+      const [allPayouts, setAllPayouts] = useState<PendingPayout[]>([]);
       const [pendingPayouts, setPendingPayouts] = useState<PendingPayout[]>([]);
+      const [completedPayouts, setCompletedPayouts] = useState<PendingPayout[]>([]);
       const [totalPayouts, setTotalPayouts] = useState<number>(0);
+      const [payoutSummary, setPayoutSummary] = useState<{
+            total: number;
+            pending: { count: number; totalAmount: number };
+            completed: { count: number; totalAmount: number };
+      }>({
+            total: 0,
+            pending: { count: 0, totalAmount: 0 },
+            completed: { count: 0, totalAmount: 0 },
+      });
       const [isLoadingPayouts, setIsLoadingPayouts] = useState(false);
       const [payoutError, setPayoutError] = useState<string | null>(null);
       const [validatingPayouts, setValidatingPayouts] = useState<Set<string>>(new Set());
@@ -22,22 +33,33 @@ export const usePayoutData = () => {
             setPayoutError(null);
 
             try {
-                  console.log("🔄 Loading pending payouts...");
+                  console.log("🔄 Loading all payouts (pending & completed)...");
 
-                  const response = await pendingPayoutsService.getPendingPayouts();
+                  const response = await pendingPayoutsService.getAllPayouts();
 
                   if (response.success && response.data) {
+                        setAllPayouts(response.data.payouts);
                         setPendingPayouts(response.data.pendingPayouts);
-                        setTotalPayouts(response.data.total);
-                        console.log("✅ Pending payouts loaded:", response.data.pendingPayouts.length, "Total:", response.data.total);
+                        setCompletedPayouts(response.data.completedPayouts);
+                        setTotalPayouts(response.data.summary.total);
+                        setPayoutSummary(response.data.summary);
+                        console.log("✅ All payouts loaded:", {
+                              total: response.data.summary.total,
+                              pending: response.data.summary.pending,
+                              completed: response.data.summary.completed,
+                        });
                   } else {
+                        setAllPayouts([]);
                         setPendingPayouts([]);
+                        setCompletedPayouts([]);
                         setTotalPayouts(0);
                   }
             } catch (error: any) {
-                  console.error("❌ Error loading pending payouts:", error);
-                  setPayoutError(error.message || "Failed to load pending payouts");
+                  console.error("❌ Error loading payouts:", error);
+                  setPayoutError(error.message || "Failed to load payouts");
+                  setAllPayouts([]);
                   setPendingPayouts([]);
+                  setCompletedPayouts([]);
                   setTotalPayouts(0);
             } finally {
                   setIsLoadingPayouts(false);
@@ -202,8 +224,11 @@ export const usePayoutData = () => {
       }, [pendingPayouts]);
 
       return {
+            allPayouts,
             pendingPayouts,
+            completedPayouts,
             totalPayouts,
+            payoutSummary,
             isLoadingPayouts,
             payoutError,
             validatingPayouts,

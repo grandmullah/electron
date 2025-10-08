@@ -339,7 +339,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="history-page">
+    <Box
+      sx={{
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        minHeight: "100vh",
+        pb: 4,
+      }}
+    >
       <Header
         onNavigate={onNavigate}
         currentPage="history"
@@ -348,51 +354,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Page Header */}
-        <Paper
-          sx={{
-            p: 4,
-            mb: 3,
-            background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
-            color: "white",
-            border: "1px solid #2a2d3a",
-            borderRadius: "16px",
-            boxShadow:
-              "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-          }}
-        >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Stack spacing={1}>
-              <Typography variant="h3" color="white">
-                📚 Bet History
-              </Typography>
-              <Typography color="white" sx={{ opacity: 0.9 }}>
-                Track your betting performance and manage all shop bets
-              </Typography>
-            </Stack>
-            <Box display="flex" gap={2} alignItems="center">
-              <Chip
-                label={`${filteredBets.length} bets`}
-                color="primary"
-                variant="outlined"
-                sx={{ color: "white", borderColor: "white" }}
-              />
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<IconDownload />}
-                onClick={handleExportHistory}
-                disabled={isExporting}
-                sx={{ color: "white", borderColor: "white" }}
-              >
-                {isExporting ? "Exporting..." : "Export CSV"}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
 
         {/* Filters */}
         <MUIFilters
@@ -527,6 +488,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           }}
         />
       )}
-    </div>
+    </Box>
   );
 };

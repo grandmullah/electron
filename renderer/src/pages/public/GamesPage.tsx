@@ -11,8 +11,6 @@ import { API_BASE_URL } from "../../services/apiConfig";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
-import { GameDataGrid } from "../../components/games/GameDataGrid";
-import { GameDataGridCompact } from "../../components/games/GameDataGridCompact";
 import {
   Container,
   Paper,
@@ -41,8 +39,6 @@ import {
   Snackbar,
   Divider,
   Badge,
-  Tabs,
-  Tab,
 } from "@mui/material";
 import {
   SportsSoccer as SoccerIcon,
@@ -78,7 +74,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   >(null);
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
-  const [viewMode, setViewMode] = useState<number>(0); // 0: Card view, 1: Simple DataGrid, 2: Compact DataGrid
   const [leagueKey, setLeagueKey] = useState<string>("");
 
   // Use SWR for odds fetching
@@ -211,7 +206,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             .print-header {
               text-align: center;
               margin-bottom: 30px;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
               color: white;
               padding: 20px;
               border-radius: 12px;
@@ -896,7 +891,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
   if (isLoading) {
     return (
-      <Box sx={{ bgcolor: "#0e1220", minHeight: "100vh" }}>
+      <Box
+        sx={{
+          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+          minHeight: "100vh",
+        }}
+      >
         <Header
           onNavigate={onNavigate}
           currentPage="games"
@@ -908,7 +908,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             sx={{
               p: 4,
               mb: 4,
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
               color: "white",
               position: "relative",
               overflow: "hidden",
@@ -1011,7 +1011,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   }
 
   return (
-    <Box sx={{ bgcolor: "#0e1220", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        minHeight: "100vh",
+      }}
+    >
       <Header
         onNavigate={onNavigate}
         currentPage="games"
@@ -1025,11 +1030,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           sx={{
             p: 4,
             mb: 4,
-            background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
+            background:
+              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
             color: "white",
             position: "relative",
             overflow: "hidden",
-            border: "1px solid #2a2d3a",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
             borderRadius: "16px",
             boxShadow:
               "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
@@ -1118,38 +1124,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           </Box>
         </Paper>
 
-        {/* View Mode Toggle */}
-        <Paper
-          sx={{
-            p: 2,
-            mb: 3,
-            backgroundColor: "#1a1d29",
-            border: "1px solid #2a2d3a",
-          }}
-        >
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={viewMode}
-              onChange={(event, newValue) => setViewMode(newValue)}
-              sx={{
-                "& .MuiTab-root": {
-                  color: "rgba(255,255,255,0.7)",
-                  "&.Mui-selected": {
-                    color: "white",
-                  },
-                },
-                "& .MuiTabs-indicator": {
-                  backgroundColor: "primary.main",
-                },
-              }}
-            >
-              <Tab label="Card View" />
-              <Tab label="Simple Table" />
-              <Tab label="Compact Table" />
-            </Tabs>
-          </Box>
-        </Paper>
-
         {/* Main Content with Left Panel and Games */}
         <Box sx={{ display: "flex", gap: 3 }}>
           {/* Left Panel - League Selector and Controls */}
@@ -1160,8 +1134,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               height: "fit-content",
               position: "sticky",
               top: 20,
-              background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
-              border: "1px solid #2a2d3a",
+              background:
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
               borderRadius: "16px",
               boxShadow:
                 "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
@@ -1451,45 +1426,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       (game) =>
                         game && game.id && game.homeTeam && game.awayTeam
                     )
-                    .map((game) => {
-                      if (viewMode === 0) {
-                        // Card View
-                        return (
-                          <GameCard
-                            key={game.id}
-                            game={game}
-                            isSelected={selectedGame?.id === game.id}
-                            onSelect={setSelectedGame}
-                            onAddToBetSlip={handleAddToBetSlip}
-                            isSelectionInBetSlip={isSelectionInBetSlip}
-                            expandedGames={expandedGames}
-                            onToggleExpanded={toggleExpanded}
-                          />
-                        );
-                      } else if (viewMode === 1) {
-                        // Simple DataGrid View
-                        return (
-                          <Paper key={game.id} elevation={2} sx={{ p: 2 }}>
-                            <GameDataGrid
-                              game={game}
-                              onAddToBetSlip={handleAddToBetSlip}
-                              isSelectionInBetSlip={isSelectionInBetSlip}
-                            />
-                          </Paper>
-                        );
-                      } else {
-                        // Compact DataGrid View
-                        return (
-                          <Paper key={game.id} elevation={2} sx={{ p: 2 }}>
-                            <GameDataGridCompact
-                              game={game}
-                              onAddToBetSlip={handleAddToBetSlip}
-                              isSelectionInBetSlip={isSelectionInBetSlip}
-                            />
-                          </Paper>
-                        );
-                      }
-                    })}
+                    .map((game) => (
+                      <GameCard
+                        key={game.id}
+                        game={game}
+                        isSelected={selectedGame?.id === game.id}
+                        onSelect={setSelectedGame}
+                        onAddToBetSlip={handleAddToBetSlip}
+                        isSelectionInBetSlip={isSelectionInBetSlip}
+                        expandedGames={expandedGames}
+                        onToggleExpanded={toggleExpanded}
+                      />
+                    ))}
                 </Stack>
               )}
             </Box>

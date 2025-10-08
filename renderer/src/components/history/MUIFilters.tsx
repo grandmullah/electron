@@ -125,11 +125,12 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
         sx={{
           p: 3,
           mb: 3,
-          background: "linear-gradient(145deg, #0e1220 0%, #1a1d29 100%)",
-          boxShadow:
-            "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
           borderRadius: "16px",
-          border: "1px solid #2a2d3a",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          backdropFilter: "blur(20px)",
         }}
       >
         {/* Enhanced Header */}
@@ -144,8 +145,9 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
               sx={{
                 p: 1.5,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
                 color: "white",
+                boxShadow: "0 2px 8px rgba(25, 118, 210, 0.4)",
               }}
             >
               <IconFilter />
@@ -187,10 +189,15 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
               onClick={onApplyFilters}
               size="small"
               sx={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
+                transition: "all 0.3s ease",
                 "&:hover": {
                   background:
-                    "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
+                    "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 16px rgba(25, 118, 210, 0.5)",
                 },
               }}
             >

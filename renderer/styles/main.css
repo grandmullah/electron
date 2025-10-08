@@ -1569,8 +1569,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
@@ -1586,7 +1586,10 @@ body {
 .app-title {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--color-primary);
+  background: linear-gradient(45deg, #1976d2, #42a5f5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
 }
 
@@ -1597,8 +1600,8 @@ body {
 
 .nav-item {
   background: none;
-  border: none;
-  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.7);
   font-size: var(--font-size-sm);
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -1608,14 +1611,15 @@ body {
 }
 
 .nav-item:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .nav-item.active {
-  color: var(--color-primary);
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  color: #1976d2;
+  background: rgba(25, 118, 210, 0.1);
+  border: 1px solid rgba(25, 118, 210, 0.3);
 }
 
 .header-right {
@@ -5555,10 +5559,11 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e9ecef;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   min-width: 320px;
   max-width: 400px;
   z-index: 1000;
@@ -5584,7 +5589,8 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -5594,7 +5600,7 @@ body {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5611,15 +5617,15 @@ body {
 
 .dropdown-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: white;
   font-size: 1.1rem;
 }
 
 .dropdown-role {
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
   text-transform: capitalize;
-  background: #e9ecef;
+  background: rgba(255, 255, 255, 0.1);
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
   align-self: flex-start;
@@ -5627,19 +5633,19 @@ body {
 
 .dropdown-divider {
   height: 1px;
-  background: #e9ecef;
+  background: rgba(255, 255, 255, 0.1);
   margin: 0;
 }
 
 .dropdown-section-header {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.03);
   padding: 0.75rem 1.5rem;
   font-weight: 600;
-  color: #495057;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dropdown-item {
@@ -5648,7 +5654,7 @@ body {
   align-items: center;
   padding: 1rem 1.5rem;
   transition: background-color 0.2s;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dropdown-item:last-child {
@@ -5656,11 +5662,11 @@ body {
 }
 
 .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .dropdown-label {
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 0.9rem;
   font-weight: 500;
   flex-shrink: 0;
@@ -5668,7 +5674,7 @@ body {
 }
 
 .dropdown-value {
-  color: #2c3e50;
+  color: white;
   font-weight: 600;
   font-size: 0.95rem;
   text-align: right;
@@ -5690,20 +5696,22 @@ body {
 }
 
 .status-badge.active {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .status-badge.inactive {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .dropdown-logout-btn {
   width: 100%;
-  background: #dc3545;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.8) 100%);
   color: white;
-  border: none;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   padding: 1rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
@@ -5712,11 +5720,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  border-radius: 0;
 }
 
 .dropdown-logout-btn:hover {
-  background: #c82333;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 1) 0%, rgba(220, 38, 38, 1) 100%);
+  transform: translateY(-1px);
 }
 
 .logout-icon {

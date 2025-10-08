@@ -74,8 +74,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   } = useDashboardData();
 
   const {
+    allPayouts,
     pendingPayouts,
+    completedPayouts,
     totalPayouts,
+    payoutSummary: payoutCounts,
     isLoadingPayouts,
     payoutError,
     validatingPayouts,
@@ -167,7 +170,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: "grey.900",
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
         minHeight: "100vh",
         position: "relative",
         color: "text.primary",
@@ -183,9 +186,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             p: 4,
             mb: 4,
             borderRadius: 3,
-            backgroundColor: "grey.800",
-            border: "1px solid",
-            borderColor: "grey.700",
+            background:
+              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
             color: "text.primary",
             position: "relative",
             overflow: "hidden",
@@ -197,14 +201,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 sx={{
                   width: 72,
                   height: 72,
-                  backgroundColor: "primary.main",
-                  border: "3px solid",
-                  borderColor: "primary.light",
+                  background:
+                    "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                  border: "3px solid rgba(25, 118, 210, 0.3)",
+                  boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
                 }}
               >
-                <AssessmentIcon
-                  sx={{ fontSize: 36, color: "primary.contrastText" }}
-                />
+                <AssessmentIcon sx={{ fontSize: 36, color: "white" }} />
               </Avatar>
               <Box>
                 <Typography
@@ -229,211 +232,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </Typography>
               </Box>
             </Stack>
-
-            {/* Quick Stats Row */}
-            <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 250px", minWidth: "250px" }}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: "grey.800",
-                    border: "1px solid",
-                    borderColor: "grey.700",
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: 4,
-                      borderColor: "grey.600",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          backgroundColor: "success.light",
-                          color: "success.contrastText",
-                        }}
-                      >
-                        <TrendingUpIcon sx={{ fontSize: 24 }} />
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          Total Activity
-                        </Typography>
-                        <Typography
-                          variant="h5"
-                          fontWeight="bold"
-                          color="text.primary"
-                        >
-                          {personalStats?.totalBets || 0}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-              <Box sx={{ flex: "1 1 250px", minWidth: "250px" }}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: "grey.800",
-                    border: "1px solid",
-                    borderColor: "grey.700",
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: 4,
-                      borderColor: "grey.600",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          backgroundColor: "primary.light",
-                          color: "primary.contrastText",
-                        }}
-                      >
-                        <MoneyIcon sx={{ fontSize: 24 }} />
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          Total Stake
-                        </Typography>
-                        <Typography
-                          variant="h5"
-                          fontWeight="bold"
-                          color="text.primary"
-                        >
-                          SSP{" "}
-                          {(
-                            (personalStats?.totalStake || 0) +
-                            (shopStats?.totalStake || 0)
-                          ).toFixed(0)}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-              <Box sx={{ flex: "1 1 250px", minWidth: "250px" }}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: "grey.800",
-                    border: "1px solid",
-                    borderColor: "grey.700",
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: 4,
-                      borderColor: "grey.600",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          backgroundColor: "warning.light",
-                          color: "warning.contrastText",
-                        }}
-                      >
-                        <TimelineIcon sx={{ fontSize: 24 }} />
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          Win Rate
-                        </Typography>
-                        <Typography
-                          variant="h5"
-                          fontWeight="bold"
-                          color="text.primary"
-                        >
-                          {(personalStats?.winRate || 0).toFixed(1)}%
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-              <Box sx={{ flex: "1 1 250px", minWidth: "250px" }}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: "grey.800",
-                    border: "1px solid",
-                    borderColor: "grey.700",
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: 4,
-                      borderColor: "grey.600",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          backgroundColor: "secondary.light",
-                          color: "secondary.contrastText",
-                        }}
-                      >
-                        <BetsIcon sx={{ fontSize: 24 }} />
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          Pending Payouts
-                        </Typography>
-                        <Typography
-                          variant="h5"
-                          fontWeight="bold"
-                          color="text.primary"
-                        >
-                          {payoutSummary?.pending.count || totalPayouts}
-                        </Typography>
-                        {payoutSummary?.pending.totalAmount && (
-                          <Typography variant="caption" color="text.secondary">
-                            {formatCurrency(payoutSummary.pending.totalAmount)}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
           </Box>
         </Paper>
 
@@ -543,8 +341,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {activeTab === "payout" && (
               <PayoutTab
+                allPayouts={allPayouts}
                 pendingPayouts={pendingPayouts}
+                completedPayouts={completedPayouts}
                 totalPayouts={totalPayouts}
+                payoutSummary={payoutCounts}
                 isLoadingPayouts={isLoadingPayouts}
                 payoutError={payoutError}
                 validatingPayouts={validatingPayouts}

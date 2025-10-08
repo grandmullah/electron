@@ -352,12 +352,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             minHeight: "70vh",
             maxHeight: "85vh",
             width: "480px",
-            background: "rgba(255, 255, 255, 0.05)",
+            background:
+              "linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%)",
             backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            border: "1px solid rgba(25, 118, 210, 0.2)",
             borderRadius: "16px",
             boxShadow:
-              "0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+              "0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(25, 118, 210, 0.1)",
             position: "relative",
             "&::before": {
               content: '""',
@@ -365,18 +366,20 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               top: 0,
               left: 0,
               right: 0,
-              height: "1px",
+              height: "2px",
               background:
-                "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
+                "linear-gradient(90deg, transparent 0%, rgba(25, 118, 210, 0.6) 50%, transparent 100%)",
             },
           },
         }}
       >
         <DialogTitle
           sx={{
-            background: "rgba(102, 126, 234, 0.2)",
+            background:
+              "linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(66, 165, 245, 0.15) 100%)",
             backdropFilter: "blur(20px)",
-            border: "1px solid rgba(102, 126, 234, 0.3)",
+            border: "1px solid rgba(25, 118, 210, 0.3)",
+            borderBottom: "2px solid rgba(25, 118, 210, 0.4)",
             color: "white",
             display: "flex",
             alignItems: "center",
@@ -384,7 +387,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             py: 3,
             px: 3,
             borderRadius: "16px 16px 0 0",
-            boxShadow: "0 4px 20px rgba(102, 126, 234, 0.3)",
+            boxShadow: "0 4px 20px rgba(25, 118, 210, 0.4)",
             position: "relative",
             "&::before": {
               content: '""',
@@ -392,9 +395,9 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               top: 0,
               left: 0,
               right: 0,
-              height: "1px",
+              height: "2px",
               background:
-                "linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.5) 50%, transparent 100%)",
+                "linear-gradient(90deg, transparent 0%, rgba(25, 118, 210, 0.8) 50%, transparent 100%)",
             },
           }}
         >
@@ -421,7 +424,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0, background: "rgba(255, 255, 255, 0.02)" }}>
+        <DialogContent sx={{ p: 0, background: "rgba(0, 0, 0, 0.2)" }}>
           {!betSlipItems || (betSlipItems?.length || 0) === 0 ? (
             <Box
               display="flex"
@@ -792,10 +795,14 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                     key={bet.id}
                     sx={{
                       background:
-                        "linear-gradient(135deg, #1a1d29 0%, #2d3748 50%, #4a5568 100%)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                        "linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(26, 26, 46, 0.6) 100%)",
+                      border: "1px solid rgba(25, 118, 210, 0.2)",
+                      backdropFilter: "blur(10px)",
+                      transition: "all 0.3s ease",
                       "&:hover": {
-                        boxShadow: "0 4px 12px rgba(102, 126, 234, 0.2)",
+                        boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                        borderColor: "rgba(25, 118, 210, 0.4)",
+                        transform: "translateY(-2px)",
                       },
                     }}
                   >
@@ -875,11 +882,15 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                         borderColor: "rgba(255,255,255,0.2)",
                                       },
                                       "&:hover fieldset": {
-                                        borderColor: "rgba(255,255,255,0.4)",
+                                        borderColor: "rgba(25, 118, 210, 0.5)",
                                       },
                                       "&.Mui-focused fieldset": {
-                                        borderColor: "#667eea",
+                                        borderColor: "#42a5f5",
+                                        borderWidth: "2px",
                                       },
+                                    },
+                                    "& .MuiInputLabel-root.Mui-focused": {
+                                      color: "#42a5f5",
                                     },
                                   }}
                                 />
@@ -914,7 +925,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, background: "rgba(255, 255, 255, 0.02)" }}>
+        <DialogActions
+          sx={{
+            p: 3,
+            background: "rgba(0, 0, 0, 0.2)",
+            borderTop: "1px solid rgba(25, 118, 210, 0.2)",
+          }}
+        >
           <Button
             onClick={onClose}
             sx={{
@@ -970,14 +987,20 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               })()
             }
             sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
               color: "white",
+              fontWeight: 600,
+              boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
+              transition: "all 0.3s ease",
               "&:hover": {
-                background: "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
+                background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                transform: "translateY(-2px)",
+                boxShadow: "0 6px 16px rgba(25, 118, 210, 0.5)",
               },
               "&:disabled": {
                 background: "rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.3)",
+                boxShadow: "none",
               },
             }}
           >
@@ -1002,10 +1025,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         fullWidth
         sx={{
           "& .MuiDialog-paper": {
-            background: "rgba(76, 175, 80, 0.95)",
+            background:
+              "linear-gradient(135deg, rgba(25, 118, 210, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%)",
+            backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.2)",
             borderRadius: 3,
             color: "white",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.5)",
           },
         }}
       >

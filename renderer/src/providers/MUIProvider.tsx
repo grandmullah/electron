@@ -4,7 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 const theme = createTheme({
   palette: {
-    mode: "light",
+    mode: "dark",
     primary: {
       main: "#1976d2",
       light: "#42a5f5",
@@ -36,8 +36,8 @@ const theme = createTheme({
       contrastText: "#fff",
     },
     background: {
-      default: "#f5f5f5",
-      paper: "#ffffff",
+      default: "#1a1a2e",
+      paper: "rgba(255, 255, 255, 0.05)",
     },
   },
   typography: {

@@ -698,14 +698,16 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
             isProcessing ? <CircularProgress size={20} /> : <CheckIcon />
           }
           sx={{
-            background: "rgba(76, 175, 80, 0.8)",
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
             backdropFilter: "blur(10px)",
-            border: "1px solid rgba(76, 175, 80, 0.3)",
+            border: "1px solid rgba(16, 185, 129, 0.3)",
             color: "white",
+            fontWeight: 600,
+            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.4)",
             "&:hover": {
-              backgroundColor: "rgba(76, 175, 80, 0.9)",
-              transform: "translateY(-1px)",
-              boxShadow: "0 4px 12px rgba(76, 175, 80, 0.4)",
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              transform: "translateY(-2px)",
+              boxShadow: "0 6px 16px rgba(16, 185, 129, 0.5)",
             },
             minWidth: 140,
             transition: "all 0.3s ease",

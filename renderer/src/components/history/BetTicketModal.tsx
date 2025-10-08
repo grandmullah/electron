@@ -689,14 +689,16 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
           startIcon={<PrintIcon />}
           onClick={() => onPrint(bet)}
           sx={{
-            background: "rgba(102, 126, 234, 0.8)",
+            background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
             backdropFilter: "blur(10px)",
-            border: "1px solid rgba(102, 126, 234, 0.3)",
+            border: "1px solid rgba(25, 118, 210, 0.3)",
             color: "white",
+            fontWeight: 600,
+            boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
             "&:hover": {
-              backgroundColor: "rgba(102, 126, 234, 0.9)",
-              transform: "translateY(-1px)",
-              boxShadow: "0 4px 12px rgba(102, 126, 234, 0.4)",
+              background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+              transform: "translateY(-2px)",
+              boxShadow: "0 6px 16px rgba(25, 118, 210, 0.5)",
             },
             transition: "all 0.3s ease",
           }}

@@ -2,10 +2,7 @@ import React from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
-import { PayoutStatsCard } from "./shared/PayoutStatsCard";
 import { CompletePayoutModal } from "./shared/CompletePayoutModal";
-import { usePayoutStats } from "../../hooks/usePayoutStats";
-import { usePayoutSummary } from "../../hooks/usePayoutSummary";
 import { PendingPayout } from "../../services/pendingPayoutsService";
 import {
   Paper,
@@ -22,6 +19,12 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Pagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
 } from "@mui/material";
 import {
   AttachMoney as MoneyIcon,
@@ -29,11 +32,20 @@ import {
   CheckCircle as CheckIcon,
   Visibility as ViewIcon,
   Print as PrintIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from "@mui/icons-material";
 
 interface PayoutTabProps {
+  allPayouts: PendingPayout[];
   pendingPayouts: PendingPayout[];
+  completedPayouts: PendingPayout[];
   totalPayouts: number;
+  payoutSummary: {
+    total: number;
+    pending: { count: number; totalAmount: number };
+    completed: { count: number; totalAmount: number };
+  };
   isLoadingPayouts: boolean;
   payoutError: string | null;
   validatingPayouts: Set<string>;
@@ -50,8 +62,11 @@ interface PayoutTabProps {
 }
 
 export const PayoutTab: React.FC<PayoutTabProps> = ({
+  allPayouts,
   pendingPayouts,
+  completedPayouts,
   totalPayouts,
+  payoutSummary: payoutCounts,
   isLoadingPayouts,
   payoutError,
   validatingPayouts,
@@ -64,30 +79,64 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
   onExportPayoutsToExcel,
   onNavigate,
 }) => {
-  // Load payout statistics
-  const { payoutStats, isLoadingStats, statsError, loadPayoutStats } =
-    usePayoutStats();
-
-  // Load payout summary
-  const {
-    payoutSummary,
-    isLoadingSummary,
-    summaryError,
-    loadPayoutSummary,
-    formatCurrency,
-    getTrendDirection,
-  } = usePayoutSummary();
-
-  // Load stats when component mounts
-  React.useEffect(() => {
-    loadPayoutStats();
-    loadPayoutSummary();
-  }, [loadPayoutStats, loadPayoutSummary]);
-
   // Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedPayout, setSelectedPayout] =
     React.useState<PendingPayout | null>(null);
+
+  // Filter state
+  const [statusFilter, setStatusFilter] = React.useState<
+    "all" | "pending" | "completed"
+  >("all");
+
+  // Get filtered payouts based on status
+  const getFilteredPayouts = () => {
+    switch (statusFilter) {
+      case "pending":
+        return pendingPayouts;
+      case "completed":
+        return completedPayouts;
+      default:
+        return allPayouts;
+    }
+  };
+
+  const filteredPayouts = getFilteredPayouts();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
+
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentPayouts = filteredPayouts.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
+
+  // Pagination handlers
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to page 1 when payouts or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredPayouts.length, statusFilter]);
 
   // Handle complete payout
   const handleCompletePayout = (payout: PendingPayout) => {
@@ -145,381 +194,119 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
 
   return (
     <Box>
-      {/* Section Header */}
+      {/* Status Filter Tabs */}
       <Paper
         sx={{
-          p: 3,
-          mb: 3,
-          backgroundColor: "rgba(26, 29, 41, 0.8)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          color: "white",
+          p: 2,
+          mb: 2,
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "12px",
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box display="flex" alignItems="center" gap={2}>
-            <MoneyIcon color="primary" sx={{ fontSize: 32 }} />
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                Payout Management
-              </Typography>
-              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
-                Process payouts for winning bets
-              </Typography>
-            </Box>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={
-              isExportingPayouts ? (
-                <CircularProgress size={16} />
-              ) : (
-                <ExportIcon />
-              )
-            }
-            onClick={onExportPayoutsToExcel}
-            disabled={isExportingPayouts || totalPayouts === 0}
-          >
-            {isExportingPayouts ? "Exporting..." : "Export Excel"}
-          </Button>
-        </Box>
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+        >
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant={statusFilter === "all" ? "contained" : "outlined"}
+              onClick={() => setStatusFilter("all")}
+              sx={{
+                borderRadius: "8px",
+                textTransform: "none",
+                fontWeight: 600,
+                ...(statusFilter === "all"
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                      color: "white",
+                      border: "1px solid rgba(25, 118, 210, 0.3)",
+                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.4)",
+                    }
+                  : {
+                      color: "rgba(255, 255, 255, 0.7)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      "&:hover": {
+                        bgcolor: "rgba(255, 255, 255, 0.1)",
+                        borderColor: "rgba(255, 255, 255, 0.3)",
+                      },
+                    }),
+              }}
+            >
+              All ({allPayouts.length})
+            </Button>
+            <Button
+              variant={statusFilter === "pending" ? "contained" : "outlined"}
+              onClick={() => setStatusFilter("pending")}
+              sx={{
+                borderRadius: "8px",
+                textTransform: "none",
+                fontWeight: 600,
+                ...(statusFilter === "pending"
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                      color: "white",
+                      border: "1px solid rgba(245, 158, 11, 0.3)",
+                      boxShadow: "0 2px 8px rgba(245, 158, 11, 0.4)",
+                    }
+                  : {
+                      color: "rgba(255, 255, 255, 0.7)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      "&:hover": {
+                        bgcolor: "rgba(255, 255, 255, 0.1)",
+                        borderColor: "rgba(255, 255, 255, 0.3)",
+                      },
+                    }),
+              }}
+            >
+              Pending ({pendingPayouts.length})
+            </Button>
+            <Button
+              variant={statusFilter === "completed" ? "contained" : "outlined"}
+              onClick={() => setStatusFilter("completed")}
+              sx={{
+                borderRadius: "8px",
+                textTransform: "none",
+                fontWeight: 600,
+                ...(statusFilter === "completed"
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "white",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      boxShadow: "0 2px 8px rgba(16, 185, 129, 0.4)",
+                    }
+                  : {
+                      color: "rgba(255, 255, 255, 0.7)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      "&:hover": {
+                        bgcolor: "rgba(255, 255, 255, 0.1)",
+                        borderColor: "rgba(255, 255, 255, 0.3)",
+                      },
+                    }),
+              }}
+            >
+              Completed ({completedPayouts.length})
+            </Button>
+          </Stack>
+          <Chip
+            label={`Showing: ${currentPayouts.length} of ${filteredPayouts.length} payouts`}
+            sx={{
+              bgcolor: "rgba(25, 118, 210, 0.1)",
+              color: "#42a5f5",
+              border: "1px solid rgba(25, 118, 210, 0.2)",
+              fontWeight: 600,
+            }}
+          />
+        </Stack>
       </Paper>
-
-      {/* Payout Summary Section */}
-      {isLoadingSummary ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <LoadingState message="Loading payout summary..." size="small" />
-        </Paper>
-      ) : summaryError ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <ErrorState
-            title="Error Loading Summary"
-            message={summaryError}
-            onRetry={loadPayoutSummary}
-            retryText="Retry"
-          />
-        </Paper>
-      ) : payoutSummary ? (
-        <Paper
-          sx={{
-            p: 3,
-            mb: 3,
-            background: "rgba(255, 255, 255, 0.05)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: 4,
-            boxShadow:
-              "0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-            color: "white",
-            position: "relative",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "1px",
-              background:
-                "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)",
-            },
-          }}
-        >
-          <Typography variant="h5" gutterBottom fontWeight="bold">
-            📊 Payout Summary
-          </Typography>
-          <Box display="flex" gap={3} flexWrap="wrap">
-            {/* Today's Stats */}
-            <Paper
-              sx={{
-                p: 2,
-                flex: 1,
-                minWidth: 200,
-                background: "rgba(255, 255, 255, 0.06)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                borderRadius: 3,
-                boxShadow:
-                  "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                color: "white",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow:
-                    "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                },
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                Today
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Payouts:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {payoutSummary.today.totalPayouts}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Amount:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {formatCurrency(payoutSummary.today.totalAmount)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Completed:</Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight="bold"
-                  color="success.main"
-                >
-                  {payoutSummary.today.completedPayouts}
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* This Week's Stats */}
-            <Paper
-              sx={{
-                p: 2,
-                flex: 1,
-                minWidth: 200,
-                background: "rgba(255, 255, 255, 0.06)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                borderRadius: 3,
-                boxShadow:
-                  "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                color: "white",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow:
-                    "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                },
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                This Week
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Payouts:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {payoutSummary.thisWeek.totalPayouts}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Amount:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {formatCurrency(payoutSummary.thisWeek.totalAmount)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Completed:</Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight="bold"
-                  color="success.main"
-                >
-                  {payoutSummary.thisWeek.completedPayouts}
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* This Month's Stats */}
-            <Paper
-              sx={{
-                p: 2,
-                flex: 1,
-                minWidth: 200,
-                background: "rgba(255, 255, 255, 0.06)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                borderRadius: 3,
-                boxShadow:
-                  "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                color: "white",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow:
-                    "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                },
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                This Month
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Payouts:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {payoutSummary.thisMonth.totalPayouts}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Amount:</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {formatCurrency(payoutSummary.thisMonth.totalAmount)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Completed:</Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight="bold"
-                  color="success.main"
-                >
-                  {payoutSummary.thisMonth.completedPayouts}
-                </Typography>
-              </Box>
-            </Paper>
-          </Box>
-        </Paper>
-      ) : null}
-
-      {/* Payout Statistics Section */}
-      {isLoadingStats ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <LoadingState message="Loading payout statistics..." size="small" />
-        </Paper>
-      ) : statsError ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <ErrorState
-            title="Error Loading Statistics"
-            message={statsError}
-            onRetry={loadPayoutStats}
-            retryText="Retry"
-          />
-        </Paper>
-      ) : payoutStats ? (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <PayoutStatsCard stats={payoutStats} />
-        </Paper>
-      ) : null}
-
-      {/* Summary Cards */}
-      <Box display="flex" gap={3} mb={3}>
-        <Paper
-          sx={{
-            p: 3,
-            flex: 1,
-            background: "rgba(255, 255, 255, 0.06)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: 3,
-            boxShadow:
-              "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-            color: "white",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-2px)",
-              boxShadow:
-                "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-            },
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                background:
-                  "linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(156, 39, 176, 0.8) 100%)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "24px",
-              }}
-            >
-              🎉
-            </Box>
-            <Box>
-              <Typography
-                sx={{ color: "rgba(255,255,255,0.7)" }}
-                variant="body2"
-                gutterBottom
-              >
-                Pending Payouts
-              </Typography>
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                sx={{ color: "rgba(255,255,255,0.9)" }}
-              >
-                {totalPayouts}
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-        <Paper
-          sx={{
-            p: 3,
-            flex: 1,
-            background: "rgba(255, 255, 255, 0.06)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: 3,
-            boxShadow:
-              "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-            color: "white",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-2px)",
-              boxShadow:
-                "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-            },
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                background:
-                  "linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(46, 125, 50, 0.8) 100%)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "24px",
-              }}
-            >
-              💰
-            </Box>
-            <Box>
-              <Typography
-                sx={{ color: "rgba(255,255,255,0.7)" }}
-                variant="body2"
-                gutterBottom
-              >
-                Total Payout Amount
-              </Typography>
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                sx={{ color: "rgba(255,255,255,0.9)" }}
-              >
-                SSP {totalPayoutAmount.toFixed(2)}
-              </Typography>
-              <Typography
-                sx={{ color: "rgba(255,255,255,0.6)" }}
-                variant="body2"
-              >
-                Ready for processing
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-      </Box>
 
       {/* Payouts Table */}
       <Paper
@@ -547,135 +334,118 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
         <TableContainer>
           <Table
             sx={{
+              tableLayout: "fixed",
+              width: "100%",
               "& .MuiTableCell-root": {
                 color: "rgba(255,255,255,0.8)",
                 borderColor: "rgba(255,255,255,0.1)",
+                padding: "12px 16px",
               },
             }}
           >
             <TableHead>
               <TableRow
                 sx={{
-                  background: "rgba(255, 255, 255, 0.08)",
-                  backdropFilter: "blur(20px)",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
-                  position: "relative",
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "1px",
-                    background:
-                      "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
-                  },
+                  background:
+                    "linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(66, 165, 245, 0.08) 100%)",
+                  borderBottom: "2px solid rgba(25, 118, 210, 0.3)",
                 }}
               >
                 <TableCell
+                  width="12%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
-                  Payout ID
+                  ID
                 </TableCell>
                 <TableCell
+                  width="10%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
-                  Ticket ID
+                  Ticket
                 </TableCell>
                 <TableCell
+                  width="12%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
                   Bet ID
                 </TableCell>
                 <TableCell
+                  width="12%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
                   Amount
                 </TableCell>
                 <TableCell
+                  width="12%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
-                  Payment Method
+                  Payment
                 </TableCell>
                 <TableCell
+                  width="10%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
-                  Reference
+                  Ref
                 </TableCell>
                 <TableCell
+                  width="10%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
                   Status
                 </TableCell>
                 <TableCell
+                  width="10%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
-                  Created
+                  Date
                 </TableCell>
                 <TableCell
+                  width="12%"
                   sx={{
-                    color: "rgba(255,255,255,0.95)",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    color: "#42a5f5",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                   }}
                 >
                   Actions
@@ -683,7 +453,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingPayouts.map((payout) => {
+              {currentPayouts.map((payout) => {
                 const payoutId = payout.id;
                 const isValidating = validatingPayouts.has(payoutId);
                 const validationResult = payoutValidationResults.get(payoutId);
@@ -691,70 +461,70 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                 return (
                   <TableRow
                     key={payoutId}
-                    hover
                     sx={{
                       backgroundColor: "rgba(255,255,255,0.02)",
-                      transition: "all 0.3s ease",
+                      transition: "background-color 0.2s ease",
                       "&:hover": {
-                        backgroundColor: "rgba(255,255,255,0.08)",
-                        transform: "translateY(-1px)",
-                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+                        backgroundColor: "rgba(25, 118, 210, 0.1)",
                       },
                       "&:nth-of-type(even)": {
-                        backgroundColor: "rgba(255,255,255,0.03)",
+                        backgroundColor: "rgba(255,255,255,0.04)",
                       },
                     }}
                   >
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        title={payoutId}
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payoutId.substring(0, 8)}...
-                      </Typography>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {payoutId.substring(0, 10)}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {payout.ticketId}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {payout.betId.substring(0, 10)}
                     </TableCell>
                     <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payout.ticketId}
-                      </Typography>
+                      <Chip
+                        label={`${payout.currency} ${payout.amount.toFixed(2)}`}
+                        size="small"
+                        sx={{
+                          background:
+                            "linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)",
+                          color: "#4ade80",
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          border: "1px solid rgba(16, 185, 129, 0.3)",
+                        }}
+                      />
                     </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        title={payout.betId}
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payout.betId.substring(0, 8)}...
-                      </Typography>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {payout.paymentMethod}
                     </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight="bold"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payout.currency} {payout.amount.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payout.paymentMethod}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {payout.reference}
-                      </Typography>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {payout.reference}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -802,13 +572,13 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                         }
                       />
                     </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "rgba(255,255,255,0.9)" }}
-                      >
-                        {new Date(payout.createdAt).toLocaleDateString()}
-                      </Typography>
+                    <TableCell
+                      sx={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {new Date(payout.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
@@ -841,15 +611,19 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                                 )
                               }
                               sx={{
-                                background: "rgba(76, 175, 80, 0.8)",
+                                background:
+                                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                                 backdropFilter: "blur(10px)",
-                                border: "1px solid rgba(76, 175, 80, 0.3)",
+                                border: "1px solid rgba(16, 185, 129, 0.3)",
                                 color: "white",
+                                fontWeight: 600,
+                                boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
                                 "&:hover": {
-                                  backgroundColor: "rgba(76, 175, 80, 0.9)",
-                                  transform: "translateY(-1px)",
+                                  background:
+                                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                  transform: "translateY(-2px)",
                                   boxShadow:
-                                    "0 4px 12px rgba(76, 175, 80, 0.4)",
+                                    "0 4px 12px rgba(16, 185, 129, 0.5)",
                                 },
                                 transition: "all 0.3s ease",
                               }}
@@ -858,24 +632,25 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                                 ? "Completing..."
                                 : "Complete"}
                             </Button>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => onNavigate("history")}
-                              startIcon={<ViewIcon />}
-                              sx={{
-                                color: "rgba(255,255,255,0.8)",
-                                border: "1px solid rgba(255, 255, 255, 0.2)",
-                                background: "rgba(255, 255, 255, 0.05)",
-                                backdropFilter: "blur(10px)",
-                                "&:hover": {
-                                  backgroundColor: "rgba(255,255,255,0.1)",
-                                  border: "1px solid rgba(255, 255, 255, 0.3)",
-                                },
-                              }}
-                            >
-                              History
-                            </Button>
+                            <Tooltip title="View in History">
+                              <IconButton
+                                size="small"
+                                onClick={() => onNavigate("history")}
+                                sx={{
+                                  color: "#42a5f5",
+                                  border: "1px solid rgba(25, 118, 210, 0.2)",
+                                  bgcolor: "rgba(25, 118, 210, 0.05)",
+                                  transition: "all 0.3s ease",
+                                  "&:hover": {
+                                    bgcolor: "rgba(25, 118, 210, 0.15)",
+                                    borderColor: "rgba(25, 118, 210, 0.4)",
+                                    transform: "scale(1.1)",
+                                  },
+                                }}
+                              >
+                                <ViewIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </>
                         ) : validationResult === false ? (
                           <Button
@@ -893,16 +668,21 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                         ) : (
                           <Button
                             size="small"
-                            variant="outlined"
+                            variant="contained"
                             onClick={() => onValidatePayoutForBet(payout)}
                             sx={{
-                              color: "#ff9800",
-                              border: "1px solid rgba(255, 152, 0, 0.3)",
-                              background: "rgba(255, 152, 0, 0.1)",
-                              backdropFilter: "blur(10px)",
+                              background:
+                                "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                              color: "white",
+                              fontWeight: 600,
+                              border: "1px solid rgba(245, 158, 11, 0.3)",
+                              boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+                              transition: "all 0.3s ease",
                               "&:hover": {
-                                backgroundColor: "rgba(255, 152, 0, 0.2)",
-                                border: "1px solid rgba(255, 152, 0, 0.4)",
+                                background:
+                                  "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 4px 12px rgba(245, 158, 11, 0.5)",
                               },
                             }}
                           >
@@ -918,6 +698,167 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Pagination */}
+      {pendingPayouts.length > 0 && (
+        <Paper
+          sx={{
+            p: 3,
+            mt: 3,
+            background:
+              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "16px",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
+          }}
+        >
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={2}
+          >
+            {/* Items per page selector */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel
+                sx={{
+                  color: "rgba(255,255,255,0.7)",
+                  "&.Mui-focused": {
+                    color: "#42a5f5",
+                  },
+                }}
+              >
+                Items per page
+              </InputLabel>
+              <Select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                label="Items per page"
+                sx={{
+                  color: "white",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(25, 118, 210, 0.5)",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#42a5f5",
+                  },
+                  "& .MuiSvgIcon-root": {
+                    color: "rgba(255, 255, 255, 0.7)",
+                  },
+                }}
+              >
+                <MenuItem value={5}>5 per page</MenuItem>
+                <MenuItem value={10}>10 per page</MenuItem>
+                <MenuItem value={25}>25 per page</MenuItem>
+                <MenuItem value={50}>50 per page</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Page info */}
+            <Chip
+              label={`Showing ${indexOfFirstItem + 1}-${Math.min(indexOfLastItem, pendingPayouts.length)} of ${pendingPayouts.length}`}
+              sx={{
+                bgcolor: "rgba(25, 118, 210, 0.1)",
+                color: "#42a5f5",
+                border: "1px solid rgba(25, 118, 210, 0.2)",
+                fontWeight: 600,
+              }}
+            />
+
+            {/* Pagination controls */}
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <IconButton
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                size="small"
+                sx={{
+                  color:
+                    currentPage === 1 ? "rgba(255,255,255,0.3)" : "#42a5f5",
+                  border: "1px solid",
+                  borderColor:
+                    currentPage === 1
+                      ? "rgba(255,255,255,0.1)"
+                      : "rgba(25, 118, 210, 0.2)",
+                  "&:hover": {
+                    bgcolor: "rgba(25, 118, 210, 0.1)",
+                    borderColor: "rgba(25, 118, 210, 0.4)",
+                  },
+                }}
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+
+              <Pagination
+                count={totalPages}
+                page={currentPage}
+                onChange={(event, page) => goToPage(page)}
+                color="primary"
+                size="small"
+                showFirstButton
+                showLastButton
+                siblingCount={1}
+                boundaryCount={1}
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    color: "rgba(255,255,255,0.8)",
+                    borderColor: "rgba(255,255,255,0.2)",
+                    "&:hover": {
+                      backgroundColor: "rgba(25, 118, 210, 0.1)",
+                      borderColor: "rgba(25, 118, 210, 0.3)",
+                    },
+                    "&.Mui-selected": {
+                      background:
+                        "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                      color: "white",
+                      fontWeight: 600,
+                      border: "1px solid rgba(25, 118, 210, 0.3)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                      },
+                    },
+                  },
+                }}
+              />
+
+              <IconButton
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                size="small"
+                sx={{
+                  color:
+                    currentPage === totalPages
+                      ? "rgba(255,255,255,0.3)"
+                      : "#42a5f5",
+                  border: "1px solid",
+                  borderColor:
+                    currentPage === totalPages
+                      ? "rgba(255,255,255,0.1)"
+                      : "rgba(25, 118, 210, 0.2)",
+                  "&:hover": {
+                    bgcolor: "rgba(25, 118, 210, 0.1)",
+                    borderColor: "rgba(25, 118, 210, 0.4)",
+                  },
+                }}
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </Stack>
+          </Stack>
+
+          {/* Additional page info */}
+          <Box mt={2} textAlign="center">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
+              Page {currentPage} of {totalPages}
+            </Typography>
+          </Box>
+        </Paper>
+      )}
 
       {/* Complete Payout Modal */}
       {selectedPayout && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { logout } from "../store/authSlice";
 import {
@@ -21,6 +21,28 @@ import { addAgentBet } from "../store/agentSlice";
 import BetSlipSummary from "./BetSlipSummary";
 import { BetSlipService } from "../services/betslipService";
 import { MUIBetSlip } from "./MUIBetSlip";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  IconButton,
+  Badge,
+  Avatar,
+  Menu,
+  MenuItem,
+  Divider,
+  Stack,
+  Chip,
+  ListItemText,
+} from "@mui/material";
+import {
+  Receipt as ReceiptIcon,
+  KeyboardArrowDown as ArrowDownIcon,
+  KeyboardArrowUp as ArrowUpIcon,
+  Logout as LogoutIcon,
+} from "@mui/icons-material";
 
 interface HeaderProps {
   onNavigate: (
@@ -45,25 +67,16 @@ export const Header: React.FC<HeaderProps> = ({
     isMultibetMode,
     multibetStake,
   } = useAppSelector((state) => state.betslip);
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const showUserDropdown = Boolean(anchorEl);
 
-  // Handle clicking outside dropdown to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowUserDropdown(false);
-      }
-    };
+  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   // Auto-enable multibet mode when multiple selections are added
   useEffect(() => {
@@ -104,207 +117,500 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="app-header">
-        <div className="header-left">
-          <h1 className="app-title">Betzone</h1>
-          <nav className="nav-menu">
-            <button
-              className={`nav-item ${currentPage === "home" ? "active" : ""}`}
-              onClick={() => onNavigate("home")}
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+        }}
+      >
+        <Toolbar
+          sx={{
+            justifyContent: "space-between",
+            px: { xs: 2, md: 4 },
+            py: { xs: 1.5, md: 2 },
+            minHeight: { xs: 70, md: 80 },
+          }}
+        >
+          {/* Left Section */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <Typography
+              variant="h6"
+              component="h1"
+              sx={{
+                fontWeight: 700,
+                background: "linear-gradient(45deg, #1976d2, #42a5f5, #00d4ff)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                color: "transparent",
+                fontSize: { xs: "1.5rem", md: "1.75rem" },
+                letterSpacing: "0.5px",
+                textShadow: "0 0 30px rgba(25, 118, 210, 0.3)",
+                position: "relative",
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -4,
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  background:
+                    "linear-gradient(90deg, #1976d2, #42a5f5, transparent)",
+                  borderRadius: "2px",
+                },
+              }}
             >
-              Home
-            </button>
-            <button
-              className={`nav-item ${currentPage === "games" ? "active" : ""}`}
-              onClick={() => onNavigate("games")}
+              Betzone
+            </Typography>
+
+            {/* Navigation */}
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ display: { xs: "none", md: "flex" } }}
             >
-              Games
-            </button>
-            <button
-              className={`nav-item ${
-                currentPage === "dashboard" ? "active" : ""
-              }`}
-              onClick={() => onNavigate("dashboard")}
-            >
-              Dashboard
-            </button>
-            <button
-              className={`nav-item ${
-                currentPage === "settings" ? "active" : ""
-              }`}
-              onClick={() => onNavigate("settings")}
-            >
-              Settings
-            </button>
-            <button
-              className={`nav-item ${
-                currentPage === "history" ? "active" : ""
-              }`}
-              onClick={() => onNavigate("history")}
-            >
-              History
-            </button>
-            {user && user.role === "agent" && (
-              <button
-                className={`nav-item ${
-                  currentPage === "agent" ? "active" : ""
-                }`}
-                onClick={() => onNavigate("agent")}
+              <Button
+                onClick={() => onNavigate("home")}
+                sx={{
+                  color:
+                    currentPage === "home"
+                      ? "#42a5f5"
+                      : "rgba(255, 255, 255, 0.7)",
+                  bgcolor:
+                    currentPage === "home"
+                      ? "rgba(25, 118, 210, 0.15)"
+                      : "transparent",
+                  border:
+                    currentPage === "home"
+                      ? "1px solid rgba(25, 118, 210, 0.4)"
+                      : "1px solid transparent",
+                  borderRadius: "8px",
+                  px: 2,
+                  py: 0.75,
+                  fontWeight: currentPage === "home" ? 600 : 500,
+                  fontSize: "0.95rem",
+                  textTransform: "none",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    color: "white",
+                    bgcolor: "rgba(255, 255, 255, 0.15)",
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                  },
+                }}
               >
-                Agent
-              </button>
+                Home
+              </Button>
+              <Button
+                onClick={() => onNavigate("games")}
+                sx={{
+                  color:
+                    currentPage === "games"
+                      ? "#42a5f5"
+                      : "rgba(255, 255, 255, 0.7)",
+                  bgcolor:
+                    currentPage === "games"
+                      ? "rgba(25, 118, 210, 0.15)"
+                      : "transparent",
+                  border:
+                    currentPage === "games"
+                      ? "1px solid rgba(25, 118, 210, 0.4)"
+                      : "1px solid transparent",
+                  borderRadius: "8px",
+                  px: 2,
+                  py: 0.75,
+                  fontWeight: currentPage === "games" ? 600 : 500,
+                  fontSize: "0.95rem",
+                  textTransform: "none",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    color: "white",
+                    bgcolor: "rgba(255, 255, 255, 0.15)",
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                  },
+                }}
+              >
+                Games
+              </Button>
+              {["dashboard", "settings", "history"].map((page) => (
+                <Button
+                  key={page}
+                  onClick={() => onNavigate(page as any)}
+                  sx={{
+                    color:
+                      currentPage === page
+                        ? "#42a5f5"
+                        : "rgba(255, 255, 255, 0.7)",
+                    bgcolor:
+                      currentPage === page
+                        ? "rgba(25, 118, 210, 0.15)"
+                        : "transparent",
+                    border:
+                      currentPage === page
+                        ? "1px solid rgba(25, 118, 210, 0.4)"
+                        : "1px solid transparent",
+                    borderRadius: "8px",
+                    px: 2,
+                    py: 0.75,
+                    fontWeight: currentPage === page ? 600 : 500,
+                    fontSize: "0.95rem",
+                    textTransform: "capitalize",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      color: "white",
+                      bgcolor: "rgba(255, 255, 255, 0.15)",
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    },
+                  }}
+                >
+                  {page}
+                </Button>
+              ))}
+              {user && user.role === "agent" && (
+                <Button
+                  onClick={() => onNavigate("agent")}
+                  sx={{
+                    color:
+                      currentPage === "agent"
+                        ? "#42a5f5"
+                        : "rgba(255, 255, 255, 0.7)",
+                    bgcolor:
+                      currentPage === "agent"
+                        ? "rgba(25, 118, 210, 0.15)"
+                        : "transparent",
+                    border:
+                      currentPage === "agent"
+                        ? "1px solid rgba(25, 118, 210, 0.4)"
+                        : "1px solid transparent",
+                    borderRadius: "8px",
+                    px: 2,
+                    py: 0.75,
+                    fontWeight: currentPage === "agent" ? 600 : 500,
+                    fontSize: "0.95rem",
+                    textTransform: "none",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      color: "white",
+                      bgcolor: "rgba(255, 255, 255, 0.15)",
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    },
+                  }}
+                >
+                  Agent
+                </Button>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Right Section */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {/* Bet Slip Button */}
+            {betSlipItems.length > 0 && (
+              <IconButton
+                onClick={() => dispatch(toggleBetSlipVisibility())}
+                sx={{
+                  color: "white",
+                  bgcolor: "rgba(25, 118, 210, 0.15)",
+                  border: "1px solid rgba(25, 118, 210, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(25, 118, 210, 0.25)",
+                    borderColor: "rgba(25, 118, 210, 0.5)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
+                  },
+                }}
+              >
+                <Badge
+                  badgeContent={betSlipItems.length}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      bgcolor: "#42a5f5",
+                      color: "white",
+                      fontWeight: 600,
+                    },
+                  }}
+                >
+                  <ReceiptIcon />
+                </Badge>
+              </IconButton>
             )}
-          </nav>
-        </div>
 
-        <div className="header-right">
-          {/* Bet Slip Button */}
-          {betSlipItems.length > 0 && (
-            <button
-              className="btn btn-primary betslip-btn"
-              onClick={() => dispatch(toggleBetSlipVisibility())}
-            >
-              <span className="betslip-icon">📋</span>
-              <span className="betslip-count">{betSlipItems.length}</span>
-            </button>
-          )}
-
-          {user && (
-            <div className="user-section" ref={dropdownRef}>
-
-
-              <div
-                className="user-avatar-container"
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-              >
-                <div className="user-avatar">
-                  <span className="avatar-text">
+            {/* User Menu */}
+            {user && (
+              <Box>
+                <Button
+                  onClick={handleUserMenuClick}
+                  endIcon={
+                    showUserDropdown ? <ArrowUpIcon /> : <ArrowDownIcon />
+                  }
+                  sx={{
+                    color: "white",
+                    textTransform: "none",
+                    borderRadius: "12px",
+                    px: 1.5,
+                    py: 0.75,
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.1)",
+                      borderColor: "rgba(255, 255, 255, 0.2)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    },
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      mr: 1,
+                      background:
+                        "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.4)",
+                    }}
+                  >
                     {user.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="dropdown-arrow">
-                  {showUserDropdown ? "▲" : "▼"}
-                </span>
-              </div>
+                  </Avatar>
+                </Button>
 
-              {showUserDropdown && (
-                <div className="user-dropdown">
-                  <div className="dropdown-header">
-                    <div className="dropdown-avatar">
-                      <span className="dropdown-avatar-text">
+                <Menu
+                  anchorEl={anchorEl}
+                  open={showUserDropdown}
+                  onClose={handleUserMenuClose}
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        mt: 1,
+                        minWidth: 320,
+                        maxWidth: 400,
+                        maxHeight: "80vh",
+                        background:
+                          "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+                        backdropFilter: "blur(10px)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "12px",
+                      },
+                    },
+                  }}
+                >
+                  {/* Header */}
+                  <Box
+                    sx={{
+                      p: 2,
+                      background:
+                        "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar
+                        sx={{
+                          width: 50,
+                          height: 50,
+                          background:
+                            "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                          fontSize: "1.2rem",
+                          fontWeight: "bold",
+                        }}
+                      >
                         {user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="dropdown-user-info">
-                      <span className="dropdown-name">{user.name}</span>
-                      <span className="dropdown-role">{user.role}</span>
-                    </div>
-                  </div>
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600, color: "white" }}
+                        >
+                          {user.name}
+                        </Typography>
+                        <Chip
+                          label={user.role}
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(255, 255, 255, 0.1)",
+                            color: "rgba(255, 255, 255, 0.8)",
+                            textTransform: "capitalize",
+                            height: "20px",
+                            fontSize: "0.75rem",
+                          }}
+                        />
+                      </Box>
+                    </Stack>
+                  </Box>
 
-                  <div className="dropdown-divider"></div>
+                  <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
 
                   {/* Basic User Info */}
-                  <div className="dropdown-item">
-                    <span className="dropdown-label">User ID</span>
-                    <span className="dropdown-value">{user.id}</span>
-                  </div>
-
-                  <div className="dropdown-item">
-                    <span className="dropdown-label">Phone Number</span>
-                    <span className="dropdown-value">{user.phoneNumber}</span>
-                  </div>
-
-                  <div className="dropdown-item">
-                    <span className="dropdown-label">Status</span>
-                    <span
-                      className={`dropdown-value status-badge ${user.isActive ? "active" : "inactive"}`}
+                  <MenuItem
+                    disableRipple
+                    sx={{
+                      justifyContent: "space-between",
+                      py: 1.5,
+                      cursor: "default",
+                      "&:hover": { bgcolor: "transparent" },
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255, 255, 255, 0.6)" }}
                     >
-                      {user.isActive ? "🟢 Active" : "🔴 Inactive"}
-                    </span>
-                  </div>
+                      User ID
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: "white" }}
+                    >
+                      {user.id}
+                    </Typography>
+                  </MenuItem>
 
-                  <div className="dropdown-item">
-                    <span className="dropdown-label">Balance</span>
-                    <span className="dropdown-value balance-value">
+                  <MenuItem sx={{ justifyContent: "space-between", py: 1.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                    >
+                      Phone Number
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: "white" }}
+                    >
+                      {user.phoneNumber}
+                    </Typography>
+                  </MenuItem>
+
+                  <MenuItem sx={{ justifyContent: "space-between", py: 1.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                    >
+                      Status
+                    </Typography>
+                    <Chip
+                      label={user.isActive ? "🟢 Active" : "🔴 Inactive"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.isActive
+                          ? "rgba(34, 197, 94, 0.2)"
+                          : "rgba(239, 68, 68, 0.2)",
+                        color: user.isActive ? "#4ade80" : "#f87171",
+                        border: user.isActive
+                          ? "1px solid rgba(34, 197, 94, 0.3)"
+                          : "1px solid rgba(239, 68, 68, 0.3)",
+                        height: "24px",
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  </MenuItem>
+
+                  <MenuItem sx={{ justifyContent: "space-between", py: 1.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                    >
+                      Balance
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#28a745",
+                        fontSize: "1rem",
+                      }}
+                    >
                       {user.currency} {user.balance.toFixed(2)}
-                    </span>
-                  </div>
+                    </Typography>
+                  </MenuItem>
 
                   {/* Shop Information */}
                   {user.shop && (
                     <>
-                      <div className="dropdown-divider"></div>
-                      <div className="dropdown-section-header">
-                        Shop Information
-                      </div>
+                      <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
+                      <Box
+                        sx={{
+                          px: 2,
+                          py: 1,
+                          bgcolor: "rgba(255, 255, 255, 0.03)",
+                          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255, 255, 255, 0.9)",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Shop Information
+                        </Typography>
+                      </Box>
 
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Shop Name</span>
-                        <span className="dropdown-value">
+                      <MenuItem
+                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                        >
+                          Shop Name
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "white" }}
+                        >
                           {user.shop.shop_name}
-                        </span>
-                      </div>
+                        </Typography>
+                      </MenuItem>
 
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Shop Code</span>
-                        <span className="dropdown-value">
+                      <MenuItem
+                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                        >
+                          Shop Code
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "white" }}
+                        >
                           {user.shop.shop_code}
-                        </span>
-                      </div>
-
-                      {user.shop.shop_address && (
-                        <div className="dropdown-item">
-                          <span className="dropdown-label">Shop Address</span>
-                          <span className="dropdown-value">
-                            {user.shop.shop_address}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Default Currency</span>
-                        <span className="dropdown-value">
-                          {user.shop.default_currency}
-                        </span>
-                      </div>
+                        </Typography>
+                      </MenuItem>
 
                       {user.role === "agent" && (
-                        <div className="dropdown-item">
-                          <span className="dropdown-label">
+                        <MenuItem
+                          sx={{ justifyContent: "space-between", py: 1.5 }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                          >
                             Commission Rate
-                          </span>
-                          <span className="dropdown-value">
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600, color: "white" }}
+                          >
                             {user.shop.commission_rate}%
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Agent Information */}
-                  {user.role === "agent" && (
-                    <>
-                      <div className="dropdown-divider"></div>
-                      <div className="dropdown-section-header">
-                        Agent Information
-                      </div>
-
-                      {user.commission && (
-                        <div className="dropdown-item">
-                          <span className="dropdown-label">Commission</span>
-                          <span className="dropdown-value">
-                            {user.commission}%
-                          </span>
-                        </div>
-                      )}
-
-                      {user.managedUsers && user.managedUsers.length > 0 && (
-                        <div className="dropdown-item">
-                          <span className="dropdown-label">Managed Users</span>
-                          <span className="dropdown-value">
-                            {user.managedUsers.length} users
-                          </span>
-                        </div>
+                          </Typography>
+                        </MenuItem>
                       )}
                     </>
                   )}
@@ -312,113 +618,99 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* Betting Limits */}
                   {user.bettingLimits && (
                     <>
-                      <div className="dropdown-divider"></div>
-                      <div className="dropdown-section-header">
-                        Betting Limits
-                      </div>
+                      <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
+                      <Box
+                        sx={{
+                          px: 2,
+                          py: 1,
+                          bgcolor: "rgba(255, 255, 255, 0.03)",
+                          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255, 255, 255, 0.9)",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Betting Limits
+                        </Typography>
+                      </Box>
 
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Min Stake</span>
-                        <span className="dropdown-value">
+                      <MenuItem
+                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                        >
+                          Min/Max Stake
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "white" }}
+                        >
                           {user.currency}{" "}
-                          {user.bettingLimits.minStake.toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Max Stake</span>
-                        <span className="dropdown-value">
-                          {user.currency}{" "}
+                          {user.bettingLimits.minStake.toFixed(2)} -{" "}
                           {user.bettingLimits.maxStake.toFixed(2)}
-                        </span>
-                      </div>
+                        </Typography>
+                      </MenuItem>
 
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Max Daily Loss</span>
-                        <span className="dropdown-value">
+                      <MenuItem
+                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                        >
+                          Max Daily Loss
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "white" }}
+                        >
                           {user.currency}{" "}
                           {user.bettingLimits.maxDailyLoss.toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Max Weekly Loss</span>
-                        <span className="dropdown-value">
-                          {user.currency}{" "}
-                          {user.bettingLimits.maxWeeklyLoss.toFixed(2)}
-                        </span>
-                      </div>
+                        </Typography>
+                      </MenuItem>
                     </>
                   )}
 
-                  {/* User Preferences */}
-                  {user.preferences && (
-                    <>
-                      <div className="dropdown-divider"></div>
-                      <div className="dropdown-section-header">Preferences</div>
+                  <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
 
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Odds Format</span>
-                        <span className="dropdown-value">
-                          {user.preferences.oddsFormat}
-                        </span>
-                      </div>
-
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Timezone</span>
-                        <span className="dropdown-value">
-                          {user.preferences.timezone}
-                        </span>
-                      </div>
-
-                      {/* Notification Preferences */}
-                      <div className="dropdown-item">
-                        <span className="dropdown-label">Notifications</span>
-                        <span className="dropdown-value">
-                          {user.preferences.notifications.betSettled
-                            ? "✅"
-                            : "❌"}{" "}
-                          Bet Settled
-                          {user.preferences.notifications.oddsChanged
-                            ? " ✅"
-                            : " ❌"}{" "}
-                          Odds Changed
-                          {user.preferences.notifications.newGames
-                            ? " ✅"
-                            : " ❌"}{" "}
-                          New Games
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Account Details */}
-                  <div className="dropdown-divider"></div>
-                  <div className="dropdown-section-header">Account Details</div>
-
-                  <div className="dropdown-item">
-                    <span className="dropdown-label">User ID</span>
-                    <span className="dropdown-value">{user.id}</span>
-                  </div>
-
-                  <div className="dropdown-divider"></div>
-
-                  <button
-                    className="dropdown-logout-btn"
+                  {/* Logout Button */}
+                  <MenuItem
                     onClick={() => {
                       handleLogout();
-                      setShowUserDropdown(false);
+                      handleUserMenuClose();
+                    }}
+                    sx={{
+                      py: 1.5,
+                      background:
+                        "linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.8) 100%)",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      color: "white",
+                      justifyContent: "center",
+                      fontWeight: 600,
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, rgba(239, 68, 68, 1) 0%, rgba(220, 38, 38, 1) 100%)",
+                        transform: "translateY(-1px)",
+                      },
                     }}
                   >
-                    <span className="logout-icon">🚪</span>
+                    <LogoutIcon sx={{ mr: 1, fontSize: "1.2rem" }} />
                     Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </header>
+                  </MenuItem>
+                </Menu>
+              </Box>
+            )}
+          </Box>
+        </Toolbar>
+      </AppBar>
 
       {/* Material-UI Bet Slip Modal */}
       <MUIBetSlip

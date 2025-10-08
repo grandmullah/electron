@@ -95,10 +95,17 @@ export const GameCard: React.FC<GameCardProps> = ({
         mb: 2,
         mx: "25%", // 25% margin on left and right
         cursor: "pointer",
-        border: "1px solid",
-        borderColor: "divider",
-        background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        background:
+          "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+        backdropFilter: "blur(20px)",
         color: "white",
+        transition: "all 0.3s ease",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          borderColor: "rgba(255, 255, 255, 0.2)",
+          boxShadow: "0 20px 40px rgba(0, 212, 255, 0.15)",
+        },
       }}
       onClick={() => onSelect(game)}
     >
