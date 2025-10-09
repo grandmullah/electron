@@ -88,7 +88,7 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             // Print shop information (get from user data or auth storage)
             const shopName = user?.shop?.shop_name || user?.shop?.shopName || AuthService.getShopNameFromToken();
             const shopCode = user?.shop?.shop_code || user?.shop?.shopCode || AuthService.getShopCodeFromToken();
-            const shopDisplay = shopName && shopCode ? `${shopName} (${shopCode})` : 'Unknown Shop';
+            const shopDisplay = shopName && shopCode ? `${shopName} (${shopCode})` : 'JEBEL Shop';
             win.printText("Shop: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${shopDisplay}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
