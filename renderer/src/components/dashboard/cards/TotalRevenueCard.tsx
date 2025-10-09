@@ -16,13 +16,13 @@ export const TotalRevenueCard: React.FC<TotalRevenueCardProps> = ({
   formatCurrency,
 }) => {
   const revenueData = financialSummary?.revenue || {
-    grossRevenue: 0,
+    settledRevenue: 0,
     stakesFromLostBets: 0,
     stakesFromWinningBets: 0,
   };
 
   const config = createTotalRevenueConfig();
-  const mainColor = config.getColor(revenueData.grossRevenue);
+  const mainColor = config.getColor(revenueData.settledRevenue);
 
   const breakdownItems = [
     {
@@ -39,18 +39,18 @@ export const TotalRevenueCard: React.FC<TotalRevenueCardProps> = ({
 
   return (
     <MetricCard
-      title="💰 Gross Revenue"
-      subtitle="All stakes received"
+      title="💰 Settled Revenue"
+      subtitle="Stakes from settled bets only"
       icon={config.icon}
       iconColor={config.iconColor}
       topBorderColor={config.topBorderColor}
     >
       <MetricDisplay
-        label="Gross Revenue"
-        value={formatCurrency(revenueData.grossRevenue)}
+        label="Settled Revenue"
+        value={formatCurrency(revenueData.settledRevenue)}
         color={mainColor}
-        description="All stakes from all bets"
-        icon={config.getIcon(revenueData.grossRevenue)}
+        description="Won/lost bets only"
+        icon={config.getIcon(revenueData.settledRevenue)}
         showIcon
       />
 
@@ -58,14 +58,14 @@ export const TotalRevenueCard: React.FC<TotalRevenueCardProps> = ({
 
       <MetricDisplay
         label="Lost Bets %"
-        value={`${revenueData.grossRevenue > 0 ? ((revenueData.stakesFromLostBets / revenueData.grossRevenue) * 100).toFixed(1) : 0}%`}
+        value={`${revenueData.settledRevenue > 0 ? ((revenueData.stakesFromLostBets / revenueData.settledRevenue) * 100).toFixed(1) : 0}%`}
         color="#10b981"
         variant="h6"
         description="Stakes from losing bets"
       />
 
       <StatusChip
-        label={config.getStatusLabel(revenueData.grossRevenue)}
+        label={config.getStatusLabel(revenueData.settledRevenue)}
         color={mainColor}
         icon={config.getStatusIcon()}
       />

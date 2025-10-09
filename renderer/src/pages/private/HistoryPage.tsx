@@ -19,6 +19,11 @@ import {
   Button,
   Chip,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import {
   Info as IconInfoCircle,
@@ -53,6 +58,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const [selectedPayoutBet, setSelectedPayoutBet] = useState<DisplayBet | null>(
     null
   );
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [selectedCancelBet, setSelectedCancelBet] = useState<DisplayBet | null>(
+    null
+  );
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // Filter states
@@ -307,6 +319,49 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     setSelectedPayoutBet(null);
   };
 
+  // Handle cancel bet dialog
+  const handleCancelBet = (bet: DisplayBet) => {
+    setSelectedCancelBet(bet);
+    setCancelError(null);
+    setCancelSuccess(null);
+    setShowCancelDialog(true);
+  };
+
+  // Confirm cancel bet
+  const confirmCancelBet = async () => {
+    if (!selectedCancelBet) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      const response = await BetHistoryService.cancelBet(
+        selectedCancelBet.betId
+      );
+
+      if (response.success) {
+        setCancelSuccess(response.message || "Bet cancelled successfully");
+        // Refresh the bet history
+        loadBetHistory();
+        // Close dialog after a short delay
+        setTimeout(() => {
+          setShowCancelDialog(false);
+          setSelectedCancelBet(null);
+          setCancelSuccess(null);
+        }, 2000);
+      } else {
+        setCancelError(response.message || "Failed to cancel bet");
+      }
+    } catch (error: any) {
+      console.error("Error cancelling bet:", error);
+      setCancelError(
+        error.message || "An error occurred while cancelling the bet"
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   // Status helpers
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -433,6 +488,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
                 setShowBetTicket(true);
               }}
               onPayout={openPayoutModal}
+              onCancel={handleCancelBet}
               getStatusColor={getStatusColor}
               getStatusIcon={getStatusIcon}
             />
@@ -488,6 +544,117 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           }}
         />
       )}
+
+      {/* Cancel Bet Confirmation Dialog */}
+      <Dialog
+        open={showCancelDialog}
+        onClose={() => !isCancelling && setShowCancelDialog(false)}
+        PaperProps={{
+          sx: {
+            background: "rgba(26, 26, 46, 0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: 0,
+            color: "white",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background:
+              "linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(229, 57, 53, 0.15) 100%)",
+            borderBottom: "1px solid rgba(244, 67, 54, 0.3)",
+          }}
+        >
+          Cancel Bet
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <DialogContentText sx={{ color: "rgba(255,255,255,0.8)", mb: 2 }}>
+            Are you sure you want to cancel this bet?
+          </DialogContentText>
+          {selectedCancelBet && (
+            <Box
+              sx={{
+                p: 2,
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: 0,
+              }}
+            >
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Bet ID:</strong> {selectedCancelBet.betId}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Type:</strong> {selectedCancelBet.betType}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Stake:</strong> SSP{" "}
+                {selectedCancelBet.totalStake?.toFixed(2)}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Status:</strong>{" "}
+                <Chip
+                  label={selectedCancelBet.status}
+                  size="small"
+                  sx={{
+                    backgroundColor: getStatusColor(selectedCancelBet.status),
+                    color: "white",
+                  }}
+                />
+              </Typography>
+            </Box>
+          )}
+          {cancelError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {cancelError}
+            </Alert>
+          )}
+          {cancelSuccess && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              {cancelSuccess}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions
+          sx={{
+            borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            p: 2,
+          }}
+        >
+          <Button
+            onClick={() => setShowCancelDialog(false)}
+            disabled={isCancelling}
+            sx={{
+              color: "rgba(255,255,255,0.7)",
+              "&:hover": {
+                background: "rgba(255, 255, 255, 0.05)",
+              },
+            }}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={confirmCancelBet}
+            disabled={isCancelling || !!cancelSuccess}
+            variant="contained"
+            sx={{
+              background: "linear-gradient(135deg, #f44336 0%, #e53935 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #e53935 0%, #d32f2f 100%)",
+              },
+              "&:disabled": {
+                background: "rgba(244, 67, 54, 0.3)",
+              },
+            }}
+          >
+            {isCancelling ? (
+              <CircularProgress size={20} sx={{ color: "white" }} />
+            ) : (
+              "Confirm Cancel"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

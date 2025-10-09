@@ -130,8 +130,8 @@ export const useFinancialSummary = () => {
                   ? ('taxesCollectedByShop' in taxData ? taxData.taxesCollectedByShop : (taxData as any).totalTaxCollected) || 0
                   : 0;
 
-            // Total Revenue: stakes from lost bets + tax collected
-            const totalRevenue = (summary.revenue.stakesFromLostBets || 0) + taxCollected;
+            // Total Revenue: settled revenue (stakes from lost bets + stakes from winning bets)
+            const totalRevenue = (summary.revenue.settledRevenue || 0);
 
             // Actual Expenses: net winnings paid to users
             const actualExpenses = summary.expenses.netWinningsPaidToUsers || 0;

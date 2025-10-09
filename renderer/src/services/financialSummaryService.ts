@@ -1,7 +1,7 @@
 import { apiConfig } from './apiConfig';
 
 export interface RevenueData {
-      grossRevenue: number;
+      settledRevenue: number;
       stakesFromLostBets: number;
       stakesFromWinningBets: number;
       note?: string;
@@ -67,9 +67,22 @@ export interface TaxData {
 
 export interface PerformanceData {
       totalBets: number;
+      totalActiveBets?: number;
       winRate: number;
       averageStake: number;
       averageWinnings: number;
+}
+
+export interface PendingBetsData {
+      count: number;
+      stakesReceived: number;
+      note?: string;
+}
+
+export interface CancelledBetsData {
+      count: number;
+      stakesReturned: number;
+      note?: string;
 }
 
 export interface PeriodData {
@@ -85,6 +98,8 @@ export interface FinancialSummary {
       taxObligations: TaxObligations;
       tax?: TaxData; // Legacy support
       performance: PerformanceData;
+      pendingBets?: PendingBetsData;
+      cancelledBets?: CancelledBetsData;
       period: PeriodData;
 }
 

@@ -7,6 +7,7 @@ import { TotalRevenueCard } from "./cards/TotalRevenueCard";
 import { ExpensesCard } from "./cards/ExpensesCard";
 import { NetProfitCard } from "./cards/NetProfitCard";
 import { PerformanceCard } from "./cards/PerformanceCard";
+import { PendingBetsCard } from "./cards/PendingBetsCard";
 import { FinancialSummary } from "../../services/financialSummaryService";
 import excelExportService from "../../services/excelExportService";
 import {
@@ -291,6 +292,18 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             formatCurrency={formatCurrency}
           />
         </Grid>
+        <Grid
+          item
+          sx={{
+            minWidth: { xs: "180px", sm: "200px", md: "220px" },
+            flex: "0 0 auto",
+          }}
+        >
+          <PendingBetsCard
+            financialSummary={financialSummary}
+            formatCurrency={formatCurrency}
+          />
+        </Grid>
       </Grid>
 
       {/* Period Summary Cards */}
@@ -503,9 +516,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">Gross Revenue:</Typography>
+                <Typography variant="body1">Settled Revenue:</Typography>
                 <Typography variant="h6" fontWeight="bold">
-                  {formatCurrency(financialSummary.revenue.grossRevenue || 0)}
+                  {formatCurrency(financialSummary.revenue.settledRevenue || 0)}
                 </Typography>
               </Box>
               <Box

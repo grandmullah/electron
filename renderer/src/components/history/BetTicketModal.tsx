@@ -84,8 +84,9 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
           maxHeight: "95vh",
           width: "90vw",
           maxWidth: "900px",
-          borderRadius: 4,
-          background: "rgba(0, 0, 0, 0.8)",
+          borderRadius: 0,
+          background:
+            "linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%)",
           backdropFilter: "blur(20px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
           boxShadow:
@@ -99,16 +100,17 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             right: 0,
             height: "1px",
             background:
-              "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)",
+              "linear-gradient(90deg, transparent 0%, rgba(25, 118, 210, 0.6) 50%, transparent 100%)",
           },
         },
       }}
     >
       <DialogTitle
         sx={{
-          background: "rgba(102, 126, 234, 0.2)",
+          background:
+            "linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(66, 165, 245, 0.15) 100%)",
           backdropFilter: "blur(20px)",
-          border: "1px solid rgba(102, 126, 234, 0.3)",
+          border: "1px solid rgba(25, 118, 210, 0.3)",
           color: "white",
           display: "flex",
           alignItems: "center",
@@ -126,7 +128,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
             right: 0,
             height: "1px",
             background:
-              "linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.5) 50%, transparent 100%)",
+              "linear-gradient(90deg, transparent 0%, rgba(25, 118, 210, 0.5) 50%, transparent 100%)",
           },
         }}
       >
@@ -170,7 +172,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, background: "rgba(0, 0, 0, 0.3)" }}>
+      <DialogContent sx={{ p: 0, background: "rgba(0, 0, 0, 0.2)" }}>
         {/* Ticket Header */}
         <Paper
           sx={{
@@ -291,10 +293,10 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
           <Box
             sx={{
               background:
-                "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)",
+                "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.15)",
-              borderRadius: 4,
+              borderRadius: 0,
               p: 3,
               mb: 2,
             }}
@@ -554,7 +556,7 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   <Avatar
                     sx={{
                       background:
-                        "linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(156, 39, 176, 0.8) 100%)",
+                        "linear-gradient(135deg, rgba(25, 118, 210, 0.8) 0%, rgba(66, 165, 245, 0.8) 100%)",
                       width: 28,
                       height: 28,
                       fontSize: "0.8rem",

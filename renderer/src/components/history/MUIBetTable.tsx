@@ -54,6 +54,7 @@ interface MUIBetTableProps {
   onPrint: (bet: DisplayBet) => void;
   onView: (bet: DisplayBet) => void;
   onPayout: (bet: DisplayBet) => void;
+  onCancel: (bet: DisplayBet) => void;
   getStatusColor: (status: string) => string;
   getStatusIcon: (status: string) => React.ReactNode;
 }
@@ -225,6 +226,7 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
   onPrint,
   onView,
   onPayout,
+  onCancel,
   getStatusColor,
   getStatusIcon,
 }) => {
@@ -1272,6 +1274,41 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                             </Button>
                           </Tooltip>
                         )}
+
+                      {(bet.status === "accepted" ||
+                        bet.status === "pending") && (
+                        <Tooltip title="Cancel Bet">
+                          <Button
+                            size="small"
+                            onClick={() => onCancel(bet)}
+                            startIcon={<IconCancel />}
+                            sx={{
+                              color: "#f44336",
+                              minWidth: "auto",
+                              px: 2,
+                              py: 1,
+                              background:
+                                "linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(229, 57, 53, 0.1) 100%)",
+                              backdropFilter: "blur(10px)",
+                              border: "1px solid rgba(244, 67, 54, 0.2)",
+                              borderRadius: 2,
+                              transition: "all 0.3s ease",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              "&:hover": {
+                                backgroundColor:
+                                  "linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(229, 57, 53, 0.2) 100%)",
+                                color: "#f44336",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 6px 16px rgba(244, 67, 54, 0.3)",
+                              },
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>

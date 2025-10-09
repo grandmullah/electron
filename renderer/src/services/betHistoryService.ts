@@ -337,6 +337,12 @@ export class BetHistoryService {
                   return response.data;
             } catch (error: any) {
                   console.error('Error cancelling bet:', error);
+
+                  // Return the error response if available
+                  if (error.response?.data) {
+                        return error.response.data;
+                  }
+
                   throw this.handleError(error);
             }
       }
