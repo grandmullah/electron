@@ -15,8 +15,7 @@ export const ExpensesCard: React.FC<ExpensesCardProps> = ({
   formatCurrency,
 }) => {
   const expensesData = financialSummary?.expenses || {
-    actualWinningsPaid: 0,
-    totalPayoutAmount: 0,
+    netWinningsPaidToUsers: 0,
     payoutBreakdown: {
       total: 0,
       completed: 0,
@@ -28,38 +27,31 @@ export const ExpensesCard: React.FC<ExpensesCardProps> = ({
   };
 
   const config = createExpensesConfig();
-  const mainColor = config.getColor(expensesData.actualWinningsPaid);
-  const expenseRatio =
-    expensesData.totalPayoutAmount > 0
-      ? (
-          (expensesData.actualWinningsPaid / expensesData.totalPayoutAmount) *
-          100
-        ).toFixed(1)
-      : 0;
+  const mainColor = config.getColor(expensesData.netWinningsPaidToUsers);
 
   return (
     <MetricCard
-      title={config.title}
-      subtitle={config.subtitle}
+      title="💸 Expenses"
+      subtitle="Winnings paid to users"
       icon={config.icon}
       iconColor={config.iconColor}
       topBorderColor={config.topBorderColor}
     >
       <MetricDisplay
-        label="Actual Winnings Paid"
-        value={formatCurrency(expensesData.actualWinningsPaid)}
+        label="Net Winnings Paid"
+        value={formatCurrency(expensesData.netWinningsPaidToUsers)}
         color={mainColor}
-        description="Net winnings paid to users"
-        icon={config.getIcon(expensesData.actualWinningsPaid)}
+        description="After tax deduction"
+        icon={config.getIcon(expensesData.netWinningsPaidToUsers)}
         showIcon
       />
 
       <MetricDisplay
-        label="Total Payout Amount"
-        value={formatCurrency(expensesData.totalPayoutAmount)}
+        label="Total Payouts"
+        value={formatCurrency(expensesData.payoutBreakdown.total)}
         color="#e91e63"
         variant="h6"
-        description="Gross payout amount"
+        description={`${expensesData.payoutBreakdown.totalCount} payouts`}
       />
 
       <MetricDisplay
@@ -79,7 +71,7 @@ export const ExpensesCard: React.FC<ExpensesCardProps> = ({
       />
 
       <StatusChip
-        label={config.getStatusLabel(expensesData.actualWinningsPaid)}
+        label={config.getStatusLabel(expensesData.netWinningsPaidToUsers)}
         color={mainColor}
         icon={config.getStatusIcon()}
       />

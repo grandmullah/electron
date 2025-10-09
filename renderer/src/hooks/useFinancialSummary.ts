@@ -78,7 +78,7 @@ export const useFinancialSummary = () => {
 
       // Helper function to get formatted currency amount
       const formatCurrency = (amount: number): string => {
-            return `SSP ${amount.toFixed(2)}`;
+            return `SSP ${(amount || 0).toFixed(2)}`;
       };
 
       // Helper function to get percentage change
@@ -124,17 +124,20 @@ export const useFinancialSummary = () => {
                   };
             }
 
-            // Total Revenue: stakes from lost bets + tax
-            const totalRevenue = summary.revenue.stakesKeptFromLostBets + summary.tax.totalTaxCollected;
+            // Get tax data (support both new and old structure)
+            const taxData = summary.taxObligations || summary.tax;
+            const taxCollected = taxData
+                  ? ('taxesCollectedByShop' in taxData ? taxData.taxesCollectedByShop : (taxData as any).totalTaxCollected) || 0
+                  : 0;
+
+            // Total Revenue: stakes from lost bets + tax collected
+            const totalRevenue = (summary.revenue.stakesFromLostBets || 0) + taxCollected;
 
             // Actual Expenses: net winnings paid to users
-            const actualExpenses = summary.expenses.actualWinningsPaid;
+            const actualExpenses = summary.expenses.netWinningsPaidToUsers || 0;
 
             // Net Profit: Total Revenue - Actual Expenses
             const netProfit = totalRevenue - actualExpenses;
-
-            // Tax Collected: kept by house
-            const taxCollected = summary.tax.totalTaxCollected;
 
             return {
                   totalRevenue,

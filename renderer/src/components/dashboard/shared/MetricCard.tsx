@@ -28,7 +28,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         background: "rgba(255, 255, 255, 0.05)",
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(255, 255, 255, 0.1)",
-        borderRadius: 4,
+        borderRadius: 0,
         boxShadow:
           "0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
         color: "white",
@@ -45,7 +45,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           right: 0,
           height: "4px",
           background: topBorderColor,
-          borderRadius: "4px 4px 0 0",
+          borderRadius: 0,
         },
         transition: "all 0.3s ease",
         "&:hover": {
@@ -66,7 +66,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         <Box
           sx={{
             p: { xs: 0.5, sm: 0.75, md: 1 },
-            borderRadius: 2,
+            borderRadius: 0,
             background: `${iconColor}20`,
             border: `1px solid ${iconColor}40`,
           }}

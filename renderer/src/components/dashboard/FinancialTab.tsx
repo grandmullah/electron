@@ -3,7 +3,6 @@ import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
 import { TaxRevenueCard } from "./cards/TaxRevenueCard";
-import { StakesCollectedCard } from "./cards/StakesCollectedCard";
 import { TotalRevenueCard } from "./cards/TotalRevenueCard";
 import { ExpensesCard } from "./cards/ExpensesCard";
 import { NetProfitCard } from "./cards/NetProfitCard";
@@ -150,7 +149,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           background: "rgba(255, 255, 255, 0.05)",
           backdropFilter: "blur(20px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: 4,
+          borderRadius: 0,
           boxShadow:
             "0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           color: "white",
@@ -191,7 +190,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               fontWeight: "bold",
               px: 3,
               py: 1.5,
-              borderRadius: 2,
+              borderRadius: 0,
               textTransform: "none",
               fontSize: "0.9rem",
               "&:hover": {
@@ -221,11 +220,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           },
           "&::-webkit-scrollbar-track": {
             background: "rgba(255, 255, 255, 0.1)",
-            borderRadius: "4px",
+            borderRadius: 0,
           },
           "&::-webkit-scrollbar-thumb": {
             background: "rgba(255, 255, 255, 0.3)",
-            borderRadius: "4px",
+            borderRadius: 0,
             "&:hover": {
               background: "rgba(255, 255, 255, 0.5)",
             },
@@ -240,18 +239,6 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           }}
         >
           <TaxRevenueCard
-            financialSummary={financialSummary}
-            formatCurrency={formatCurrency}
-          />
-        </Grid>
-        <Grid
-          item
-          sx={{
-            minWidth: { xs: "180px", sm: "200px", md: "220px" },
-            flex: "0 0 auto",
-          }}
-        >
-          <StakesCollectedCard
             financialSummary={financialSummary}
             formatCurrency={formatCurrency}
           />
@@ -317,7 +304,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             background: "rgba(255, 255, 255, 0.06)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: 3,
+            borderRadius: 0,
             boxShadow:
               "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
@@ -374,7 +361,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             background: "rgba(255, 255, 255, 0.06)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: 3,
+            borderRadius: 0,
             boxShadow:
               "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
@@ -433,7 +420,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             background: "rgba(255, 255, 255, 0.06)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: 3,
+            borderRadius: 0,
             boxShadow:
               "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             color: "white",
@@ -494,7 +481,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               background: "rgba(255, 255, 255, 0.06)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: 3,
+              borderRadius: 0,
               boxShadow:
                 "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
@@ -516,9 +503,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">Total Stakes Received:</Typography>
+                <Typography variant="body1">Gross Revenue:</Typography>
                 <Typography variant="h6" fontWeight="bold">
-                  {formatCurrency(financialSummary.revenue.totalStakesReceived)}
+                  {formatCurrency(financialSummary.revenue.grossRevenue || 0)}
                 </Typography>
               </Box>
               <Box
@@ -526,12 +513,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">
-                  Stakes Kept from Lost Bets:
-                </Typography>
+                <Typography variant="body1">Stakes from Lost Bets:</Typography>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
                   {formatCurrency(
-                    financialSummary.revenue.stakesKeptFromLostBets
+                    financialSummary.revenue.stakesFromLostBets || 0
                   )}
                 </Typography>
               </Box>
@@ -540,9 +525,13 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">Total Tax Collected:</Typography>
+                <Typography variant="body1">
+                  Stakes from Winning Bets:
+                </Typography>
                 <Typography variant="h6" fontWeight="bold">
-                  {formatCurrency(financialSummary.revenue.totalTaxCollected)}
+                  {formatCurrency(
+                    financialSummary.revenue.stakesFromWinningBets || 0
+                  )}
                 </Typography>
               </Box>
               <Divider />
@@ -552,10 +541,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 alignItems="center"
               >
                 <Typography variant="h6" fontWeight="bold">
-                  Total Revenue:
+                  Gross Revenue:
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" color="primary">
-                  {formatCurrency(financialSummary.revenue.totalRevenue)}
+                  {formatCurrency(financialSummary.revenue.grossRevenue || 0)}
                 </Typography>
               </Box>
             </Stack>
@@ -570,7 +559,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               background: "rgba(255, 255, 255, 0.06)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: 3,
+              borderRadius: 0,
               boxShadow:
                 "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
@@ -592,9 +581,13 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">Actual Winnings Paid:</Typography>
+                <Typography variant="body1">
+                  Net Winnings Paid to Users:
+                </Typography>
                 <Typography variant="h6" fontWeight="bold" color="error.main">
-                  {formatCurrency(financialSummary.expenses.actualWinningsPaid)}
+                  {formatCurrency(
+                    financialSummary.expenses.netWinningsPaidToUsers || 0
+                  )}
                 </Typography>
               </Box>
               <Box
@@ -602,9 +595,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Typography variant="body1">Total Payout Amount:</Typography>
+                <Typography variant="body1">Total Payouts:</Typography>
                 <Typography variant="h6" fontWeight="bold" color="error.main">
-                  {formatCurrency(financialSummary.expenses.totalPayoutAmount)}
+                  {formatCurrency(
+                    financialSummary.expenses.payoutBreakdown?.total || 0
+                  )}
                 </Typography>
               </Box>
             </Stack>
@@ -619,7 +614,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               background: "rgba(255, 255, 255, 0.06)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: 3,
+              borderRadius: 0,
               boxShadow:
                 "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
@@ -643,7 +638,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               >
                 <Typography variant="body1">Gross Profit:</Typography>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
-                  {formatCurrency(financialSummary.profit.grossProfit)}
+                  {formatCurrency(financialSummary.profit?.grossProfit || 0)}
                 </Typography>
               </Box>
               <Box
@@ -653,7 +648,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               >
                 <Typography variant="body1">Net Profit:</Typography>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
-                  {formatCurrency(financialSummary.profit.netProfit)}
+                  {formatCurrency(financialSummary.profit?.netProfit || 0)}
                 </Typography>
               </Box>
               <Box
@@ -663,11 +658,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               >
                 <Typography variant="body1">Profit Margin:</Typography>
                 <Chip
-                  label={`${financialSummary.profit.profitMargin.toFixed(1)}%`}
+                  label={`${(financialSummary.profit?.profitMargin || 0).toFixed(1)}%`}
                   color={
-                    financialSummary.profit.profitMargin > 20
+                    (financialSummary.profit?.profitMargin || 0) > 20
                       ? "success"
-                      : financialSummary.profit.profitMargin > 10
+                      : (financialSummary.profit?.profitMargin || 0) > 10
                         ? "warning"
                         : "error"
                   }
@@ -686,7 +681,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               background: "rgba(255, 255, 255, 0.06)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: 3,
+              borderRadius: 0,
               boxShadow:
                 "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               color: "white",
@@ -720,11 +715,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               >
                 <Typography variant="body1">Win Rate:</Typography>
                 <Chip
-                  label={`${financialSummary.performance.winRate.toFixed(1)}%`}
+                  label={`${(financialSummary.performance?.winRate || 0).toFixed(1)}%`}
                   color={
-                    financialSummary.performance.winRate > 50
+                    (financialSummary.performance?.winRate || 0) > 50
                       ? "success"
-                      : financialSummary.performance.winRate > 30
+                      : (financialSummary.performance?.winRate || 0) > 30
                         ? "warning"
                         : "error"
                   }
@@ -767,7 +762,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             background: "rgba(255, 255, 255, 0.05)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: 3,
+            borderRadius: 0,
             color: "white",
           },
         }}

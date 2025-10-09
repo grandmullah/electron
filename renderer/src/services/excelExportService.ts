@@ -10,10 +10,11 @@ export interface ExportSummaryData {
                   currency: string;
             };
             financial: {
-                  totalStakesReceived: number;
-                  actualWinningsPaid: number;
-                  stakesKeptFromLostBets: number;
-                  totalTaxCollected: number;
+                  grossRevenue: number;
+                  netWinningsPaidToUsers: number;
+                  stakesFromLostBets: number;
+                  stakesFromWinningBets: number;
+                  taxesCollectedByShop: number;
             };
             counts: {
                   totalBets: number;
@@ -221,10 +222,11 @@ class ExcelExportService {
                   ['To Date', new Date(summary.period.toDate).toLocaleDateString()],
                   [''],
                   ['Financial Summary'],
-                  ['Total Stakes Received', summary.financial.totalStakesReceived],
-                  ['Actual Winnings Paid', summary.financial.actualWinningsPaid],
-                  ['Stakes Kept from Lost Bets', summary.financial.stakesKeptFromLostBets],
-                  ['Total Tax Collected', summary.financial.totalTaxCollected],
+                  ['Gross Revenue', summary.financial.grossRevenue],
+                  ['Net Winnings Paid to Users', summary.financial.netWinningsPaidToUsers],
+                  ['Stakes from Lost Bets', summary.financial.stakesFromLostBets],
+                  ['Stakes from Winning Bets', summary.financial.stakesFromWinningBets],
+                  ['Taxes Collected by Shop', summary.financial.taxesCollectedByShop],
                   [''],
                   ['Counts Summary'],
                   ['Total Bets', summary.counts.totalBets],
@@ -451,4 +453,5 @@ class ExcelExportService {
 }
 
 export default new ExcelExportService();
+
 

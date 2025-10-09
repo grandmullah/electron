@@ -1,10 +1,10 @@
 import { apiConfig } from './apiConfig';
 
 export interface RevenueData {
-      totalStakesReceived: number;
-      stakesKeptFromLostBets: number;
-      totalTaxCollected: number;
-      totalRevenue: number;
+      grossRevenue: number;
+      stakesFromLostBets: number;
+      stakesFromWinningBets: number;
+      note?: string;
 }
 
 export interface PayoutBreakdown {
@@ -17,24 +17,45 @@ export interface PayoutBreakdown {
 }
 
 export interface ExpensesData {
-      actualWinningsPaid: number;
-      totalPayoutAmount: number;
+      netWinningsPaidToUsers: number;
       payoutBreakdown: PayoutBreakdown;
+      note?: string;
+}
+
+export interface ProfitBreakdown {
+      totalRevenue: number;
+      lessNetWinningsPaid: number;
+      equalsGrossProfit: number;
+      lessTaxesToGovernment: number;
+      equalsNetProfit: number;
 }
 
 export interface ProfitData {
       grossProfit: number;
       netProfit: number;
       profitMargin: number;
+      breakdown: ProfitBreakdown;
+      note?: string;
 }
 
 export interface TaxBreakdown {
-      collected: number;
-      pending: number;
-      calculated: number;
-      uncollected: number;
+      collectedByShop: number;
+      pendingCollection: number;
+      totalCalculated: number;
+      notYetCollected: number;
 }
 
+export interface TaxObligations {
+      taxesCollectedByShop: number;
+      taxesNotYetCollected: number;
+      totalTaxesOwedToGovernment: number;
+      taxRate: number;
+      effectiveTaxCollected: number;
+      breakdown: TaxBreakdown;
+      note?: string;
+}
+
+// Legacy interface for backwards compatibility
 export interface TaxData {
       totalTaxCollected: number;
       totalTaxPending: number;
@@ -61,7 +82,8 @@ export interface FinancialSummary {
       revenue: RevenueData;
       expenses: ExpensesData;
       profit: ProfitData;
-      tax: TaxData;
+      taxObligations: TaxObligations;
+      tax?: TaxData; // Legacy support
       performance: PerformanceData;
       period: PeriodData;
 }

@@ -6,7 +6,7 @@ interface PayoutStatsCardProps {
 }
 
 export const PayoutStatsCard: React.FC<PayoutStatsCardProps> = ({ stats }) => {
-  const formatCurrency = (amount: number) => `SSP ${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number) => `SSP ${(amount || 0).toFixed(2)}`;
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();

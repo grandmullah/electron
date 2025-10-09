@@ -203,7 +203,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
           backdropFilter: "blur(20px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "12px",
+          borderRadius: 0,
         }}
       >
         <Stack
@@ -218,7 +218,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               variant={statusFilter === "all" ? "contained" : "outlined"}
               onClick={() => setStatusFilter("all")}
               sx={{
-                borderRadius: "8px",
+                borderRadius: 0,
                 textTransform: "none",
                 fontWeight: 600,
                 ...(statusFilter === "all"
@@ -245,7 +245,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               variant={statusFilter === "pending" ? "contained" : "outlined"}
               onClick={() => setStatusFilter("pending")}
               sx={{
-                borderRadius: "8px",
+                borderRadius: 0,
                 textTransform: "none",
                 fontWeight: 600,
                 ...(statusFilter === "pending"
@@ -272,7 +272,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               variant={statusFilter === "completed" ? "contained" : "outlined"}
               onClick={() => setStatusFilter("completed")}
               sx={{
-                borderRadius: "8px",
+                borderRadius: 0,
                 textTransform: "none",
                 fontWeight: 600,
                 ...(statusFilter === "completed"
@@ -311,7 +311,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
       {/* Payouts Table */}
       <Paper
         sx={{
-          borderRadius: 4,
+          borderRadius: 0,
           overflow: "hidden",
           background: "rgba(255, 255, 255, 0.05)",
           backdropFilter: "blur(20px)",
@@ -709,7 +709,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "16px",
+            borderRadius: 0,
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
           }}
         >

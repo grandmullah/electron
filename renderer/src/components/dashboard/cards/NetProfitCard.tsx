@@ -35,7 +35,7 @@ export const NetProfitCard: React.FC<NetProfitCardProps> = ({
         label="Net Profit"
         value={formatCurrency(profitData.netProfit)}
         color={mainColor}
-        description="Revenue - Expenses"
+        description="Revenue - Expenses (Taxes excluded)"
         icon={config.getIcon(profitData.netProfit)}
         showIcon
       />
@@ -50,7 +50,7 @@ export const NetProfitCard: React.FC<NetProfitCardProps> = ({
 
       <MetricDisplay
         label="Profit Margin"
-        value={`${profitData.profitMargin.toFixed(1)}%`}
+        value={`${(profitData.profitMargin || 0).toFixed(1)}%`}
         color={mainColor}
         variant="h6"
         description="Net profit percentage"

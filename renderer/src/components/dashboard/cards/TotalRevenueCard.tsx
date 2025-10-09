@@ -16,64 +16,56 @@ export const TotalRevenueCard: React.FC<TotalRevenueCardProps> = ({
   formatCurrency,
 }) => {
   const revenueData = financialSummary?.revenue || {
-    totalStakesReceived: 0,
-    stakesKeptFromLostBets: 0,
-    totalTaxCollected: 0,
-    totalRevenue: 0,
+    grossRevenue: 0,
+    stakesFromLostBets: 0,
+    stakesFromWinningBets: 0,
   };
 
   const config = createTotalRevenueConfig();
-  const mainColor = config.getColor(revenueData.totalRevenue);
-  const revenueEfficiency =
-    revenueData.totalStakesReceived > 0
-      ? (
-          (revenueData.totalRevenue / revenueData.totalStakesReceived) *
-          100
-        ).toFixed(1)
-      : 0;
+  const mainColor = config.getColor(revenueData.grossRevenue);
 
   const breakdownItems = [
     {
       label: "From Lost Bets",
-      value: formatCurrency(revenueData.stakesKeptFromLostBets),
-      color: "#ffc107",
+      value: formatCurrency(revenueData.stakesFromLostBets),
+      color: "#10b981",
     },
     {
-      label: "From Tax",
-      value: formatCurrency(revenueData.totalTaxCollected),
-      color: "#ff9800",
+      label: "From Winning Bets",
+      value: formatCurrency(revenueData.stakesFromWinningBets),
+      color: "#f59e0b",
     },
   ];
 
   return (
     <MetricCard
-      title={config.title}
-      subtitle={config.subtitle}
+      title="💰 Gross Revenue"
+      subtitle="All stakes received"
       icon={config.icon}
       iconColor={config.iconColor}
       topBorderColor={config.topBorderColor}
     >
       <MetricDisplay
-        label="Total Revenue"
-        value={formatCurrency(revenueData.totalRevenue)}
+        label="Gross Revenue"
+        value={formatCurrency(revenueData.grossRevenue)}
         color={mainColor}
-        description="Stakes + Tax collected"
-        icon={config.getIcon(revenueData.totalRevenue)}
+        description="All stakes from all bets"
+        icon={config.getIcon(revenueData.grossRevenue)}
         showIcon
       />
 
       <RevenueBreakdown items={breakdownItems} />
 
       <MetricDisplay
-        label="Revenue Efficiency"
-        value={`${revenueEfficiency}%`}
-        color="#ffc107"
+        label="Lost Bets %"
+        value={`${revenueData.grossRevenue > 0 ? ((revenueData.stakesFromLostBets / revenueData.grossRevenue) * 100).toFixed(1) : 0}%`}
+        color="#10b981"
         variant="h6"
-        description="Revenue as % of total stakes"
+        description="Stakes from losing bets"
       />
 
       <StatusChip
-        label={config.getStatusLabel(revenueData.totalRevenue)}
+        label={config.getStatusLabel(revenueData.grossRevenue)}
         color={mainColor}
         icon={config.getStatusIcon()}
       />

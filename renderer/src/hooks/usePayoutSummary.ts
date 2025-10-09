@@ -90,7 +90,7 @@ export const usePayoutSummary = () => {
 
       // Helper function to get formatted currency amount
       const formatCurrency = (amount: number): string => {
-            return `SSP ${amount.toFixed(2)}`;
+            return `SSP ${(amount || 0).toFixed(2)}`;
       };
 
       // Helper function to get percentage change

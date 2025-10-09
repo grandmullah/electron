@@ -43,11 +43,11 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
 
       <MetricDisplay
         label="Win Rate"
-        value={`${performanceData.winRate.toFixed(1)}%`}
+        value={`${(performanceData.winRate || 0).toFixed(1)}%`}
         color={
-          performanceData.winRate > 50
+          (performanceData.winRate || 0) > 50
             ? "#4caf50"
-            : performanceData.winRate > 30
+            : (performanceData.winRate || 0) > 30
               ? "#ff9800"
               : "#f44336"
         }
