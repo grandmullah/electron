@@ -293,7 +293,7 @@ export const FinancialAnalysisCard: React.FC<FinancialAnalysisCardProps> = ({
                 variant="caption"
                 sx={{ color: "rgba(255,255,255,0.6)" }}
               >
-                Revenue - Expenses
+                Revenue - Expenses - Taxes
               </Typography>
             </Stack>
           </Paper>

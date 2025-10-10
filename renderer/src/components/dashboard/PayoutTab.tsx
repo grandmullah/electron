@@ -498,7 +498,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={`${payout.currency} ${payout.amount.toFixed(2)}`}
+                        label={`SSP ${payout.amount.toFixed(2)}`}
                         size="small"
                         sx={{
                           background:

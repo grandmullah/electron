@@ -136,8 +136,9 @@ export const useFinancialSummary = () => {
             // Actual Expenses: net winnings paid to users
             const actualExpenses = summary.expenses.netWinningsPaidToUsers || 0;
 
-            // Net Profit: Total Revenue - Actual Expenses
-            const netProfit = totalRevenue - actualExpenses;
+            // Net Profit: Total Revenue - Actual Expenses - Taxes to Government
+            // Taxes are NOT shop profit, they go to government
+            const netProfit = totalRevenue - actualExpenses - taxCollected;
 
             return {
                   totalRevenue,
