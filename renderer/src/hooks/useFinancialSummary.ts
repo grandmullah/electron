@@ -133,12 +133,16 @@ export const useFinancialSummary = () => {
             // Total Revenue: settled revenue (stakes from lost bets + stakes from winning bets)
             const totalRevenue = (summary.revenue.settledRevenue || 0);
 
-            // Actual Expenses: net winnings paid to users
-            const actualExpenses = summary.expenses.netWinningsPaidToUsers || 0;
+            // Net winnings paid to users (after tax)
+            const netWinningsPaid = summary.expenses.netWinningsPaidToUsers || 0;
 
-            // Net Profit: Total Revenue - Actual Expenses - Taxes to Government
-            // Taxes are NOT shop profit, they go to government
-            const netProfit = totalRevenue - actualExpenses - taxCollected;
+            // Actual Expenses: Total potential winnings (net winnings + taxes)
+            // This represents the total gross amount owed to winning users before tax deduction
+            const actualExpenses = netWinningsPaid + taxCollected;
+
+            // Net Profit: Total Revenue - Actual Expenses (gross winnings)
+            // Since actualExpenses now includes taxes, we don't subtract taxCollected separately
+            const netProfit = totalRevenue - actualExpenses;
 
             return {
                   totalRevenue,

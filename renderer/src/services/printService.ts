@@ -202,6 +202,11 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             const barcodeData = `BET${String(rawBarcodeId).replace(/-/g, '')}`;
             win.print1DBarcode(barcodeData, 7, 3, 70, 2, 1);
 
+            // Print maximum payout notice below barcode
+            win.printText("\n", 0, 0, false, false, false, 0, 0);
+            win.printText("Maximum payout per ticket\n", 0, 0, false, false, false, 0, 1);
+            win.printText("is 25 million SSP\n", 0, 0, false, false, false, 0, 1);
+
             // Add some spacing and cut paper
             win.printText("\n\n", 0, 0, false, false, false, 0, 0);
             win.cutPaper(1);

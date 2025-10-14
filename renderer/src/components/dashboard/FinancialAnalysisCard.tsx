@@ -169,7 +169,7 @@ export const FinancialAnalysisCard: React.FC<FinancialAnalysisCardProps> = ({
                 variant="caption"
                 sx={{ color: "rgba(255,255,255,0.6)" }}
               >
-                Lost bets + tax collected
+                Stakes from settled bets
               </Typography>
             </Stack>
           </Paper>
@@ -214,7 +214,7 @@ export const FinancialAnalysisCard: React.FC<FinancialAnalysisCardProps> = ({
                     fontWeight: 600,
                   }}
                 >
-                  Actual Expenses
+                  Total Payouts
                 </Typography>
               </Box>
               <Typography
@@ -231,7 +231,7 @@ export const FinancialAnalysisCard: React.FC<FinancialAnalysisCardProps> = ({
                 variant="caption"
                 sx={{ color: "rgba(255,255,255,0.6)" }}
               >
-                Net winnings paid to users
+                Total potential winnings (gross)
               </Typography>
             </Stack>
           </Paper>
@@ -293,7 +293,7 @@ export const FinancialAnalysisCard: React.FC<FinancialAnalysisCardProps> = ({
                 variant="caption"
                 sx={{ color: "rgba(255,255,255,0.6)" }}
               >
-                Revenue - Expenses - Taxes
+                Revenue - Total Payouts
               </Typography>
             </Stack>
           </Paper>

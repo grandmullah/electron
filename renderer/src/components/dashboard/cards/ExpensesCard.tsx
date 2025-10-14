@@ -26,24 +26,51 @@ export const ExpensesCard: React.FC<ExpensesCardProps> = ({
     },
   };
 
+  // Calculate total potential winnings (net winnings + taxes)
+  const taxData = financialSummary?.taxObligations || financialSummary?.tax;
+  const taxCollected = taxData
+    ? ("taxesCollectedByShop" in taxData
+        ? taxData.taxesCollectedByShop
+        : (taxData as any).totalTaxCollected) || 0
+    : 0;
+
+  const totalPotentialWinnings =
+    expensesData.netWinningsPaidToUsers + taxCollected;
+
   const config = createExpensesConfig();
-  const mainColor = config.getColor(expensesData.netWinningsPaidToUsers);
+  const mainColor = config.getColor(totalPotentialWinnings);
 
   return (
     <MetricCard
       title="💸 Expenses"
-      subtitle="Winnings paid to users"
+      subtitle="Total potential winnings"
       icon={config.icon}
       iconColor={config.iconColor}
       topBorderColor={config.topBorderColor}
     >
       <MetricDisplay
+        label="Total Potential Winnings"
+        value={formatCurrency(totalPotentialWinnings)}
+        color={mainColor}
+        description="Gross amount (before tax)"
+        icon={config.getIcon(totalPotentialWinnings)}
+        showIcon
+      />
+
+      <MetricDisplay
         label="Net Winnings Paid"
         value={formatCurrency(expensesData.netWinningsPaidToUsers)}
-        color={mainColor}
-        description="After tax deduction"
-        icon={config.getIcon(expensesData.netWinningsPaidToUsers)}
-        showIcon
+        color="#4caf50"
+        variant="h6"
+        description="Amount paid to users (after tax)"
+      />
+
+      <MetricDisplay
+        label="Tax Withheld"
+        value={formatCurrency(taxCollected)}
+        color="#2196f3"
+        variant="h6"
+        description="Tax collected from winnings"
       />
 
       <MetricDisplay
