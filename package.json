@@ -1,6 +1,6 @@
 {
   "name": "Betzone",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "Betzone desktop app",
   "main": "dist/main/index.js",
   "author": "grandmullah",
