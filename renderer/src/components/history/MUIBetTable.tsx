@@ -46,6 +46,8 @@ import {
   FlashOn as IconFlash,
   ExpandMore as IconExpandMore,
   ExpandLess as IconExpandLess,
+  ThumbUp as IconThumbUp,
+  ThumbDown as IconThumbDown,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
 
@@ -787,6 +789,51 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                                   gap={1}
                                   mt={0.5}
                                 >
+                                  {/* Thumbs Up/Down Icon for Won/Lost */}
+                                  {selection.selectionOutcome === "won" && (
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: "50%",
+                                        background: "rgba(76, 175, 80, 0.2)",
+                                        border:
+                                          "1px solid rgba(76, 175, 80, 0.4)",
+                                      }}
+                                    >
+                                      <IconThumbUp
+                                        sx={{
+                                          fontSize: "0.9rem",
+                                          color: "#4caf50",
+                                        }}
+                                      />
+                                    </Box>
+                                  )}
+                                  {selection.selectionOutcome === "lost" && (
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: "50%",
+                                        background: "rgba(244, 67, 54, 0.2)",
+                                        border:
+                                          "1px solid rgba(244, 67, 54, 0.4)",
+                                      }}
+                                    >
+                                      <IconThumbDown
+                                        sx={{
+                                          fontSize: "0.9rem",
+                                          color: "#f44336",
+                                        }}
+                                      />
+                                    </Box>
+                                  )}
                                   <Chip
                                     label={selection.selectionOutcome}
                                     size="small"

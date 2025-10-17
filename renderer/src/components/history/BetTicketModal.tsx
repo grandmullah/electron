@@ -28,6 +28,8 @@ import {
   Cancel as CancelIcon,
   Schedule as ScheduleIcon,
   Functions as FunctionsIcon,
+  ThumbUp as ThumbUpIcon,
+  ThumbDown as ThumbDownIcon,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
 
@@ -597,7 +599,55 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                     />
 
                     {selection.selectionOutcome && (
-                      <Box>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        justifyContent="flex-end"
+                      >
+                        {/* Thumbs Up/Down Icon for Won/Lost */}
+                        {selection.selectionOutcome === "won" && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              background: "rgba(76, 175, 80, 0.2)",
+                              border: "1px solid rgba(76, 175, 80, 0.4)",
+                            }}
+                          >
+                            <ThumbUpIcon
+                              sx={{
+                                fontSize: "1rem",
+                                color: "#4caf50",
+                              }}
+                            />
+                          </Box>
+                        )}
+                        {selection.selectionOutcome === "lost" && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              background: "rgba(244, 67, 54, 0.2)",
+                              border: "1px solid rgba(244, 67, 54, 0.4)",
+                            }}
+                          >
+                            <ThumbDownIcon
+                              sx={{
+                                fontSize: "1rem",
+                                color: "#f44336",
+                              }}
+                            />
+                          </Box>
+                        )}
                         <Chip
                           label={selection.selectionOutcome}
                           size="small"
