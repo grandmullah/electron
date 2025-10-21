@@ -33,6 +33,8 @@ interface GameSearchProps {
     selection: string
   ) => boolean;
   onSearchResultsChange?: (hasResults: boolean) => void;
+  leagueGames?: Game[];
+  leagueKey?: string;
 }
 
 export const GameSearch: React.FC<GameSearchProps> = ({
@@ -40,11 +42,14 @@ export const GameSearch: React.FC<GameSearchProps> = ({
   onAddToBetSlip,
   isSelectionInBetSlip,
   onSearchResultsChange,
+  leagueGames = [],
+  leagueKey = "",
 }) => {
   const [searchMode, setSearchMode] = useState<
-    "id" | "filters" | "autocomplete"
-  >("autocomplete");
+    "id" | "filters" | "autocomplete" | "number"
+  >("number");
   const [gameId, setGameId] = useState("");
+  const [gameNumberQuery, setGameNumberQuery] = useState("");
   const [autocompleteQuery, setAutocompleteQuery] = useState("");
   const [filters, setFilters] = useState<{
     externalId: string;
@@ -64,6 +69,7 @@ export const GameSearch: React.FC<GameSearchProps> = ({
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autocompleteTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const numberSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSearchById = async (searchTerm: string) => {
     if (!searchTerm.trim()) {
@@ -276,8 +282,174 @@ export const GameSearch: React.FC<GameSearchProps> = ({
     }
   };
 
+  // Frontend filter by game number using stable indexes (cross-league search)
+  const performNumberSearch = async (numberQuery: string) => {
+    if (!numberQuery.trim()) {
+      setError(null);
+      setSearchResults([]);
+      onSearchResultsChange?.(false);
+      return;
+    }
+
+    const searchNumber = parseInt(numberQuery.trim());
+
+    if (isNaN(searchNumber)) {
+      setError("Please enter a valid game number");
+      setSearchResults([]);
+      onSearchResultsChange?.(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSelectedGame(null);
+
+    try {
+      // Load stored game indexes
+      const stored = localStorage.getItem("betzone_game_indexes");
+
+      if (!stored) {
+        setError("No game indexes found. Please view games first.");
+        setSearchResults([]);
+        onSearchResultsChange?.(false);
+        setLoading(false);
+        return;
+      }
+
+      const existingIndexes: Record<
+        string,
+        { externalId: string; index: number; leagueKey: string }
+      > = JSON.parse(stored);
+
+      // Find which game(s) have this index number (search across all leagues)
+      const matchingEntries = Object.entries(existingIndexes).filter(
+        ([_, data]) => data.index === searchNumber
+      );
+
+      if (matchingEntries.length === 0) {
+        setError(`No game found with number ${searchNumber} in any league`);
+        setSearchResults([]);
+        onSearchResultsChange?.(false);
+        setLoading(false);
+        return;
+      }
+
+      // Get the external IDs and league keys
+      const gameInfo = matchingEntries[0][1]; // Get first match
+      const targetLeagueKey = gameInfo.leagueKey;
+      const targetExternalId = gameInfo.externalId;
+
+      // Check if it's in the current league's loaded games
+      let matchingGames = leagueGames.filter((game) => {
+        const externalId = game.externalId || game.id;
+        return externalId === targetExternalId;
+      });
+
+      // If not found in current league, fetch odds from the correct league API
+      if (matchingGames.length === 0) {
+        try {
+          // Fetch fresh odds from the league odds API endpoint
+          console.log(`🔄 Fetching odds from ${targetLeagueKey} API...`);
+          const leagueGames = await GamesService.fetchOdds(targetLeagueKey);
+
+          // Find the specific game by external ID
+          const foundGame = leagueGames.find((game) => {
+            const externalId = game.externalId || game.id;
+            return externalId === targetExternalId;
+          });
+
+          if (foundGame) {
+            matchingGames = [foundGame];
+            if (targetLeagueKey !== leagueKey) {
+              setError(
+                `✅ Found in ${targetLeagueKey.toUpperCase()} with fresh odds (game #${searchNumber})`
+              );
+            }
+          } else {
+            // Game not found in odds API, try direct fetch as fallback
+            console.log("Game not in odds API, trying direct fetch...");
+            try {
+              const game = await GamesService.fetchGameById(targetExternalId);
+              if (game) {
+                matchingGames = [game];
+                if (targetLeagueKey !== leagueKey) {
+                  setError(
+                    `✅ Found in ${targetLeagueKey.toUpperCase()} (game #${searchNumber})`
+                  );
+                }
+              }
+            } catch (directFetchErr) {
+              console.error("Direct fetch also failed:", directFetchErr);
+            }
+          }
+        } catch (fetchErr: any) {
+          console.error("Failed to fetch odds from league:", fetchErr);
+          // Final fallback: try search
+          try {
+            const games = await GamesService.searchGames({
+              externalId: targetExternalId,
+            });
+
+            if (games && games.length > 0) {
+              matchingGames = games;
+              if (targetLeagueKey !== leagueKey) {
+                setError(
+                  `✅ Found in ${targetLeagueKey.toUpperCase()} (game #${searchNumber})`
+                );
+              }
+            }
+          } catch (searchErr) {
+            console.error("All fetch attempts failed:", searchErr);
+          }
+        }
+      }
+
+      setSearchResults(matchingGames);
+
+      if (matchingGames.length === 0) {
+        setError(
+          `Game #${searchNumber} exists in ${targetLeagueKey.toUpperCase()} but couldn't load it. Try switching to that league.`
+        );
+        onSearchResultsChange?.(false);
+      } else {
+        if (targetLeagueKey !== leagueKey) {
+          // Show info that it's from another league
+          console.log(`✅ Found game #${searchNumber} from ${targetLeagueKey}`);
+        }
+        onSearchResultsChange?.(true);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to search games");
+      onSearchResultsChange?.(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounced number search
+  const debouncedNumberSearch = useCallback(
+    (query: string) => {
+      if (numberSearchTimerRef.current) {
+        clearTimeout(numberSearchTimerRef.current);
+      }
+
+      numberSearchTimerRef.current = setTimeout(() => {
+        performNumberSearch(query);
+      }, 300);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [leagueGames, leagueKey]
+  );
+
+  // Handle number search input change
+  const handleGameNumberChange = (value: string) => {
+    setGameNumberQuery(value);
+    debouncedNumberSearch(value);
+  };
+
   const handleClear = () => {
     setGameId("");
+    setGameNumberQuery("");
     setAutocompleteQuery("");
     setFilters({
       externalId: "",
@@ -296,6 +468,9 @@ export const GameSearch: React.FC<GameSearchProps> = ({
     }
     if (autocompleteTimerRef.current) {
       clearTimeout(autocompleteTimerRef.current);
+    }
+    if (numberSearchTimerRef.current) {
+      clearTimeout(numberSearchTimerRef.current);
     }
   };
 
@@ -331,7 +506,90 @@ export const GameSearch: React.FC<GameSearchProps> = ({
           🔍 Search Games
         </Typography>
 
-        {/* Search Mode Toggle - Hidden (only Quick Search mode now) */}
+        {/* Search Mode Toggle */}
+        <Stack direction="row" spacing={2} mb={3}>
+          <Button
+            variant={searchMode === "number" ? "contained" : "outlined"}
+            onClick={() => {
+              setSearchMode("number");
+              handleClear();
+            }}
+            sx={{
+              color:
+                searchMode === "number" ? "white" : "rgba(255,255,255,0.7)",
+              borderColor: "rgba(255,255,255,0.3)",
+            }}
+          >
+            🔢 Filter by Number
+          </Button>
+          <Button
+            variant={searchMode === "autocomplete" ? "contained" : "outlined"}
+            onClick={() => {
+              setSearchMode("autocomplete");
+              handleClear();
+            }}
+            sx={{
+              color:
+                searchMode === "autocomplete"
+                  ? "white"
+                  : "rgba(255,255,255,0.7)",
+              borderColor: "rgba(255,255,255,0.3)",
+            }}
+          >
+            Quick Search
+          </Button>
+        </Stack>
+
+        {/* Filter by Number */}
+        {searchMode === "number" && (
+          <Stack spacing={2}>
+            <Alert severity="info" sx={{ bgcolor: "rgba(33, 150, 243, 0.1)" }}>
+              Enter a game number (e.g., 101, 102, 201) - searches across all
+              leagues
+            </Alert>
+            <TextField
+              label="Game Number"
+              value={gameNumberQuery}
+              onChange={(e) => handleGameNumberChange(e.target.value)}
+              placeholder="e.g., 101"
+              type="number"
+              fullWidth
+              helperText={`⚡ Cross-league search - finds games from any league (e.g., 101=League 1, 401=League 4)`}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  color: "white",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.3)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.5)",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
+                "& .MuiFormHelperText-root": {
+                  color: "rgba(255, 193, 7, 0.8)",
+                  fontWeight: 500,
+                },
+              }}
+            />
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={<ClearIcon />}
+                onClick={handleClear}
+                fullWidth
+                sx={{
+                  color: "rgba(255,255,255,0.8)",
+                  borderColor: "rgba(255,255,255,0.3)",
+                }}
+              >
+                Clear
+              </Button>
+            </Stack>
+          </Stack>
+        )}
 
         {/* Quick Search (Autocomplete) */}
         {searchMode === "autocomplete" && (

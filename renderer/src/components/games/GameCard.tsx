@@ -28,6 +28,8 @@ interface GameCardProps {
   ) => boolean;
   expandedGames: Set<string>;
   onToggleExpanded: (gameId: string, event: React.MouseEvent) => void;
+  gameNumber?: number;
+  isHighlighted?: boolean;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -38,6 +40,8 @@ export const GameCard: React.FC<GameCardProps> = ({
   isSelectionInBetSlip,
   expandedGames,
   onToggleExpanded,
+  gameNumber,
+  isHighlighted = false,
 }) => {
   const BettingOption = ({
     betType,
@@ -171,6 +175,18 @@ export const GameCard: React.FC<GameCardProps> = ({
                   hyphens: "auto",
                 }}
               >
+                {gameNumber && (
+                  <Box
+                    component="span"
+                    sx={{
+                      color: "#FFD700",
+                      fontWeight: "bold",
+                      textShadow: "0 0 2px rgba(255, 215, 0, 0.5)",
+                    }}
+                  >
+                    [{gameNumber}]{" "}
+                  </Box>
+                )}
                 {game.homeTeam}
               </Typography>
               <Typography
