@@ -11,6 +11,7 @@ import { API_BASE_URL } from "../../services/apiConfig";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
+import { GameSearch } from "../../components/games/GameSearch";
 import {
   Container,
   Paper,
@@ -39,6 +40,7 @@ import {
   Snackbar,
   Divider,
   Badge,
+  Collapse,
 } from "@mui/material";
 import {
   SportsSoccer as SoccerIcon,
@@ -53,6 +55,7 @@ import {
   Home as HomeIcon,
   EmojiEvents as TrophyIcon,
   TrendingUp as TrendingUpIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 
 interface GamesPageProps {
@@ -141,6 +144,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [hasSearchResults, setHasSearchResults] = useState(false);
 
   // Check if user is an agent and load managed users
   useEffect(() => {
@@ -240,43 +245,55 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             
             .game-card {
               background: white;
-              border-radius: 12px;
-              padding: 20px;
+              border-radius: 8px;
+              padding: 12px 16px;
               box-shadow: 0 2px 10px rgba(0,0,0,0.1);
               border: 1px solid #e9ecef;
               transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              min-height: 60px;
             }
             
-            .game-info {
+            .game-info-compact {
               display: flex;
-              flex-direction: column;
               align-items: center;
-              margin-bottom: 20px;
-              padding-bottom: 15px;
-              border-bottom: 2px solid #f1f3f4;
+              gap: 12px;
+              min-width: 420px;
+              flex-shrink: 0;
+            }
+            
+            .game-id-compact {
+              background: #f8f9fa;
+              border: 1px solid #e9ecef;
+              border-radius: 4px;
+              padding: 4px 8px;
+              font-size: 10px;
+              font-weight: 600;
+              color: #6c757d;
+              font-family: monospace;
+              min-width: 60px;
+              text-align: center;
             }
             
             .game-header {
               display: flex;
               flex-direction: column;
-              align-items: center;
-              gap: 8px;
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px solid #e9ecef;
+              align-items: flex-start;
+              gap: 4px;
             }
             
             .game-teams {
-              font-size: 18px;
+              font-size: 14px;
               font-weight: 700;
               color: #2c3e50;
-              text-align: center;
+              white-space: nowrap;
             }
             
             .game-time {
-              font-size: 14px;
+              font-size: 11px;
               color: #6c757d;
-              text-align: center;
             }
             
             .team {
@@ -287,96 +304,74 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             }
             
             .team-name {
-              font-size: 16px;
-              font-weight: 600;
-              color: #2c3e50;
-            }
-            
-            .team-names {
-              font-size: 16px;
-              font-weight: 600;
-              color: #2c3e50;
-              text-align: center;
-              margin-bottom: 8px;
-            }
-            
-            .vs-divider {
-              font-size: 14px;
-              font-weight: 700;
-              color: #6c757d;
-              background: #f8f9fa;
-              padding: 8px 12px;
-              border-radius: 50%;
-              border: 2px solid #dee2e6;
-            }
-            
-            .game-time {
               font-size: 12px;
+              font-weight: 600;
+              color: #2c3e50;
+            }
+            
+            .vs-separator {
+              font-size: 10px;
+              font-weight: 600;
               color: #6c757d;
-              text-align: center;
+              padding: 0 6px;
             }
             
             .betting-options {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-              gap: 15px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex: 1;
+              flex-wrap: nowrap;
+              overflow-x: auto;
             }
             
-            .betting-option-column {
+            .betting-option-compact {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
               background: #f8f9fa;
-              border-radius: 8px;
-              padding: 12px;
+              border-radius: 6px;
+              padding: 6px 10px;
               border: 1px solid #e9ecef;
+              min-width: 60px;
             }
             
-            .betting-option-column.disabled {
-              opacity: 0.5;
-              background: #f1f3f4;
+            .betting-option-compact.disabled {
+              opacity: 0.4;
+              background: #f5f5f5;
             }
             
-            .betting-option-label {
-              font-size: 12px;
+            .betting-option-label-compact {
+              font-size: 9px;
               font-weight: 600;
               color: #495057;
               text-align: center;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.3px;
             }
             
-            .betting-option-sub-labels {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 4px;
-              margin-bottom: 8px;
-            }
-            
-            .betting-option-sub-label {
-              font-size: 10px;
-              color: #6c757d;
-              text-align: center;
-              font-weight: 500;
-            }
-            
-            .betting-option-values {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 4px;
-            }
-            
-            .betting-option-value {
+            .betting-option-value-compact {
               background: white;
               border: 1px solid #dee2e6;
-              border-radius: 6px;
-              padding: 8px 4px;
+              border-radius: 4px;
+              padding: 4px 6px;
               text-align: center;
-              font-size: 12px;
-              font-weight: 600;
+              font-size: 11px;
+              font-weight: 700;
               color: #2c5aa0;
-              min-height: 32px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
+              min-width: 45px;
+            }
+            
+            .betting-option-value-compact.clickable {
+              background: #e3f2fd;
+              border-color: #2196f3;
+            }
+            
+            .betting-option-value-compact:not(.clickable) {
+              background: #f5f5f5;
+              color: #999;
+              border-color: #ddd;
             }
             
             .betting-option-value.clickable {
@@ -529,10 +524,24 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 break-inside: avoid;
                 box-shadow: none;
                 border: 1px solid #ddd;
+                page-break-inside: avoid;
               }
               
               .games-grid {
-                gap: 15px;
+                gap: 10px;
+              }
+              
+              .betting-options {
+                flex-wrap: wrap;
+              }
+              
+              .game-info-compact {
+                min-width: 380px;
+              }
+              
+              .game-id-compact {
+                font-size: 9px;
+                padding: 3px 6px;
               }
             }
           </style>
@@ -549,113 +558,111 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               .map(
                 (game) => `
               <div class="game-card">
-                <div class="game-header">
-                  <div class="game-teams">${game.homeTeam} vs ${game.awayTeam}</div>
-                  <div class="game-time">${new Date(game.matchTime).toLocaleDateString()} - ${new Date(game.matchTime).toLocaleTimeString()}</div>
+                <!-- Teams Section (Left) -->
+                <div class="game-info-compact">
+                  <!-- Game ID (last 5 chars) -->
+                  <div class="game-id-compact">
+                    ${game.externalId ? "..." + game.externalId.slice(-5) : game.id.slice(-5)}
+                  </div>
+                  
+                  <div class="game-header">
+                    <div class="game-teams">${game.homeTeam} <span class="vs-separator">vs</span> ${game.awayTeam}</div>
+                    <div class="game-time">${new Date(game.matchTime).toLocaleDateString()} ${new Date(game.matchTime).toLocaleTimeString()}</div>
+                  </div>
                 </div>
                 
+                <!-- Odds Section (Right) - Horizontal -->
                 <div class="betting-options">
-                  <!-- 3 Way Column -->
-                  <div class="betting-option-column ${!game.hasValidOdds ? "disabled" : ""}">
-                    <div class="betting-option-label">3 Way</div>
-                    <div class="betting-option-sub-labels">
-                      <div class="betting-option-sub-label">Home</div>
-                      <div class="betting-option-sub-label">Draw</div>
-                      <div class="betting-option-sub-label">Away</div>
-                    </div>
-                    <div class="betting-option-values">
-                      <div class="betting-option-value ${game.homeOdds ? "clickable" : ""}">
-                        ${game.homeOdds || "-"}
-                      </div>
-                      <div class="betting-option-value ${game.drawOdds ? "clickable" : ""}">
-                        ${game.drawOdds || "-"}
-                      </div>
-                      <div class="betting-option-value ${game.awayOdds ? "clickable" : ""}">
-                        ${game.awayOdds || "-"}
-                      </div>
+                  <!-- Home Odds -->
+                  <div class="betting-option-compact ${!game.homeOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">1</div>
+                    <div class="betting-option-value-compact ${game.homeOdds ? "clickable" : ""}">
+                      ${game.homeOdds || "-"}
                     </div>
                   </div>
                   
-                  <!-- Double Chance Column -->
-                  <div class="betting-option-column ${game.doubleChance?.homeOrDraw || game.doubleChance?.drawOrAway || game.doubleChance?.homeOrAway ? "" : "disabled"}">
-                    <div class="betting-option-label">Double Chance</div>
-                    <div class="betting-option-sub-labels">
-                      <div class="betting-option-sub-label">1 or X</div>
-                      <div class="betting-option-sub-label">X or 2</div>
-                      <div class="betting-option-sub-label">1 or 2</div>
-                    </div>
-                    <div class="betting-option-values">
-                      <div class="betting-option-value ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">
-                        ${game.doubleChance?.homeOrDraw || "-"}
-                      </div>
-                      <div class="betting-option-value ${game.doubleChance?.drawOrAway ? "clickable" : ""}">
-                        ${game.doubleChance?.drawOrAway || "-"}
-                      </div>
-                      <div class="betting-option-value ${game.doubleChance?.homeOrAway ? "clickable" : ""}">
-                        ${game.doubleChance?.homeOrAway || "-"}
-                      </div>
+                  <!-- Draw Odds -->
+                  <div class="betting-option-compact ${!game.drawOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">X</div>
+                    <div class="betting-option-value-compact ${game.drawOdds ? "clickable" : ""}">
+                      ${game.drawOdds || "-"}
                     </div>
                   </div>
                   
-                  <!-- Totals Column - Show ALL point values horizontally -->
-                  <div class="betting-option-column ${game.totals && game.totals.length > 0 ? "" : "disabled"}">
-                    <div class="betting-option-label">Totals</div>
-                    ${
-                      game.totals && game.totals.length > 0
-                        ? `
-                      <div class="totals-horizontal">
-                        ${game.totals
+                  <!-- Away Odds -->
+                  <div class="betting-option-compact ${!game.awayOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">2</div>
+                    <div class="betting-option-value-compact ${game.awayOdds ? "clickable" : ""}">
+                      ${game.awayOdds || "-"}
+                    </div>
+                  </div>
+                  
+                  <!-- Double Chance 1X -->
+                  <div class="betting-option-compact ${!game.doubleChance?.homeOrDraw ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">1X</div>
+                    <div class="betting-option-value-compact ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">
+                      ${game.doubleChance?.homeOrDraw || "-"}
+                    </div>
+                  </div>
+                  
+                  <!-- Double Chance X2 -->
+                  <div class="betting-option-compact ${!game.doubleChance?.drawOrAway ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">X2</div>
+                    <div class="betting-option-value-compact ${game.doubleChance?.drawOrAway ? "clickable" : ""}">
+                      ${game.doubleChance?.drawOrAway || "-"}
+                    </div>
+                  </div>
+                  
+                  <!-- Double Chance 12 -->
+                  <div class="betting-option-compact ${!game.doubleChance?.homeOrAway ? "disabled" : ""}">
+                    <div class="betting-option-label-compact">12</div>
+                    <div class="betting-option-value-compact ${game.doubleChance?.homeOrAway ? "clickable" : ""}">
+                      ${game.doubleChance?.homeOrAway || "-"}
+                    </div>
+                  </div>
+                  
+                  <!-- Totals - Show first 2 point values only for compact view -->
+                  ${
+                    game.totals && game.totals.length > 0
+                      ? game.totals
+                          .slice(0, 2)
                           .map(
                             (total) => `
-                          <div class="totals-point-group">
-                            <div class="totals-point-label">${total.point}</div>
-                            <div class="betting-option-sub-labels">
-                              <div class="betting-option-sub-label">O</div>
-                              <div class="betting-option-sub-label">U</div>
-                            </div>
-                            <div class="betting-option-values">
-                              <div class="betting-option-value ${total.over ? "clickable" : ""}">
+                          <div class="betting-option-compact">
+                            <div class="betting-option-label-compact">O/U ${total.point}</div>
+                            <div style="display: flex; gap: 4px;">
+                              <div class="betting-option-value-compact ${total.over ? "clickable" : ""}" style="min-width: 38px; font-size: 10px;">
                                 ${total.over || "-"}
                               </div>
-                              <div class="betting-option-value ${total.under ? "clickable" : ""}">
+                              <div class="betting-option-value-compact ${total.under ? "clickable" : ""}" style="min-width: 38px; font-size: 10px;">
                                 ${total.under || "-"}
                               </div>
                             </div>
                           </div>
                         `
                           )
-                          .join("")}
-                      </div>
-                    `
-                        : `
-                      <div class="betting-option-sub-labels">
-                        <div class="betting-option-sub-label">Over</div>
-                        <div class="betting-option-sub-label">Under</div>
-                      </div>
-                      <div class="betting-option-values">
-                        <div class="betting-option-value">-</div>
-                        <div class="betting-option-value">-</div>
-                      </div>
-                    `
-                    }
-                  </div>
+                          .join("")
+                      : ""
+                  }
                   
-                  <!-- Both Teams to Score Column -->
-                  <div class="betting-option-column ${game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no ? "" : "disabled"}">
-                    <div class="betting-option-label">Both Teams To Score</div>
-                    <div class="betting-option-sub-labels">
-                      <div class="betting-option-sub-label">Yes</div>
-                      <div class="betting-option-sub-label">No</div>
-                    </div>
-                    <div class="betting-option-values">
-                      <div class="betting-option-value ${game.bothTeamsToScore?.yes ? "clickable" : ""}">
+                  <!-- Both Teams to Score -->
+                  ${
+                    game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no
+                      ? `
+                  <div class="betting-option-compact">
+                    <div class="betting-option-label-compact">BTTS</div>
+                    <div style="display: flex; gap: 4px;">
+                      <div class="betting-option-value-compact ${game.bothTeamsToScore?.yes ? "clickable" : ""}" style="min-width: 38px; font-size: 10px;">
                         ${game.bothTeamsToScore?.yes || "-"}
                       </div>
-                      <div class="betting-option-value ${game.bothTeamsToScore?.no ? "clickable" : ""}">
+                      <div class="betting-option-value-compact ${game.bothTeamsToScore?.no ? "clickable" : ""}" style="min-width: 38px; font-size: 10px;">
                         ${game.bothTeamsToScore?.no || "-"}
                       </div>
                     </div>
                   </div>
+                  `
+                      : ""
+                  }
                 </div>
               </div>
             `
@@ -1140,6 +1147,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               borderRadius: "16px",
               boxShadow:
                 "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+              maxHeight: "calc(100vh - 100px)",
+              overflowY: "auto",
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(255,255,255,0.05)",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: "4px",
+              },
             }}
           >
             <Typography
@@ -1166,6 +1185,27 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 }}
               >
                 Refresh Odds
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SearchIcon />}
+                onClick={() => {
+                  setShowSearchPanel(!showSearchPanel);
+                  if (showSearchPanel) {
+                    // Clear search results when closing panel
+                    setHasSearchResults(false);
+                  }
+                }}
+                color="primary"
+                fullWidth
+                sx={{
+                  fontWeight: 600,
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                {showSearchPanel ? "Hide Search" : "Search Games"}
               </Button>
               <Typography
                 variant="caption"
@@ -1324,6 +1364,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
           {/* Right Panel - Games */}
           <Box sx={{ flex: 1 }}>
+            {/* Search Panel */}
+            <Collapse in={showSearchPanel}>
+              <Box sx={{ mb: 3 }}>
+                <GameSearch
+                  onGameSelect={setSelectedGame}
+                  onAddToBetSlip={handleAddToBetSlip}
+                  isSelectionInBetSlip={isSelectionInBetSlip}
+                  onSearchResultsChange={setHasSearchResults}
+                />
+              </Box>
+            </Collapse>
+
             {/* Error Message */}
             {isError && (
               <Alert
@@ -1356,91 +1408,97 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               </Alert>
             </Snackbar>
 
-            {/* Games Grid */}
-            <Box>
-              {isEmpty &&
-              (leagueKey === "soccer_uefa_world_cup_qualifiers" ||
-                leagueKey === "soccer_bundesliga" ||
-                leagueKey === "soccer_laliga") ? (
-                <Paper
-                  sx={{
-                    p: 6,
-                    textAlign: "center",
-                    background:
-                      "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-                    border: "1px solid #90CAF9",
-                    mb: 3,
-                  }}
-                >
-                  <TrophyIcon
-                    sx={{ fontSize: 64, color: "primary.main", mb: 2 }}
-                  />
-                  <Typography
-                    variant="h4"
-                    fontWeight="bold"
-                    color="primary.main"
-                    gutterBottom
+            {/* Games Grid - Hidden when search results are displayed */}
+            {!hasSearchResults && (
+              <Box>
+                {isEmpty &&
+                (leagueKey === "soccer_uefa_world_cup_qualifiers" ||
+                  leagueKey === "soccer_bundesliga" ||
+                  leagueKey === "soccer_laliga") ? (
+                  <Paper
+                    sx={{
+                      p: 6,
+                      textAlign: "center",
+                      background:
+                        "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                      border: "1px solid #90CAF9",
+                      mb: 3,
+                    }}
                   >
-                    {getLeagueDisplayName(leagueKey)}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" paragraph>
-                    No games available at the moment
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    The {getLeagueDisplayName(leagueKey)} endpoint is not yet
-                    implemented on the backend.
-                    <br />
-                    Expected endpoint: <code>/api/{leagueKey}/odds</code>
-                  </Typography>
-                </Paper>
-              ) : isEmpty ? (
-                <Paper
-                  sx={{
-                    p: 6,
-                    textAlign: "center",
-                    background:
-                      "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
-                    border: "1px solid #CE93D8",
-                    mb: 3,
-                  }}
-                >
-                  <SoccerIcon
-                    sx={{ fontSize: 64, color: "secondary.main", mb: 2 }}
-                  />
-                  <Typography
-                    variant="h4"
-                    fontWeight="bold"
-                    color="secondary.main"
-                    gutterBottom
+                    <TrophyIcon
+                      sx={{ fontSize: 64, color: "primary.main", mb: 2 }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      color="primary.main"
+                      gutterBottom
+                    >
+                      {getLeagueDisplayName(leagueKey)}
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      paragraph
+                    >
+                      No games available at the moment
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      The {getLeagueDisplayName(leagueKey)} endpoint is not yet
+                      implemented on the backend.
+                      <br />
+                      Expected endpoint: <code>/api/{leagueKey}/odds</code>
+                    </Typography>
+                  </Paper>
+                ) : isEmpty ? (
+                  <Paper
+                    sx={{
+                      p: 6,
+                      textAlign: "center",
+                      background:
+                        "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                      border: "1px solid #CE93D8",
+                      mb: 3,
+                    }}
                   >
-                    No Games Available
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    Please try refreshing or check back later
-                  </Typography>
-                </Paper>
-              ) : (
-                <Stack spacing={2}>
-                  {games
-                    .filter(
-                      (game) =>
-                        game && game.id && game.homeTeam && game.awayTeam
-                    )
-                    .map((game) => (
-                      <GameCard
-                        key={game.id}
-                        game={game}
-                        isSelected={selectedGame?.id === game.id}
-                        onSelect={setSelectedGame}
-                        onAddToBetSlip={handleAddToBetSlip}
-                        isSelectionInBetSlip={isSelectionInBetSlip}
-                        expandedGames={expandedGames}
-                        onToggleExpanded={toggleExpanded}
-                      />
-                    ))}
-                </Stack>
-              )}
-            </Box>
+                    <SoccerIcon
+                      sx={{ fontSize: 64, color: "secondary.main", mb: 2 }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      color="secondary.main"
+                      gutterBottom
+                    >
+                      No Games Available
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      Please try refreshing or check back later
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Stack spacing={2}>
+                    {games
+                      .filter(
+                        (game) =>
+                          game && game.id && game.homeTeam && game.awayTeam
+                      )
+                      .map((game) => (
+                        <GameCard
+                          key={game.id}
+                          game={game}
+                          isSelected={selectedGame?.id === game.id}
+                          onSelect={setSelectedGame}
+                          onAddToBetSlip={handleAddToBetSlip}
+                          isSelectionInBetSlip={isSelectionInBetSlip}
+                          expandedGames={expandedGames}
+                          onToggleExpanded={toggleExpanded}
+                        />
+                      ))}
+                  </Stack>
+                )}
+              </Box>
+            )}
 
             {/* User Selector Modal */}
             <Dialog

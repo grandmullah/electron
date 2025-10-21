@@ -2073,6 +2073,8 @@ body {
 .country-flag {
   font-size: 1.2rem !important;
   line-height: 1 !important;
+  /* Add emoji font support for Windows */
+  font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Apple Color Emoji", sans-serif !important;
 }
 
 .country-code {
@@ -3950,6 +3952,8 @@ body {
 .country-flag {
   font-size: 1.2rem;
   line-height: 1;
+  /* Add emoji font support for Windows */
+  font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
 }
 
 .country-code {

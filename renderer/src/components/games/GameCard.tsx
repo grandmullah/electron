@@ -263,12 +263,59 @@ export const GameCard: React.FC<GameCardProps> = ({
               </Typography>
             </Box>
 
-            {/* No Odds Available Indicator */}
-            {!game.hasValidOdds && (
+            {/* Game Info - Show scores if available */}
+            {game.currentScore &&
+              (game.currentScore.home > 0 || game.currentScore.away > 0) && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 1,
+                    mb: 2,
+                    bgcolor:
+                      game.status === "live"
+                        ? "rgba(76, 175, 80, 0.1)"
+                        : game.status === "finished"
+                          ? "rgba(33, 150, 243, 0.1)"
+                          : "rgba(255,193,7,0.1)",
+                    border: `1px solid ${
+                      game.status === "live"
+                        ? "rgba(76, 175, 80, 0.3)"
+                        : game.status === "finished"
+                          ? "rgba(33, 150, 243, 0.3)"
+                          : "rgba(255,193,7,0.3)"
+                    }`,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    color={
+                      game.status === "live"
+                        ? "success.main"
+                        : game.status === "finished"
+                          ? "info.main"
+                          : "warning.main"
+                    }
+                  >
+                    {game.status === "live" && "🔴 LIVE: "}
+                    {game.status === "finished" && "✅ FINAL: "}
+                    {game.currentScore.home} - {game.currentScore.away}
+                  </Typography>
+                  {game.currentTime && (
+                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                      {game.currentTime}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+            {/* No Odds Available Indicator - Only show for upcoming games */}
+            {!game.hasValidOdds && game.status === "upcoming" && (
               <Box
                 sx={{
                   textAlign: "center",
-                  py: 2,
+                  py: 1.5,
                   mb: 2,
                   bgcolor: "rgba(255,193,7,0.1)",
                   border: "1px solid rgba(255,193,7,0.3)",
@@ -287,6 +334,33 @@ export const GameCard: React.FC<GameCardProps> = ({
                 </Typography>
               </Box>
             )}
+
+            {/* Finished/Live Games Info - Show even without odds */}
+            {!game.hasValidOdds &&
+              (game.status === "finished" || game.status === "live") && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 1.5,
+                    mb: 2,
+                    bgcolor: "rgba(33, 150, 243, 0.1)",
+                    border: "1px solid rgba(33, 150, 243, 0.3)",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="info.main"
+                    fontWeight="bold"
+                  >
+                    ℹ️ Game{" "}
+                    {game.status === "finished" ? "Finished" : "In Progress"}
+                  </Typography>
+                  <Typography variant="caption" color="rgba(33, 150, 243, 0.8)">
+                    ID: ...{game.externalId?.slice(-8) || game.id.slice(-8)}
+                  </Typography>
+                </Box>
+              )}
 
             {/* 3 Way Odds */}
             <Box

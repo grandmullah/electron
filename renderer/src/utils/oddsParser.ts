@@ -1,0 +1,386 @@
+/**
+ * Odds Parser Utility
+ * Reusable functions for parsing odds from various data structures
+ */
+
+import { GameOdds } from '../types/games';
+
+/**
+ * Generic outcome structure that works with both API formats
+ */
+interface GenericOutcome {
+      name: string;
+      price: number;
+      point?: number | null;
+}
+
+/**
+ * Normalize outcome from different formats to GenericOutcome
+ */
+export function normalizeOutcome(outcome: any): GenericOutcome {
+      return {
+            name: outcome.name || outcome.outcome_name || '',
+            price: outcome.price || outcome.outcome_price || 0,
+            point: outcome.point ?? outcome.outcome_point ?? null,
+      };
+}
+
+/**
+ * Find market from bookmakers array (legacy format)
+ */
+export function findMarketFromBookmakers(bookmakers: any[], marketKey: string): any {
+      for (const bm of bookmakers) {
+            const market = bm?.markets?.find((m: any) => m.key === marketKey);
+            if (market) return market;
+      }
+      return null;
+}
+
+/**
+ * Find H2H odds (Home/Draw/Away)
+ */
+export function extractH2HOdds(
+      outcomes: any[],
+      homeTeam: string,
+      awayTeam: string
+): {
+      homeOdds: number | null;
+      drawOdds: number | null;
+      awayOdds: number | null;
+} {
+      if (!outcomes || outcomes.length === 0) {
+            return { homeOdds: null, drawOdds: null, awayOdds: null };
+      }
+
+      const normalized = outcomes.map(normalizeOutcome);
+
+      const homeOutcome = normalized.find(o => o.name === homeTeam);
+      const awayOutcome = normalized.find(o => o.name === awayTeam);
+      const drawOutcome = normalized.find(o => o.name.toLowerCase() === 'draw');
+
+      return {
+            homeOdds: homeOutcome?.price ?? null,
+            drawOdds: drawOutcome?.price ?? null,
+            awayOdds: awayOutcome?.price ?? null,
+      };
+}
+
+/**
+ * Find double chance odds
+ */
+export function extractDoubleChanceOdds(
+      outcomes: any[],
+      homeTeam: string,
+      awayTeam: string
+): {
+      homeOrDraw: number | null;
+      homeOrAway: number | null;
+      drawOrAway: number | null;
+} {
+      if (!outcomes || outcomes.length === 0) {
+            return { homeOrDraw: null, homeOrAway: null, drawOrAway: null };
+      }
+
+      const normalized = outcomes.map(normalizeOutcome);
+      const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+
+      const findOdds = (variant: 'home_draw' | 'home_away' | 'draw_away'): number | null => {
+            const candidates: string[] = (() => {
+                  switch (variant) {
+                        case 'home_draw':
+                              return [
+                                    `${homeTeam} or Draw`,
+                                    `Draw or ${homeTeam}`,
+                                    'Home or Draw',
+                                    'Draw or Home',
+                                    '1X',
+                                    'X1',
+                                    'Home/Draw',
+                                    'Draw/Home'
+                              ];
+                        case 'home_away':
+                              return [
+                                    `${homeTeam} or ${awayTeam}`,
+                                    `${awayTeam} or ${homeTeam}`,
+                                    'Home or Away',
+                                    'Away or Home',
+                                    '12',
+                                    '21',
+                                    'Home/Away',
+                                    'Away/Home'
+                              ];
+                        case 'draw_away':
+                              return [
+                                    `Draw or ${awayTeam}`,
+                                    `${awayTeam} or Draw`,
+                                    'Draw or Away',
+                                    'Away or Draw',
+                                    'X2',
+                                    '2X',
+                                    'Draw/Away',
+                                    'Away/Draw'
+                              ];
+                  }
+            })();
+
+            const outcome = normalized.find(o =>
+                  candidates.some(p => normalize(o.name) === normalize(p))
+            );
+            return outcome?.price ?? null;
+      };
+
+      return {
+            homeOrDraw: findOdds('home_draw'),
+            homeOrAway: findOdds('home_away'),
+            drawOrAway: findOdds('draw_away'),
+      };
+}
+
+/**
+ * Extract totals/over-under odds
+ */
+export function extractTotalsOdds(
+      outcomes: any[]
+): Array<{ point: number; over: number | null; under: number | null }> {
+      if (!outcomes || outcomes.length === 0) return [];
+
+      const normalized = outcomes.map(normalizeOutcome);
+      const totalsMap = new Map<number, { over: number | null; under: number | null }>();
+
+      normalized.forEach(outcome => {
+            const point = outcome.point;
+            if (point === null || typeof point !== 'number') return;
+
+            if (!totalsMap.has(point)) {
+                  totalsMap.set(point, { over: null, under: null });
+            }
+
+            const entry = totalsMap.get(point)!;
+            const name = outcome.name.toLowerCase();
+
+            if (name.includes('over')) {
+                  entry.over = outcome.price;
+            } else if (name.includes('under')) {
+                  entry.under = outcome.price;
+            }
+      });
+
+      return Array.from(totalsMap.entries())
+            .map(([point, data]) => ({ point, over: data.over, under: data.under }))
+            .filter(t => t.over !== null || t.under !== null)
+            .sort((a, b) => a.point - b.point);
+}
+
+/**
+ * Extract BTTS (Both Teams To Score) odds
+ */
+export function extractBTTSOdds(
+      outcomes: any[]
+): {
+      yes: number | null;
+      no: number | null;
+} {
+      if (!outcomes || outcomes.length === 0) {
+            return { yes: null, no: null };
+      }
+
+      const normalized = outcomes.map(normalizeOutcome);
+
+      const yesOutcome = normalized.find(o => o.name.toLowerCase() === 'yes');
+      const noOutcome = normalized.find(o => o.name.toLowerCase() === 'no');
+
+      return {
+            yes: yesOutcome?.price ?? null,
+            no: noOutcome?.price ?? null,
+      };
+}
+
+/**
+ * Extract spread odds
+ */
+export function extractSpreadOdds(
+      outcomes: any[],
+      homeTeam: string,
+      awayTeam: string
+): {
+      homeSpread: number | null;
+      awaySpread: number | null;
+      homeSpreadOdds: number | null;
+      awaySpreadOdds: number | null;
+      spreadLine: number | null;
+} {
+      if (!outcomes || outcomes.length === 0) {
+            return {
+                  homeSpread: null,
+                  awaySpread: null,
+                  homeSpreadOdds: null,
+                  awaySpreadOdds: null,
+                  spreadLine: null,
+            };
+      }
+
+      const normalized = outcomes.map(normalizeOutcome);
+
+      const homeOutcome = normalized.find(o =>
+            o.name.toLowerCase().includes(homeTeam.toLowerCase())
+      );
+      const awayOutcome = normalized.find(o =>
+            o.name.toLowerCase().includes(awayTeam.toLowerCase())
+      );
+
+      return {
+            homeSpread: homeOutcome?.point ?? null,
+            awaySpread: awayOutcome?.point ?? null,
+            homeSpreadOdds: homeOutcome?.price ?? null,
+            awaySpreadOdds: awayOutcome?.price ?? null,
+            spreadLine: homeOutcome?.point ?? null,
+      };
+}
+
+/**
+ * Check if odds are valid (at least one betting option available)
+ */
+export function hasValidOdds(oddsData: {
+      homeOdds: number | null;
+      drawOdds: number | null;
+      awayOdds: number | null;
+      doubleChance: {
+            homeOrDraw: number | null;
+            homeOrAway: number | null;
+            drawOrAway: number | null;
+      };
+      totals: Array<{ point: number; over: number | null; under: number | null }>;
+      bothTeamsToScore: {
+            yes: number | null;
+            no: number | null;
+      };
+      spreads: {
+            homeSpreadOdds: number | null;
+            awaySpreadOdds: number | null;
+      };
+}): boolean {
+      return Boolean(
+            // Basic 3-way odds
+            (oddsData.homeOdds && oddsData.drawOdds && oddsData.awayOdds) ||
+            // Double chance odds
+            (oddsData.doubleChance.homeOrDraw || oddsData.doubleChance.homeOrAway || oddsData.doubleChance.drawOrAway) ||
+            // Totals odds
+            (oddsData.totals.length > 0) ||
+            // BTTS odds
+            (oddsData.bothTeamsToScore.yes || oddsData.bothTeamsToScore.no) ||
+            // Spreads odds
+            (oddsData.spreads.homeSpreadOdds || oddsData.spreads.awaySpreadOdds)
+      );
+}
+
+/**
+ * Parse all odds from GameOdds array (new backend format)
+ */
+export function parseOddsFromGameOddsArray(
+      odds: GameOdds[],
+      homeTeam: string,
+      awayTeam: string
+) {
+      // Group odds by market
+      const h2hOdds = odds.filter(o => o.market_key === 'h2h');
+      const dcOdds = odds.filter(o => o.market_key === 'double_chance');
+      const totalsOdds = odds.filter(o => o.market_key === 'totals');
+      const bttsOdds = odds.filter(o => o.market_key === 'btts');
+      const spreadsOdds = odds.filter(o => o.market_key === 'spreads');
+
+      const h2h = extractH2HOdds(h2hOdds, homeTeam, awayTeam);
+      const doubleChance = extractDoubleChanceOdds(dcOdds, homeTeam, awayTeam);
+      const totals = extractTotalsOdds(totalsOdds);
+      const bothTeamsToScore = extractBTTSOdds(bttsOdds);
+      const spreads = extractSpreadOdds(spreadsOdds, homeTeam, awayTeam);
+
+      const oddsData = {
+            homeOdds: h2h.homeOdds,
+            drawOdds: h2h.drawOdds,
+            awayOdds: h2h.awayOdds,
+            doubleChance,
+            totals,
+            bothTeamsToScore,
+            spreads,
+      };
+
+      return {
+            ...oddsData,
+            overUnder: {
+                  over25: totals.find(t => t.point === 2.5)?.over ?? null,
+                  under25: totals.find(t => t.point === 2.5)?.under ?? null,
+            },
+            hasValidOdds: hasValidOdds(oddsData),
+      };
+}
+
+/**
+ * Parse all odds from bookmakers array (legacy API format)
+ */
+export function parseOddsFromBookmakersArray(
+      bookmakers: any[],
+      homeTeam: string,
+      awayTeam: string
+) {
+      if (!bookmakers || bookmakers.length === 0) {
+            return {
+                  homeOdds: null,
+                  drawOdds: null,
+                  awayOdds: null,
+                  doubleChance: {
+                        homeOrDraw: null,
+                        homeOrAway: null,
+                        drawOrAway: null,
+                  },
+                  totals: [],
+                  bothTeamsToScore: {
+                        yes: null,
+                        no: null,
+                  },
+                  spreads: {
+                        homeSpread: null,
+                        awaySpread: null,
+                        homeSpreadOdds: null,
+                        awaySpreadOdds: null,
+                        spreadLine: null,
+                  },
+                  overUnder: {
+                        over25: null,
+                        under25: null,
+                  },
+                  hasValidOdds: false,
+            };
+      }
+
+      const h2hMarket = findMarketFromBookmakers(bookmakers, 'h2h');
+      const dcMarket = findMarketFromBookmakers(bookmakers, 'double_chance');
+      const totalsMarket = findMarketFromBookmakers(bookmakers, 'totals');
+      const bttsMarket = findMarketFromBookmakers(bookmakers, 'btts');
+      const spreadsMarket = findMarketFromBookmakers(bookmakers, 'spreads');
+
+      const h2h = extractH2HOdds(h2hMarket?.outcomes || [], homeTeam, awayTeam);
+      const doubleChance = extractDoubleChanceOdds(dcMarket?.outcomes || [], homeTeam, awayTeam);
+      const totals = extractTotalsOdds(totalsMarket?.outcomes || []);
+      const bothTeamsToScore = extractBTTSOdds(bttsMarket?.outcomes || []);
+      const spreads = extractSpreadOdds(spreadsMarket?.outcomes || [], homeTeam, awayTeam);
+
+      const oddsData = {
+            homeOdds: h2h.homeOdds,
+            drawOdds: h2h.drawOdds,
+            awayOdds: h2h.awayOdds,
+            doubleChance,
+            totals,
+            bothTeamsToScore,
+            spreads,
+      };
+
+      return {
+            ...oddsData,
+            overUnder: {
+                  over25: totals.find(t => t.point === 2.5)?.over ?? null,
+                  under25: totals.find(t => t.point === 2.5)?.under ?? null,
+            },
+            hasValidOdds: hasValidOdds(oddsData),
+      };
+}
+
