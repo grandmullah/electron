@@ -284,6 +284,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             odds: item.odds,
             stake: item.stake,
             potentialWinnings: item.stake * item.odds,
+            gameTime: item.gameTime, // Add game time for print receipt
+            gameStartTime: item.gameTime, // Add as gameStartTime for compatibility
           })),
           user: user,
           shop: user?.shop,

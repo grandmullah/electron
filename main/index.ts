@@ -601,40 +601,43 @@ function createEmergencyWindow(): void {
 }
 
 // Add a health check mechanism with Windows emergency fallback
-healthCheckInterval = setInterval(() => {
-      if (isShuttingDown) {
-            writeDebugLog('Health check skipped because app is shutting down');
-            return;
-      }
-      const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) {
-            console.log('No windows found, creating new window...');
-            writeDebugLog('Health check: No windows found, attempting recovery');
-
-            if (process.platform === 'win32') {
-                  createEmergencyWindow();
-            } else {
-                  createWindow();
+// Delay the start of health checks to prevent emergency mode on startup
+setTimeout(() => {
+      healthCheckInterval = setInterval(() => {
+            if (isShuttingDown) {
+                  writeDebugLog('Health check skipped because app is shutting down');
+                  return;
             }
-      } else {
-            // Check if any window is responsive
-            let hasResponsiveWindow = false;
-            for (const window of windows) {
-                  if (!window.isDestroyed() && window.isVisible()) {
-                        hasResponsiveWindow = true;
-                        break;
-                  }
-            }
-
-            if (!hasResponsiveWindow) {
-                  console.log('No responsive windows found, creating new window...');
-                  writeDebugLog('Health check: No responsive windows, attempting recovery');
+            const windows = BrowserWindow.getAllWindows();
+            if (windows.length === 0) {
+                  console.log('No windows found, creating new window...');
+                  writeDebugLog('Health check: No windows found, attempting recovery');
 
                   if (process.platform === 'win32') {
                         createEmergencyWindow();
                   } else {
                         createWindow();
                   }
+            } else {
+                  // Check if any window is responsive
+                  let hasResponsiveWindow = false;
+                  for (const window of windows) {
+                        if (!window.isDestroyed() && window.isVisible()) {
+                              hasResponsiveWindow = true;
+                              break;
+                        }
+                  }
+
+                  if (!hasResponsiveWindow) {
+                        console.log('No responsive windows found, creating new window...');
+                        writeDebugLog('Health check: No responsive windows, attempting recovery');
+
+                        if (process.platform === 'win32') {
+                              createEmergencyWindow();
+                        } else {
+                              createWindow();
+                        }
+                  }
             }
-      }
-}, 10000); // Increased to 10 seconds to prevent rapid re-crashes
+      }, 10000); // Check every 10 seconds
+}, 30000); // Wait 30 seconds after startup before starting health checks

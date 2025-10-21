@@ -164,10 +164,14 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
                   const odds = typeof selection.odds === 'object' && selection.odds !== null
                         ? selection.odds.decimal || selection.odds.multiplier || selection.odds
                         : selection.odds;
-                  const gameId = String(selection.gameId).replace(/[^\w]/g, '');
+                  const gameId = String(selection.gameId || '').replace(/[^\w]/g, '');
+
+                  // Get last 4 characters of game ID
+                  const gameIdLast4 = gameId.length >= 4 ? gameId.slice(-4) : gameId;
 
                   // Add game start time and result type (FT/HT) - use actual game data from API
-                  const gameStartTime = selection.gameStartTime ? new Date(selection.gameStartTime).toLocaleTimeString('en-US', {
+                  const gameStartTime = selection.gameStartTime || selection.gameTime;
+                  const formattedStartTime = gameStartTime ? new Date(gameStartTime).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
@@ -175,8 +179,12 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
                   const resultType = selection.resultType ? String(selection.resultType).toUpperCase() : 'FT'; // Default to FT if not specified
 
                   const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
-                  const timeAndType = gameStartTime ? ` (${gameStartTime} - ${resultType})` : ` (${resultType})`;
-                  win.printText(selectionText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
+                  win.printText(selectionText + '\n', 0, 0, false, false, false, 0, 0);
+
+                  // Print game ID (last 4 chars) and start time on new line
+                  const gameInfoText = `   ID: ...${gameIdLast4}`;
+                  const timeAndType = formattedStartTime ? ` | ${formattedStartTime} (${resultType})` : ` | (${resultType})`;
+                  win.printText(gameInfoText + timeAndType + '\n', 0, 0, false, false, false, 0, 0);
 
                   const betTypeText = `   ${betType}: ${sel}\n`;
                   win.printText(betTypeText, 0, 0, false, false, false, 0, 0);
