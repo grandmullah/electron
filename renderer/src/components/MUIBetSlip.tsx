@@ -269,7 +269,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         return;
       }
 
-      const result = await placeBets(betSlipItems, isMultibet, stake);
+      const result = await placeBets(
+        betSlipItems,
+        isMultibet,
+        stake,
+        user?.id,
+        user?.bettingLimits
+      );
 
       // Handle different response types for single bets vs multibets
       let success = false;
