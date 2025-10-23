@@ -7,6 +7,8 @@ import {
   hideBetSlip,
   toggleMultibetMode,
   setMultibetStake,
+  setMultibetStakeFromLimits,
+  initializeBetSlipWithLimits,
   BetSlipItem,
 } from "../store/betslipSlice";
 import { placeBets, BetSlipService } from "../services/betslipService";
@@ -76,6 +78,45 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
   const [successBetData, setSuccessBetData] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [validationData, setValidationData] = useState<any>(null);
+  const [stakeErrors, setStakeErrors] = useState<{ [key: string]: string }>({});
+
+  // Initialize betslip with user limits when component mounts or user changes
+  useEffect(() => {
+    if (user?.bettingLimits) {
+      dispatch(
+        initializeBetSlipWithLimits({
+          minStake: user.bettingLimits.minStake,
+          maxStake: user.bettingLimits.maxStake,
+        })
+      );
+    }
+  }, [user?.bettingLimits, dispatch]);
+
+  // Validate individual stake
+  const validateStake = (
+    value: number,
+    betId?: string
+  ): { isValid: boolean; error: string } => {
+    const minStake = user?.bettingLimits?.minStake || 10;
+    const maxStake = user?.bettingLimits?.maxStake || 100000;
+    const currency = user?.currency || "SSP";
+
+    if (value < minStake) {
+      return {
+        isValid: false,
+        error: `Minimum stake is ${currency} ${minStake.toFixed(2)}`,
+      };
+    }
+
+    if (value > maxStake) {
+      return {
+        isValid: false,
+        error: `Maximum stake is ${currency} ${maxStake.toFixed(2)}`,
+      };
+    }
+
+    return { isValid: true, error: "" };
+  };
 
   // Calculate combined odds for multibet
   const calculateCombinedOdds = (bets: BetSlipItem[]): number => {
@@ -103,21 +144,42 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       return { isValid: false, error: "No bets selected" };
     }
 
-    const minStake = 200;
-    const maxStake = user?.bettingLimits?.maxStake || 10000;
+    const minStake = user?.bettingLimits?.minStake || 10;
+    const maxStake = user?.bettingLimits?.maxStake || 100000;
+    const currency = user?.currency || "SSP";
 
-    if (stake < minStake) {
-      return {
-        isValid: false,
-        error: `Minimum stake is ${user?.currency || "SSP"} ${minStake.toFixed(2)}`,
-      };
-    }
+    // For multibet, validate the single stake
+    if (isMultibet) {
+      if (stake < minStake) {
+        return {
+          isValid: false,
+          error: `Minimum stake is ${currency} ${minStake.toFixed(2)}`,
+        };
+      }
 
-    if (stake > maxStake) {
-      return {
-        isValid: false,
-        error: `Maximum stake is ${user?.currency || "SSP"} ${maxStake.toFixed(2)}`,
-      };
+      if (stake > maxStake) {
+        return {
+          isValid: false,
+          error: `Maximum stake is ${currency} ${maxStake.toFixed(2)}`,
+        };
+      }
+    } else {
+      // For single bets, validate each individual bet stake
+      for (const bet of bets) {
+        if (bet.stake < minStake) {
+          return {
+            isValid: false,
+            error: `Minimum stake is ${currency} ${minStake.toFixed(2)}`,
+          };
+        }
+
+        if (bet.stake > maxStake) {
+          return {
+            isValid: false,
+            error: `Maximum stake is ${currency} ${maxStake.toFixed(2)}`,
+          };
+        }
+      }
     }
 
     return { isValid: true, error: "" };
@@ -628,26 +690,42 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                         value={multibetStake}
                         onChange={(e) => {
                           const value = Number(e.target.value);
-                          const minStake = 200;
-                          const maxStake =
-                            user?.bettingLimits?.maxStake || 10000;
+                          const validation = validateStake(value);
 
-                          if (value >= minStake && value <= maxStake) {
+                          if (validation.isValid) {
                             dispatch(setMultibetStake(value));
+                            setStakeErrors((prev) => ({
+                              ...prev,
+                              multibet: "",
+                            }));
+                          } else {
+                            setStakeErrors((prev) => ({
+                              ...prev,
+                              multibet: validation.error,
+                            }));
                           }
                         }}
                         onBlur={(e) => {
                           const value = Number(e.target.value);
-                          if (value < 200) {
-                            dispatch(setMultibetStake(200));
+                          const minStake = user?.bettingLimits?.minStake || 10;
+                          if (value < minStake) {
+                            dispatch(setMultibetStake(minStake));
+                            setStakeErrors((prev) => ({
+                              ...prev,
+                              multibet: "",
+                            }));
                           }
                         }}
                         inputProps={{
-                          min: 200,
-                          max: user?.bettingLimits?.maxStake || 10000,
+                          min: user?.bettingLimits?.minStake || 10,
+                          max: user?.bettingLimits?.maxStake || 100000,
                           step: 1,
                         }}
-                        helperText={`Min: ${user?.currency || "SSP"} 200.00 | Max: ${user?.currency || "SSP"} ${(user?.bettingLimits?.maxStake || 10000).toFixed(2)}`}
+                        helperText={
+                          stakeErrors.multibet ||
+                          `Min: ${user?.currency || "SSP"} ${(user?.bettingLimits?.minStake || 10).toFixed(2)} | Max: ${user?.currency || "SSP"} ${(user?.bettingLimits?.maxStake || 100000).toFixed(2)}`
+                        }
+                        error={!!stakeErrors.multibet}
                         sx={{
                           mt: 1,
                           "& .MuiInputLabel-root": {
@@ -837,46 +915,65 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                 mt={1}
                               >
                                 <TextField
-                                  label="Stake"
+                                  label={`Stake (${user?.currency || "SSP"})`}
                                   type="number"
                                   size="small"
                                   value={bet.stake}
                                   onChange={(e) => {
                                     const value = Number(e.target.value);
-                                    const minStake = 200;
-                                    const maxStake =
-                                      user?.bettingLimits?.maxStake || 10000;
+                                    const validation = validateStake(
+                                      value,
+                                      bet.id
+                                    );
 
-                                    if (
-                                      value >= minStake &&
-                                      value <= maxStake
-                                    ) {
+                                    if (validation.isValid) {
                                       dispatch(
                                         updateBetSlipStake({
                                           id: bet.id,
                                           stake: value,
                                         })
                                       );
+                                      setStakeErrors((prev) => ({
+                                        ...prev,
+                                        [bet.id]: "",
+                                      }));
+                                    } else {
+                                      setStakeErrors((prev) => ({
+                                        ...prev,
+                                        [bet.id]: validation.error,
+                                      }));
                                     }
                                   }}
                                   onBlur={(e) => {
                                     const value = Number(e.target.value);
-                                    if (value < 200) {
+                                    const minStake =
+                                      user?.bettingLimits?.minStake || 10;
+                                    if (value < minStake) {
                                       dispatch(
                                         updateBetSlipStake({
                                           id: bet.id,
-                                          stake: 200,
+                                          stake: minStake,
                                         })
                                       );
+                                      setStakeErrors((prev) => ({
+                                        ...prev,
+                                        [bet.id]: "",
+                                      }));
                                     }
                                   }}
                                   inputProps={{
-                                    min: 200,
-                                    max: user?.bettingLimits?.maxStake || 10000,
+                                    min: user?.bettingLimits?.minStake || 10,
+                                    max:
+                                      user?.bettingLimits?.maxStake || 100000,
                                     step: 1,
                                   }}
+                                  helperText={
+                                    stakeErrors[bet.id] ||
+                                    `Min: ${user?.bettingLimits?.minStake || 10} | Max: ${user?.bettingLimits?.maxStake || 100000}`
+                                  }
+                                  error={!!stakeErrors[bet.id]}
                                   sx={{
-                                    width: 120,
+                                    width: 180,
                                     "& .MuiInputLabel-root": {
                                       color: "rgba(255,255,255,0.7)",
                                     },
@@ -895,6 +992,10 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                     },
                                     "& .MuiInputLabel-root.Mui-focused": {
                                       color: "#42a5f5",
+                                    },
+                                    "& .MuiFormHelperText-root": {
+                                      color: "rgba(255,255,255,0.6)",
+                                      fontSize: "0.7rem",
                                     },
                                   }}
                                 />

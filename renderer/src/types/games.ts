@@ -203,6 +203,18 @@ export interface Game {
       };
       currentPeriod: number;
       currentTime: string | null;
+      // Team index from API - contains league, game, and full index info
+      team_index?: {
+            leagueIndex: number;
+            gameIndex: number;
+            fullIndex: number;
+            homeTeam: string;
+            awayTeam: string;
+            gameId: string;
+            externalId: string;
+            createdAt: string;
+            expiresAt: string;
+      };
 }
 
 // ===================================

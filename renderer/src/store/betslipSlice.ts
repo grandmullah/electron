@@ -92,6 +92,19 @@ export const betslipSlice = createSlice({
                         state.multibetStake = minStake; // Reset to minimum if over limit
                   }
             },
+            initializeBetSlipWithLimits: (state, action: PayloadAction<{ minStake: number; maxStake: number }>) => {
+                  // Initialize betslip with user limits
+                  const { minStake } = action.payload;
+                  state.multibetStake = minStake;
+
+                  // Update existing bet stakes to meet minimum requirements
+                  state.items.forEach(item => {
+                        if (item.stake < minStake) {
+                              item.stake = minStake;
+                              item.potentialWinnings = item.stake * item.odds;
+                        }
+                  });
+            },
       },
 });
 
@@ -107,6 +120,7 @@ export const {
       enableMultibetMode,
       setMultibetStake,
       setMultibetStakeFromLimits,
+      initializeBetSlipWithLimits,
 } = betslipSlice.actions;
 
 export default betslipSlice.reducer; 

@@ -193,6 +193,8 @@ class GamesService {
                   },
                   currentPeriod: suggestion.currentPeriod || 0,
                   currentTime: suggestion.currentTime || null,
+                  // Preserve team_index from API (if available)
+                  team_index: (suggestion as any).team_index,
             };
       }
 
@@ -225,6 +227,8 @@ class GamesService {
                   },
                   currentPeriod: gameDetails.current_period,
                   currentTime: gameDetails.current_time,
+                  // Preserve team_index from API (if available)
+                  team_index: (gameDetails as any).team_index,
             };
       }
 
@@ -276,6 +280,8 @@ class GamesService {
                   },
                   currentPeriod: searchResult.currentPeriod || 0,
                   currentTime: searchResult.currentTime || null,
+                  // Preserve team_index from API (if available)
+                  team_index: (searchResult as any).team_index,
             };
       }
 
@@ -304,6 +310,8 @@ class GamesService {
                   status: (game.status === 'scheduled' ? 'upcoming' : game.status) || 'upcoming',
                   currentPeriod: 0,
                   currentTime: null,
+                  // Preserve team_index from API
+                  team_index: game.team_index,
             };
       }
 

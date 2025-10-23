@@ -147,166 +147,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
 
-  // Weekly stable numbering system
-  // Indexes are assigned once and persist until Wednesday night reset
-  // Format: League 1 = 1xx (101, 102, 103...), League 2 = 2xx (201, 202, 203...), etc.
-
-  const getLeagueNumber = (leagueKey: string): number => {
-    const stored = localStorage.getItem("betzone_league_numbers");
-    let leagueMap: Record<string, number> = {};
-
-    if (stored) {
-      try {
-        leagueMap = JSON.parse(stored);
-      } catch (e) {
-        console.error("Failed to parse league numbers:", e);
-      }
-    }
-
-    // If this league doesn't have a number, assign the next available one
-    if (!leagueMap[leagueKey]) {
-      const existingNumbers = Object.values(leagueMap);
-      const maxNumber =
-        existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
-      leagueMap[leagueKey] = maxNumber + 1;
-      localStorage.setItem("betzone_league_numbers", JSON.stringify(leagueMap));
-    }
-
-    return leagueMap[leagueKey];
-  };
-
-  // Check if it's time to reset (Wednesday night - after 11 PM)
-  // This will trigger even if the app wasn't running on Wednesday
-  const shouldResetIndexes = (): boolean => {
-    const now = new Date();
-    const stored = localStorage.getItem("betzone_game_indexes_timestamp");
-
-    // If no timestamp, first time setup - don't reset
-    if (!stored) {
-      return false;
-    }
-
-    const lastReset = new Date(stored);
-
-    // Calculate the most recent Wednesday 11 PM
-    const getLastWednesday11PM = (date: Date): Date => {
-      const result = new Date(date);
-      const dayOfWeek = result.getDay();
-
-      // Calculate days to subtract to get to last Wednesday
-      let daysToSubtract = 0;
-      if (dayOfWeek === 3) {
-        // It's Wednesday
-        if (result.getHours() >= 23) {
-          // After 11 PM, use today
-          daysToSubtract = 0;
-        } else {
-          // Before 11 PM, use last week's Wednesday
-          daysToSubtract = 7;
-        }
-      } else if (dayOfWeek < 3) {
-        // Sunday (0), Monday (1), Tuesday (2) - go back to last Wednesday
-        daysToSubtract = dayOfWeek + 4; // e.g., Monday (1) -> go back 5 days
-      } else {
-        // Thursday (4), Friday (5), Saturday (6) - go back to this week's Wednesday
-        daysToSubtract = dayOfWeek - 3;
-      }
-
-      result.setDate(result.getDate() - daysToSubtract);
-      result.setHours(23, 0, 0, 0);
-      return result;
-    };
-
-    const lastWednesday = getLastWednesday11PM(now);
-
-    // Reset if the last Wednesday 11 PM is after the last reset timestamp
-    // This means we've passed a Wednesday 11 PM since last reset
-    return lastWednesday.getTime() > lastReset.getTime();
-  };
-
-  // Get or assign game indexes with weekly reset
-  const getGameIndexes = (
-    games: Game[],
-    leagueKey: string
-  ): Map<string, number> => {
-    const indexMap = new Map<string, number>();
-    const leagueNumber = getLeagueNumber(leagueKey);
-
-    // Check if we should reset
-    if (shouldResetIndexes()) {
-      console.log("🔄 Wednesday night reset - clearing old game indexes");
-      localStorage.removeItem("betzone_game_indexes");
-      localStorage.setItem(
-        "betzone_game_indexes_timestamp",
-        new Date().toISOString()
-      );
-    }
-
-    // Load existing indexes
-    const stored = localStorage.getItem("betzone_game_indexes");
-    let existingIndexes: Record<
-      string,
-      { externalId: string; index: number; leagueKey: string }
-    > = {};
-
-    if (stored) {
-      try {
-        existingIndexes = JSON.parse(stored);
-      } catch (e) {
-        console.error("Failed to parse game indexes:", e);
-      }
-    }
-
-    // Get the highest existing index for this league
-    let maxIndex = 0;
-    Object.values(existingIndexes).forEach((item) => {
-      if (item.leagueKey === leagueKey) {
-        const gameIndex = item.index % 100; // Get just the game part (not league part)
-        if (gameIndex > maxIndex) {
-          maxIndex = gameIndex;
-        }
-      }
-    });
-
-    // Assign indexes to games
-    games.forEach((game, arrayIndex) => {
-      const externalId = game.externalId || game.id;
-      const storageKey = `${leagueKey}-${externalId}`;
-
-      // Check if this game already has an index
-      if (existingIndexes[storageKey]) {
-        indexMap.set(game.id, existingIndexes[storageKey].index);
-      } else {
-        // New game - assign next available index
-        maxIndex++;
-        const newIndex = leagueNumber * 100 + maxIndex;
-        indexMap.set(game.id, newIndex);
-
-        // Store the assignment
-        existingIndexes[storageKey] = {
-          externalId: externalId,
-          index: newIndex,
-          leagueKey: leagueKey,
-        };
-      }
-    });
-
-    // Save updated indexes
-    localStorage.setItem(
-      "betzone_game_indexes",
-      JSON.stringify(existingIndexes)
-    );
-
-    // Set timestamp if not exists
-    if (!localStorage.getItem("betzone_game_indexes_timestamp")) {
-      localStorage.setItem(
-        "betzone_game_indexes_timestamp",
-        new Date().toISOString()
-      );
-    }
-
-    return indexMap;
-  };
+  // Game indexes now come from the API via team_index field
+  // No local index creation needed
 
   // Check if user is an agent and load managed users
   useEffect(() => {
@@ -421,10 +263,14 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             
             .game-info-compact {
               display: flex;
-              align-items: center;
-              gap: 8px;
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 4px;
               flex: 0 0 auto;
               flex-shrink: 0;
+              min-width: 300px;
+              max-width: 300px;
+              margin-right: 20px;
             }
             
             .game-id-compact {
@@ -442,6 +288,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               display: flex;
               align-items: center;
               gap: 8px;
+              width: 100%;
             }
             
             .game-teams {
@@ -449,12 +296,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               font-weight: 600;
               color: #212529;
               white-space: nowrap;
+              width: 300px;
+              min-width: 300px;
+              max-width: 300px;
             }
             
             .game-number {
               color: #FFD700;
               font-weight: 700;
-              text-shadow: 0 0 2px rgba(255, 215, 0, 0.5);
+              text-shadow: 0 0 3px rgba(255, 215, 0, 0.6);
+              background: none;
             }
             
             .vs-separator {
@@ -467,16 +318,20 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               font-size: 9px;
               color: #6c757d;
               white-space: nowrap;
+              min-width: 90px;
+              text-align: left;
+              margin-top: 2px;
             }
             
             
             .betting-options {
               display: flex;
-              align-items: center;
-              gap: 6px;
+              align-items: flex-start;
+              gap: 8px;
               flex-wrap: nowrap;
               flex: 1;
               overflow-x: auto;
+              padding: 4px 0;
             }
             
             .betting-option-compact {
@@ -487,11 +342,37 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               white-space: nowrap;
             }
             
+            .betting-option-vertical {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3px;
+              min-width: 40px;
+              max-width: 40px;
+              text-align: center;
+              flex-shrink: 0;
+            }
+            
             .betting-option-label-compact {
               font-size: 8px;
               font-weight: 600;
               color: #6c757d;
               text-transform: uppercase;
+            }
+            
+            .betting-option-label-vertical {
+              font-size: 8px;
+              font-weight: 700;
+              color: #495057;
+              text-transform: uppercase;
+              background: #f8f9fa;
+              border: 1px solid #dee2e6;
+              border-radius: 3px;
+              padding: 2px 4px;
+              min-width: 22px;
+              max-width: 22px;
+              text-align: center;
+              line-height: 1;
             }
             
             .betting-option-value-compact {
@@ -506,6 +387,20 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               text-align: center;
             }
             
+            .betting-option-value-vertical {
+              background: #e7f5ff;
+              border: 1px solid #74c0fc;
+              padding: 2px 6px;
+              border-radius: 3px;
+              font-size: 9px;
+              font-weight: 700;
+              color: #1971c2;
+              min-width: 32px;
+              max-width: 32px;
+              text-align: center;
+              line-height: 1;
+            }
+            
             .betting-option-value-compact.clickable {
               background: #e7f5ff;
               border-color: #74c0fc;
@@ -513,6 +408,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
             }
             
             .betting-option-compact.disabled .betting-option-value-compact {
+              background: #f1f3f5;
+              color: #adb5bd;
+              border-color: #e9ecef;
+            }
+            
+            .betting-option-vertical.disabled .betting-option-value-vertical {
               background: #f1f3f5;
               color: #adb5bd;
               border-color: #e9ecef;
@@ -661,11 +562,17 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               
               .betting-options {
                 flex-wrap: nowrap;
-                gap: 4px;
+                gap: 6px;
+                padding: 2px 0;
               }
               
               .game-info-compact {
                 flex: 0 0 auto;
+                min-width: 250px;
+                max-width: 250px;
+                margin-right: 15px;
+                flex-direction: column;
+                gap: 3px;
               }
               
               .game-id-compact {
@@ -675,10 +582,24 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               
               .game-teams {
                 font-size: 10px;
+                width: 250px;
+                min-width: 250px;
+                max-width: 250px;
+              }
+              
+              .game-number {
+                color: #FFD700;
+                font-weight: 700;
+                text-shadow: none;
+                background: none !important;
+                background-color: transparent !important;
               }
               
               .game-time {
                 font-size: 8px;
+                min-width: 70px;
+                text-align: left;
+                margin-top: 1px;
               }
               
               .betting-option-label-compact {
@@ -689,6 +610,26 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 font-size: 8px;
                 padding: 2px 4px;
                 min-width: 28px;
+              }
+              
+              .betting-option-vertical {
+                min-width: 35px;
+                max-width: 35px;
+                gap: 2px;
+              }
+              
+              .betting-option-label-vertical {
+                font-size: 7px;
+                padding: 1px 3px;
+                min-width: 18px;
+                max-width: 18px;
+              }
+              
+              .betting-option-value-vertical {
+                font-size: 8px;
+                padding: 1px 4px;
+                min-width: 28px;
+                max-width: 28px;
               }
               
               .print-header {
@@ -719,50 +660,48 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           </div>
           
           <div class="games-grid">
-            ${(() => {
-              const gameIndexes = getGameIndexes(games, leagueKey);
-              return games
-                .map((game) => {
-                  const gameNumber = gameIndexes.get(game.id) || 0;
-                  return `
+            ${games
+              .map((game) => {
+                const gameNumber = game.team_index?.fullIndex || 0;
+                return `
               <div class="game-card">
                 <!-- Game Info & Teams - All Horizontal -->
                 <div class="game-info-compact">
                   <div class="game-id-compact">...${game.externalId ? game.externalId.slice(-5) : game.id.slice(-5)}</div>
                   <div class="game-header">
                     <div class="game-teams"><span class="game-number">[${gameNumber}]</span> ${game.homeTeam} <span class="vs-separator">vs</span> ${game.awayTeam}</div>
-                    <div class="game-time">${new Date(game.matchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
                   </div>
+                  <div class="game-time">${new Date(game.matchTime).toLocaleDateString([], { month: "short", day: "numeric" })} ${new Date(game.matchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
                 </div>
                 
-                <!-- Odds - All on Same Line -->
+                <!-- Odds - Vertical Layout -->
                 <div class="betting-options">
                   <!-- H2H Odds -->
-                  <div class="betting-option-compact ${!game.homeOdds ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">1:</div>
-                    <div class="betting-option-value-compact ${game.homeOdds ? "clickable" : ""}">${game.homeOdds || "-"}</div>
+                  <div class="betting-option-vertical ${!game.homeOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">1</div>
+                    <div class="betting-option-value-vertical ${game.homeOdds ? "clickable" : ""}">${game.homeOdds || "-"}</div>
                   </div>
-                  <div class="betting-option-compact ${!game.drawOdds ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">X:</div>
-                    <div class="betting-option-value-compact ${game.drawOdds ? "clickable" : ""}">${game.drawOdds || "-"}</div>
+                  <div class="betting-option-vertical ${!game.drawOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">X</div>
+                    <div class="betting-option-value-vertical ${game.drawOdds ? "clickable" : ""}">${game.drawOdds || "-"}</div>
                   </div>
-                  <div class="betting-option-compact ${!game.awayOdds ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">2:</div>
-                    <div class="betting-option-value-compact ${game.awayOdds ? "clickable" : ""}">${game.awayOdds || "-"}</div>
+                  <div class="betting-option-vertical ${!game.awayOdds ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">2</div>
+                    <div class="betting-option-value-vertical ${game.awayOdds ? "clickable" : ""}">${game.awayOdds || "-"}</div>
                   </div>
                   
                   <!-- DC -->
-                  <div class="betting-option-compact ${!game.doubleChance?.homeOrDraw ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">1X:</div>
-                    <div class="betting-option-value-compact ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">${game.doubleChance?.homeOrDraw || "-"}</div>
+                  <div class="betting-option-vertical ${!game.doubleChance?.homeOrDraw ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">1X</div>
+                    <div class="betting-option-value-vertical ${game.doubleChance?.homeOrDraw ? "clickable" : ""}">${game.doubleChance?.homeOrDraw || "-"}</div>
                   </div>
-                  <div class="betting-option-compact ${!game.doubleChance?.drawOrAway ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">X2:</div>
-                    <div class="betting-option-value-compact ${game.doubleChance?.drawOrAway ? "clickable" : ""}">${game.doubleChance?.drawOrAway || "-"}</div>
+                  <div class="betting-option-vertical ${!game.doubleChance?.drawOrAway ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">X2</div>
+                    <div class="betting-option-value-vertical ${game.doubleChance?.drawOrAway ? "clickable" : ""}">${game.doubleChance?.drawOrAway || "-"}</div>
                   </div>
-                  <div class="betting-option-compact ${!game.doubleChance?.homeOrAway ? "disabled" : ""}">
-                    <div class="betting-option-label-compact">12:</div>
-                    <div class="betting-option-value-compact ${game.doubleChance?.homeOrAway ? "clickable" : ""}">${game.doubleChance?.homeOrAway || "-"}</div>
+                  <div class="betting-option-vertical ${!game.doubleChance?.homeOrAway ? "disabled" : ""}">
+                    <div class="betting-option-label-vertical">12</div>
+                    <div class="betting-option-value-vertical ${game.doubleChance?.homeOrAway ? "clickable" : ""}">${game.doubleChance?.homeOrAway || "-"}</div>
                   </div>
                   
                   <!-- Totals -->
@@ -772,13 +711,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                           .slice(0, 1)
                           .map(
                             (total) => `
-                    <div class="betting-option-compact ${!total.over ? "disabled" : ""}">
-                      <div class="betting-option-label-compact">O${total.point}:</div>
-                      <div class="betting-option-value-compact ${total.over ? "clickable" : ""}">${total.over || "-"}</div>
+                    <div class="betting-option-vertical ${!total.over ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">O${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.over ? "clickable" : ""}">${total.over || "-"}</div>
                     </div>
-                    <div class="betting-option-compact ${!total.under ? "disabled" : ""}">
-                      <div class="betting-option-label-compact">U${total.point}:</div>
-                      <div class="betting-option-value-compact ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
+                    <div class="betting-option-vertical ${!total.under ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">U${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
                     </div>
                   `
                           )
@@ -790,13 +729,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   ${
                     game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no
                       ? `
-                    <div class="betting-option-compact ${!game.bothTeamsToScore?.yes ? "disabled" : ""}">
-                      <div class="betting-option-label-compact">GG:</div>
-                      <div class="betting-option-value-compact ${game.bothTeamsToScore?.yes ? "clickable" : ""}">${game.bothTeamsToScore?.yes || "-"}</div>
+                    <div class="betting-option-vertical ${!game.bothTeamsToScore?.yes ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">GG</div>
+                      <div class="betting-option-value-vertical ${game.bothTeamsToScore?.yes ? "clickable" : ""}">${game.bothTeamsToScore?.yes || "-"}</div>
                     </div>
-                    <div class="betting-option-compact ${!game.bothTeamsToScore?.no ? "disabled" : ""}">
-                      <div class="betting-option-label-compact">NG:</div>
-                      <div class="betting-option-value-compact ${game.bothTeamsToScore?.no ? "clickable" : ""}">${game.bothTeamsToScore?.no || "-"}</div>
+                    <div class="betting-option-vertical ${!game.bothTeamsToScore?.no ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">NG</div>
+                      <div class="betting-option-value-vertical ${game.bothTeamsToScore?.no ? "clickable" : ""}">${game.bothTeamsToScore?.no || "-"}</div>
                     </div>
                   `
                       : ""
@@ -804,9 +743,8 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
             `;
-                })
-                .join("");
-            })()}
+              })
+              .join("")}
           </div>
           
           <div class="print-footer">
@@ -1619,18 +1557,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   </Paper>
                 ) : (
                   <Stack spacing={2}>
-                    {(() => {
-                      const filteredGames = games.filter(
+                    {games
+                      .filter(
                         (game) =>
                           game && game.id && game.homeTeam && game.awayTeam
-                      );
-                      const gameIndexes = getGameIndexes(
-                        filteredGames,
-                        leagueKey
-                      );
-
-                      return filteredGames.map((game) => {
-                        const gameNumber = gameIndexes.get(game.id) || 0;
+                      )
+                      .map((game) => {
+                        const gameNumber = game.team_index?.fullIndex || 0;
 
                         return (
                           <GameCard
@@ -1645,8 +1578,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                             gameNumber={gameNumber}
                           />
                         );
-                      });
-                    })()}
+                      })}
                   </Stack>
                 )}
               </Box>

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import useSWR from "swr";
 import {
   Box,
   Paper,
@@ -45,418 +46,137 @@ export const GameSearch: React.FC<GameSearchProps> = ({
   leagueGames = [],
   leagueKey = "",
 }) => {
-  const [searchMode, setSearchMode] = useState<
-    "id" | "filters" | "autocomplete" | "number"
-  >("number");
-  const [gameId, setGameId] = useState("");
-  const [gameNumberQuery, setGameNumberQuery] = useState("");
   const [autocompleteQuery, setAutocompleteQuery] = useState("");
-  const [filters, setFilters] = useState<{
-    externalId: string;
-    status: string;
-    sportKey: string;
-    search: string;
-  }>({
-    externalId: "",
-    status: "",
-    sportKey: "",
-    search: "",
-  });
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Game[]>([]);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const autocompleteTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const numberSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const performSearchById = async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      setError(null);
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-      return;
-    }
-
-    // Minimum 3 characters for search
-    if (searchTerm.trim().length < 3) {
-      setError(null);
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSearchResults([]);
-    setSelectedGame(null);
-
-    try {
-      const trimmedTerm = searchTerm.trim();
-
-      // If search term is long (30+ chars), likely a full ID - use direct lookup
-      // Otherwise use search with partial matching for externalId
-      if (trimmedTerm.length >= 30) {
-        // Full ID - direct lookup
-        const game = await GamesService.fetchGameById(trimmedTerm);
-        setSelectedGame(game);
-        setSearchResults([game]);
-        onSearchResultsChange?.(true);
-      } else {
-        // Partial ID - use search endpoint which supports partial matching
-        const games = await GamesService.searchGames({
-          externalId: trimmedTerm,
-        });
-
-        if (games.length === 0) {
-          setError(`No games found with ID containing "${trimmedTerm}"`);
-          onSearchResultsChange?.(false);
-        } else {
-          setSearchResults(games);
-          if (games.length === 1 && games[0]) {
-            setSelectedGame(games[0]);
-          }
-          onSearchResultsChange?.(true);
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch game");
-      onSearchResultsChange?.(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debounced search function
-  const debouncedSearchById = useCallback((searchTerm: string) => {
-    // Clear any existing timer
+  // Debounce the search query
+  useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer
     debounceTimerRef.current = setTimeout(() => {
-      performSearchById(searchTerm);
-    }, 500); // 500ms debounce delay
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      setDebouncedQuery(autocompleteQuery);
+    }, 300); // 300ms debounce
 
-  // Cleanup on unmount
-  useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      if (autocompleteTimerRef.current) {
-        clearTimeout(autocompleteTimerRef.current);
-      }
     };
-  }, []);
+  }, [autocompleteQuery]);
 
-  // Autocomplete search function
-  const performAutocomplete = async (query: string) => {
-    if (!query.trim()) {
+  // Always use API for autocomplete (both text and index numbers)
+  const trimmedQuery = debouncedQuery.trim();
+  const shouldFetchFromAPI = trimmedQuery.length >= 2;
+
+  // SWR fetcher for autocomplete - extracts query from the key
+  const autocompleteFetcher = async (key: string) => {
+    // Extract query from the key format: /autocomplete/{query}
+    const query = key.split("/").pop() || "";
+
+    if (!query || query.length < 2) return [];
+
+    console.log("🔍 SWR fetching autocomplete for:", query);
+    const suggestions = await GamesService.autocompleteGames(query, 20);
+
+    // Transform suggestions to Game objects
+    const games = suggestions.map((suggestion) =>
+      GamesService.transformAutocompleteToGame(suggestion)
+    );
+
+    console.log("✅ SWR autocomplete results:", games.length);
+    return games;
+  };
+
+  // Use SWR for text-based autocomplete with debounced query
+  const {
+    data: apiResults,
+    error: apiError,
+    isLoading: isLoadingAPI,
+  } = useSWR(
+    shouldFetchFromAPI ? `/autocomplete/${trimmedQuery}` : null,
+    autocompleteFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 2000, // Dedupe requests within 2 seconds
+      errorRetryCount: 1,
+      keepPreviousData: true, // Keep showing previous results while loading new ones
+    }
+  );
+
+  // Handle search results from API
+  useEffect(() => {
+    console.log("🔄 Search effect triggered:", {
+      debouncedQuery: trimmedQuery,
+      shouldFetchFromAPI,
+      hasApiResults: !!apiResults,
+      apiError: apiError?.message,
+      isLoadingAPI,
+    });
+
+    if (!trimmedQuery) {
+      setSearchResults([]);
+      setError(null);
+      onSearchResultsChange?.(false);
+      return;
+    }
+
+    if (trimmedQuery.length < 2) {
+      setSearchResults([]);
+      setError(null);
+      onSearchResultsChange?.(false);
+      return;
+    }
+
+    // Handle API errors
+    if (apiError) {
+      console.error("❌ API error:", apiError);
+      setError(apiError.message || "Failed to search games");
       setSearchResults([]);
       onSearchResultsChange?.(false);
       return;
     }
 
-    // Minimum 2 characters for autocomplete
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const suggestions = await GamesService.autocompleteGames(
-        query.trim(),
-        20
-      );
-
-      if (suggestions.length === 0) {
-        setError(`No games found matching "${query.trim()}"`);
+    // Handle API results (for both text and index searches)
+    if (apiResults) {
+      console.log("📊 Processing API results:", apiResults.length);
+      if (apiResults.length === 0) {
+        setError(`No games found matching "${trimmedQuery}"`);
         setSearchResults([]);
         onSearchResultsChange?.(false);
       } else {
-        // Transform suggestions to Game objects
-        const games = suggestions.map((suggestion) =>
-          GamesService.transformAutocompleteToGame(suggestion)
-        );
-        setSearchResults(games);
-        if (games.length === 1 && games[0]) {
-          setSelectedGame(games[0]);
+        setSearchResults(apiResults);
+        if (apiResults.length === 1 && apiResults[0]) {
+          setSelectedGame(apiResults[0]);
         }
+        setError(null);
         onSearchResultsChange?.(true);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to autocomplete games");
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Debounced autocomplete
-  const debouncedAutocomplete = useCallback((query: string) => {
-    if (autocompleteTimerRef.current) {
-      clearTimeout(autocompleteTimerRef.current);
-    }
-
-    autocompleteTimerRef.current = setTimeout(() => {
-      performAutocomplete(query);
-    }, 300); // Faster debounce for autocomplete (300ms)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    trimmedQuery,
+    shouldFetchFromAPI,
+    apiResults,
+    apiError,
+    isLoadingAPI,
+    onSearchResultsChange,
+  ]);
 
   // Handle autocomplete input change
   const handleAutocompleteChange = (value: string) => {
     setAutocompleteQuery(value);
-    debouncedAutocomplete(value);
-  };
-
-  // Handle input change with debounce
-  const handleGameIdChange = (value: string) => {
-    setGameId(value);
-    debouncedSearchById(value);
-  };
-
-  // Manual search button handler (immediate, no debounce)
-  const handleSearchById = () => {
-    performSearchById(gameId);
-  };
-
-  const handleSearchWithFilters = async () => {
-    // Check if at least one filter is provided
-    const hasFilters =
-      (filters.externalId && filters.externalId.trim() !== "") ||
-      filters.status ||
-      (filters.sportKey && filters.sportKey.trim() !== "") ||
-      (filters.search && filters.search.trim() !== "");
-
-    if (!hasFilters) {
-      setError("Please provide at least one search filter");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSearchResults([]);
-    setSelectedGame(null);
-
-    try {
-      // Build filter object with only non-empty values
-      const searchFilters: GameSearchFilters = {};
-      if (filters.externalId && filters.externalId.trim() !== "") {
-        searchFilters.externalId = filters.externalId.trim();
-      }
-      if (filters.status && filters.status.trim() !== "") {
-        searchFilters.status = filters.status as any;
-      }
-      if (filters.sportKey && filters.sportKey.trim() !== "") {
-        searchFilters.sportKey = filters.sportKey.trim();
-      }
-      if (filters.search && filters.search.trim() !== "") {
-        searchFilters.search = filters.search.trim();
-      }
-
-      const games = await GamesService.searchGames(searchFilters);
-      setSearchResults(games);
-
-      if (games.length === 0) {
-        setError("No games found matching the search criteria");
-        onSearchResultsChange?.(false);
-      } else {
-        onSearchResultsChange?.(true);
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to search games");
-      onSearchResultsChange?.(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Frontend filter by game number using stable indexes (cross-league search)
-  const performNumberSearch = async (numberQuery: string) => {
-    if (!numberQuery.trim()) {
-      setError(null);
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-      return;
-    }
-
-    const searchNumber = parseInt(numberQuery.trim());
-
-    if (isNaN(searchNumber)) {
-      setError("Please enter a valid game number");
-      setSearchResults([]);
-      onSearchResultsChange?.(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSelectedGame(null);
-
-    try {
-      // Load stored game indexes
-      const stored = localStorage.getItem("betzone_game_indexes");
-
-      if (!stored) {
-        setError("No game indexes found. Please view games first.");
-        setSearchResults([]);
-        onSearchResultsChange?.(false);
-        setLoading(false);
-        return;
-      }
-
-      const existingIndexes: Record<
-        string,
-        { externalId: string; index: number; leagueKey: string }
-      > = JSON.parse(stored);
-
-      // Find which game(s) have this index number (search across all leagues)
-      const matchingEntries = Object.entries(existingIndexes).filter(
-        ([_, data]) => data.index === searchNumber
-      );
-
-      if (matchingEntries.length === 0) {
-        setError(`No game found with number ${searchNumber} in any league`);
-        setSearchResults([]);
-        onSearchResultsChange?.(false);
-        setLoading(false);
-        return;
-      }
-
-      // Get the external IDs and league keys
-      const gameInfo = matchingEntries[0][1]; // Get first match
-      const targetLeagueKey = gameInfo.leagueKey;
-      const targetExternalId = gameInfo.externalId;
-
-      // Check if it's in the current league's loaded games
-      let matchingGames = leagueGames.filter((game) => {
-        const externalId = game.externalId || game.id;
-        return externalId === targetExternalId;
-      });
-
-      // If not found in current league, fetch odds from the correct league API
-      if (matchingGames.length === 0) {
-        try {
-          // Fetch fresh odds from the league odds API endpoint
-          console.log(`🔄 Fetching odds from ${targetLeagueKey} API...`);
-          const leagueGames = await GamesService.fetchOdds(targetLeagueKey);
-
-          // Find the specific game by external ID
-          const foundGame = leagueGames.find((game) => {
-            const externalId = game.externalId || game.id;
-            return externalId === targetExternalId;
-          });
-
-          if (foundGame) {
-            matchingGames = [foundGame];
-            if (targetLeagueKey !== leagueKey) {
-              setError(
-                `✅ Found in ${targetLeagueKey.toUpperCase()} with fresh odds (game #${searchNumber})`
-              );
-            }
-          } else {
-            // Game not found in odds API, try direct fetch as fallback
-            console.log("Game not in odds API, trying direct fetch...");
-            try {
-              const game = await GamesService.fetchGameById(targetExternalId);
-              if (game) {
-                matchingGames = [game];
-                if (targetLeagueKey !== leagueKey) {
-                  setError(
-                    `✅ Found in ${targetLeagueKey.toUpperCase()} (game #${searchNumber})`
-                  );
-                }
-              }
-            } catch (directFetchErr) {
-              console.error("Direct fetch also failed:", directFetchErr);
-            }
-          }
-        } catch (fetchErr: any) {
-          console.error("Failed to fetch odds from league:", fetchErr);
-          // Final fallback: try search
-          try {
-            const games = await GamesService.searchGames({
-              externalId: targetExternalId,
-            });
-
-            if (games && games.length > 0) {
-              matchingGames = games;
-              if (targetLeagueKey !== leagueKey) {
-                setError(
-                  `✅ Found in ${targetLeagueKey.toUpperCase()} (game #${searchNumber})`
-                );
-              }
-            }
-          } catch (searchErr) {
-            console.error("All fetch attempts failed:", searchErr);
-          }
-        }
-      }
-
-      setSearchResults(matchingGames);
-
-      if (matchingGames.length === 0) {
-        setError(
-          `Game #${searchNumber} exists in ${targetLeagueKey.toUpperCase()} but couldn't load it. Try switching to that league.`
-        );
-        onSearchResultsChange?.(false);
-      } else {
-        if (targetLeagueKey !== leagueKey) {
-          // Show info that it's from another league
-          console.log(`✅ Found game #${searchNumber} from ${targetLeagueKey}`);
-        }
-        onSearchResultsChange?.(true);
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to search games");
-      onSearchResultsChange?.(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debounced number search
-  const debouncedNumberSearch = useCallback(
-    (query: string) => {
-      if (numberSearchTimerRef.current) {
-        clearTimeout(numberSearchTimerRef.current);
-      }
-
-      numberSearchTimerRef.current = setTimeout(() => {
-        performNumberSearch(query);
-      }, 300);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    },
-    [leagueGames, leagueKey]
-  );
-
-  // Handle number search input change
-  const handleGameNumberChange = (value: string) => {
-    setGameNumberQuery(value);
-    debouncedNumberSearch(value);
   };
 
   const handleClear = () => {
-    setGameId("");
-    setGameNumberQuery("");
     setAutocompleteQuery("");
-    setFilters({
-      externalId: "",
-      status: "",
-      sportKey: "",
-      search: "",
-    });
+    setDebouncedQuery("");
     setSearchResults([]);
     setSelectedGame(null);
     setError(null);
@@ -465,12 +185,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
     // Clear any pending timers
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
-    }
-    if (autocompleteTimerRef.current) {
-      clearTimeout(autocompleteTimerRef.current);
-    }
-    if (numberSearchTimerRef.current) {
-      clearTimeout(numberSearchTimerRef.current);
     }
   };
 
@@ -506,136 +220,62 @@ export const GameSearch: React.FC<GameSearchProps> = ({
           🔍 Search Games
         </Typography>
 
-        {/* Search Mode Toggle */}
-        <Stack direction="row" spacing={2} mb={3}>
-          <Button
-            variant={searchMode === "number" ? "contained" : "outlined"}
-            onClick={() => {
-              setSearchMode("number");
-              handleClear();
-            }}
+        {/* Quick Search (Autocomplete) - All searches via API (index numbers + text) */}
+        <Stack spacing={2}>
+          <Alert
+            severity="info"
             sx={{
-              color:
-                searchMode === "number" ? "white" : "rgba(255,255,255,0.7)",
-              borderColor: "rgba(255,255,255,0.3)",
+              bgcolor: "rgba(33, 150, 243, 0.1)",
+              color: "rgba(255,255,255,0.9)",
+              "& .MuiAlert-icon": {
+                color: "#42a5f5",
+              },
             }}
           >
-            🔢 Filter by Number
-          </Button>
-          <Button
-            variant={searchMode === "autocomplete" ? "contained" : "outlined"}
-            onClick={() => {
-              setSearchMode("autocomplete");
-              handleClear();
-            }}
+            🔍 Search by game index number (e.g., 101, 406), team name, or
+            external ID - all searches use API autocomplete
+          </Alert>
+          <TextField
+            label="Quick Search"
+            value={autocompleteQuery}
+            onChange={(e) => handleAutocompleteChange(e.target.value)}
+            placeholder="Type game number, team name, or external ID..."
+            fullWidth
+            helperText="⚡ Instant API search! Type 2+ characters (supports index numbers and text)"
             sx={{
-              color:
-                searchMode === "autocomplete"
-                  ? "white"
-                  : "rgba(255,255,255,0.7)",
-              borderColor: "rgba(255,255,255,0.3)",
+              "& .MuiOutlinedInput-root": {
+                color: "white",
+                "& fieldset": {
+                  borderColor: "rgba(255,255,255,0.3)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255,255,255,0.5)",
+                },
+              },
+              "& .MuiInputLabel-root": {
+                color: "rgba(255,255,255,0.7)",
+              },
+              "& .MuiFormHelperText-root": {
+                color: "rgba(76, 175, 80, 0.8)",
+                fontWeight: 500,
+              },
             }}
-          >
-            Quick Search
-          </Button>
+          />
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<ClearIcon />}
+              onClick={handleClear}
+              fullWidth
+              sx={{
+                color: "rgba(255,255,255,0.8)",
+                borderColor: "rgba(255,255,255,0.3)",
+              }}
+            >
+              Clear
+            </Button>
+          </Stack>
         </Stack>
-
-        {/* Filter by Number */}
-        {searchMode === "number" && (
-          <Stack spacing={2}>
-            <Alert severity="info" sx={{ bgcolor: "rgba(33, 150, 243, 0.1)" }}>
-              Enter a game number (e.g., 101, 102, 201) - searches across all
-              leagues
-            </Alert>
-            <TextField
-              label="Game Number"
-              value={gameNumberQuery}
-              onChange={(e) => handleGameNumberChange(e.target.value)}
-              placeholder="e.g., 101"
-              type="number"
-              fullWidth
-              helperText={`⚡ Cross-league search - finds games from any league (e.g., 101=League 1, 401=League 4)`}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": {
-                    borderColor: "rgba(255,255,255,0.3)",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "rgba(255,255,255,0.5)",
-                  },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "rgba(255,255,255,0.7)",
-                },
-                "& .MuiFormHelperText-root": {
-                  color: "rgba(255, 193, 7, 0.8)",
-                  fontWeight: 500,
-                },
-              }}
-            />
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<ClearIcon />}
-                onClick={handleClear}
-                fullWidth
-                sx={{
-                  color: "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.3)",
-                }}
-              >
-                Clear
-              </Button>
-            </Stack>
-          </Stack>
-        )}
-
-        {/* Quick Search (Autocomplete) */}
-        {searchMode === "autocomplete" && (
-          <Stack spacing={2}>
-            <TextField
-              label="Quick Search"
-              value={autocompleteQuery}
-              onChange={(e) => handleAutocompleteChange(e.target.value)}
-              placeholder="Type team name, external ID, or any text..."
-              fullWidth
-              helperText="⚡ Instant search! Type 2+ characters (searches team names, IDs, leagues)"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": {
-                    borderColor: "rgba(255,255,255,0.3)",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "rgba(255,255,255,0.5)",
-                  },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "rgba(255,255,255,0.7)",
-                },
-                "& .MuiFormHelperText-root": {
-                  color: "rgba(76, 175, 80, 0.8)",
-                  fontWeight: 500,
-                },
-              }}
-            />
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<ClearIcon />}
-                onClick={handleClear}
-                fullWidth
-                sx={{
-                  color: "rgba(255,255,255,0.8)",
-                  borderColor: "rgba(255,255,255,0.3)",
-                }}
-              >
-                Clear
-              </Button>
-            </Stack>
-          </Stack>
-        )}
 
         {/* Search by ID - COMMENTED OUT */}
 
@@ -791,32 +431,37 @@ export const GameSearch: React.FC<GameSearchProps> = ({
             Search Results ({searchResults.length})
           </Typography>
           <Stack spacing={2}>
-            {searchResults.map((game) => (
-              <GameCard
-                key={game.id}
-                game={game}
-                isSelected={selectedGame?.id === game.id}
-                onSelect={(g) => {
-                  setSelectedGame(g);
-                  onGameSelect?.(g);
-                }}
-                onAddToBetSlip={
-                  onAddToBetSlip ||
-                  (() => {
-                    console.log("Add to bet slip not configured");
-                  })
-                }
-                isSelectionInBetSlip={isSelectionInBetSlip || (() => false)}
-                expandedGames={expandedGames}
-                onToggleExpanded={toggleExpanded}
-              />
-            ))}
+            {searchResults.map((game) => {
+              const gameNumber = game.team_index?.fullIndex || 0;
+
+              return (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  isSelected={selectedGame?.id === game.id}
+                  onSelect={(g) => {
+                    setSelectedGame(g);
+                    onGameSelect?.(g);
+                  }}
+                  onAddToBetSlip={
+                    onAddToBetSlip ||
+                    (() => {
+                      console.log("Add to bet slip not configured");
+                    })
+                  }
+                  isSelectionInBetSlip={isSelectionInBetSlip || (() => false)}
+                  expandedGames={expandedGames}
+                  onToggleExpanded={toggleExpanded}
+                  gameNumber={gameNumber}
+                />
+              );
+            })}
           </Stack>
         </Box>
       )}
 
       {/* Loading State */}
-      {loading && (
+      {isLoadingAPI && (
         <Box sx={{ textAlign: "center", py: 4 }}>
           <CircularProgress sx={{ color: "primary.main" }} />
           <Typography
