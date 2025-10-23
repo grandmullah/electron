@@ -223,13 +223,14 @@ export class BetSlipService {
       }
 
       // Create bet slip (step 1 of bet placement)
-      static async createBetSlip(bets: BetSlipItem[], totalStake: number, userId?: string): Promise<BetSlipResponse> {
+      static async createBetSlip(bets: BetSlipItem[], totalStake: number, userId?: string, isMultibet?: boolean): Promise<BetSlipResponse> {
             try {
                   console.log('=== CREATE BET SLIP DEBUG ===');
                   console.log('createBetSlip called with:', {
                         betsCount: bets.length,
                         totalStake,
                         userId,
+                        isMultibet,
                         bets: bets.map(b => ({
                               gameId: b.gameId,
                               homeTeam: b.homeTeam,
@@ -276,7 +277,8 @@ export class BetSlipService {
                         if (!bet.odds || bet.odds <= 0) {
                               throw new Error(`Invalid odds (${bet.odds}) for bet: ${bet.homeTeam} vs ${bet.awayTeam}`);
                         }
-                        if (!bet.stake || bet.stake <= 0) {
+                        // Only validate individual stakes for single bets, not multibets
+                        if (!isMultibet && (!bet.stake || bet.stake <= 0)) {
                               throw new Error(`Invalid stake (${bet.stake}) for bet: ${bet.homeTeam} vs ${bet.awayTeam}`);
                         }
                   }
@@ -376,7 +378,7 @@ export class BetSlipService {
                   const totalStake = bets.reduce((sum, bet) => sum + bet.stake, 0);
 
                   // Step 1: Create bet slip
-                  const betSlip = await this.createBetSlip(bets, totalStake, userId);
+                  const betSlip = await this.createBetSlip(bets, totalStake, userId, false);
 
                   // Check for the ID field - backend returns it in betSlipId, not id
                   const betSlipId = betSlip.data?.betSlipId || betSlip.data?.betSlip?.id;
@@ -474,7 +476,7 @@ export class BetSlipService {
 
                   // Step 1: Create bet slip
                   console.log('Step 1: Creating bet slip...');
-                  const betSlip = await this.createBetSlip(bets, totalStake, userId);
+                  const betSlip = await this.createBetSlip(bets, totalStake, userId, true);
 
                   console.log('Bet slip creation result:', betSlip);
 
