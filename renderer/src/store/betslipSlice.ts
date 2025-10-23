@@ -26,7 +26,7 @@ const initialState: BetSlipState = {
       items: [],
       isVisible: false,
       isMultibetMode: false,
-      multibetStake: 10, // Will be updated based on user limits
+      multibetStake: 0, // No default stake - user must input
 };
 
 export const betslipSlice = createSlice({
@@ -63,7 +63,7 @@ export const betslipSlice = createSlice({
                   state.items = [];
                   state.isVisible = false;
                   state.isMultibetMode = false;
-                  state.multibetStake = 10; // Will be updated by setMultibetStakeFromLimits
+                  state.multibetStake = 0; // No default stake - user must input
             },
             toggleBetSlipVisibility: (state) => {
                   state.isVisible = !state.isVisible;

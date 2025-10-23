@@ -233,7 +233,7 @@ export const GameSearch: React.FC<GameSearchProps> = ({
             }}
           >
             🔍 Search by game index number (e.g., 101, 406), team name, or
-            external ID - all searches use API autocomplete
+            external ID
           </Alert>
           <TextField
             label="Quick Search"

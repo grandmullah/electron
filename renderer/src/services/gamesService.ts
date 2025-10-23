@@ -177,9 +177,12 @@ class GamesService {
                   };
             }
 
+            // Extract externalId: prioritize team_index.externalId, then top-level external_id, finally fall back to id
+            const externalId = (suggestion as any).team_index?.externalId || suggestion.external_id || suggestion.id;
+
             return {
                   id: suggestion.id,
-                  externalId: suggestion.external_id,
+                  externalId: externalId,
                   homeTeam: homeTeam,
                   awayTeam: awayTeam,
                   ...parsedOdds,
@@ -211,9 +214,12 @@ class GamesService {
             // Use the modular odds parser
             const parsedOdds = parseOddsFromGameOddsArray(odds, homeTeamName, awayTeamName);
 
+            // Extract externalId: prioritize team_index.externalId, then top-level external_id, finally fall back to id
+            const externalId = (gameDetails as any).team_index?.externalId || gameDetails.external_id || gameDetails.id;
+
             return {
                   id: gameDetails.id,
-                  externalId: gameDetails.external_id,
+                  externalId: externalId,
                   homeTeam: homeTeamName,
                   awayTeam: awayTeamName,
                   ...parsedOdds,
@@ -238,9 +244,12 @@ class GamesService {
        * @returns Game - Transformed game object
        */
       private static transformSearchResult(searchResult: GameSearchResult): Game {
+            // Extract externalId: prioritize team_index.externalId, then fall back to id
+            const externalId = (searchResult as any).team_index?.externalId || searchResult.id;
+
             return {
                   id: searchResult.id,
-                  externalId: '',
+                  externalId: externalId,
                   homeTeam: searchResult.homeTeam,
                   awayTeam: searchResult.awayTeam,
                   homeOdds: null,
@@ -298,9 +307,12 @@ class GamesService {
             // Use the modular odds parser
             const parsedOdds = parseOddsFromBookmakersArray(bookmakers, homeTeamName, awayTeamName);
 
+            // Extract externalId: prioritize team_index.externalId, then top-level external_id, finally fall back to id
+            const externalId = game.team_index?.externalId || game.external_id || game.id;
+
             return {
                   id: game.id,
-                  externalId: game.external_id || game.id,
+                  externalId: externalId,
                   homeTeam: homeTeamName,
                   awayTeam: awayTeamName,
                   ...parsedOdds,

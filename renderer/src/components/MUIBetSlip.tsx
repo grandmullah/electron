@@ -97,9 +97,16 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
     value: number,
     betId?: string
   ): { isValid: boolean; error: string } => {
-    const minStake = user?.bettingLimits?.minStake || 10;
-    const maxStake = user?.bettingLimits?.maxStake || 100000;
+    const minStake = user?.bettingLimits?.minStake || 200;
+    const maxStake = user?.bettingLimits?.maxStake || 1000000;
     const currency = user?.currency || "SSP";
+
+    if (!value || value === 0) {
+      return {
+        isValid: false,
+        error: `Please enter stake amount`,
+      };
+    }
 
     if (value < minStake) {
       return {
@@ -144,12 +151,19 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       return { isValid: false, error: "No bets selected" };
     }
 
-    const minStake = user?.bettingLimits?.minStake || 10;
-    const maxStake = user?.bettingLimits?.maxStake || 100000;
+    const minStake = user?.bettingLimits?.minStake || 200;
+    const maxStake = user?.bettingLimits?.maxStake || 1000000;
     const currency = user?.currency || "SSP";
 
     // For multibet, validate the single stake
     if (isMultibet) {
+      if (!stake || stake === 0) {
+        return {
+          isValid: false,
+          error: `Please enter stake amount`,
+        };
+      }
+
       if (stake < minStake) {
         return {
           isValid: false,
@@ -166,6 +180,13 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
     } else {
       // For single bets, validate each individual bet stake
       for (const bet of bets) {
+        if (!bet.stake || bet.stake === 0) {
+          return {
+            isValid: false,
+            error: `Please enter stake amount for ${bet.homeTeam} vs ${bet.awayTeam}`,
+          };
+        }
+
         if (bet.stake < minStake) {
           return {
             isValid: false,
@@ -685,47 +706,51 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                     <Box mt={2}>
                       <TextField
                         fullWidth
-                        label={`Stake (${user?.currency || "SSP"})`}
+                        label={`Stake (${user?.currency || "SSP"}) *`}
+                        placeholder="Enter stake amount"
                         type="number"
-                        value={multibetStake}
+                        value={multibetStake || ""}
                         onChange={(e) => {
                           const value = Number(e.target.value);
-                          const validation = validateStake(value);
+                          // Always update the stake, let user type freely
+                          dispatch(setMultibetStake(value));
 
-                          if (validation.isValid) {
-                            dispatch(setMultibetStake(value));
+                          // Validate and show errors, but don't block typing
+                          const validation = validateStake(value);
+                          if (!validation.isValid) {
                             setStakeErrors((prev) => ({
                               ...prev,
-                              multibet: "",
+                              multibet: validation.error,
                             }));
                           } else {
                             setStakeErrors((prev) => ({
                               ...prev,
-                              multibet: validation.error,
+                              multibet: "",
                             }));
                           }
                         }}
                         onBlur={(e) => {
                           const value = Number(e.target.value);
-                          const minStake = user?.bettingLimits?.minStake || 10;
-                          if (value < minStake) {
-                            dispatch(setMultibetStake(minStake));
-                            setStakeErrors((prev) => ({
-                              ...prev,
-                              multibet: "",
-                            }));
+                          // Trigger validation on blur to show errors
+                          if (value) {
+                            const validation = validateStake(value);
+                            if (!validation.isValid) {
+                              setStakeErrors((prev) => ({
+                                ...prev,
+                                multibet: validation.error,
+                              }));
+                            }
                           }
                         }}
                         inputProps={{
-                          min: user?.bettingLimits?.minStake || 10,
-                          max: user?.bettingLimits?.maxStake || 100000,
+                          min: 0,
                           step: 1,
                         }}
                         helperText={
-                          stakeErrors.multibet ||
-                          `Min: ${user?.currency || "SSP"} ${(user?.bettingLimits?.minStake || 10).toFixed(2)} | Max: ${user?.currency || "SSP"} ${(user?.bettingLimits?.maxStake || 100000).toFixed(2)}`
+                          stakeErrors["multibet"] ||
+                          `Min: ${user?.currency || "SSP"} ${(user?.bettingLimits?.minStake || 200).toFixed(2)} | Max: ${user?.currency || "SSP"} ${(user?.bettingLimits?.maxStake || 1000000).toFixed(2)}`
                         }
-                        error={!!stakeErrors.multibet}
+                        error={!!stakeErrors["multibet"]}
                         sx={{
                           mt: 1,
                           "& .MuiInputLabel-root": {
@@ -915,61 +940,61 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                                 mt={1}
                               >
                                 <TextField
-                                  label={`Stake (${user?.currency || "SSP"})`}
+                                  label={`Stake (${user?.currency || "SSP"}) *`}
+                                  placeholder="Enter amount"
                                   type="number"
                                   size="small"
-                                  value={bet.stake}
+                                  value={bet.stake || ""}
                                   onChange={(e) => {
                                     const value = Number(e.target.value);
+                                    // Always update the stake, let user type freely
+                                    dispatch(
+                                      updateBetSlipStake({
+                                        id: bet.id,
+                                        stake: value,
+                                      })
+                                    );
+
+                                    // Validate and show errors, but don't block typing
                                     const validation = validateStake(
                                       value,
                                       bet.id
                                     );
-
-                                    if (validation.isValid) {
-                                      dispatch(
-                                        updateBetSlipStake({
-                                          id: bet.id,
-                                          stake: value,
-                                        })
-                                      );
+                                    if (!validation.isValid) {
                                       setStakeErrors((prev) => ({
                                         ...prev,
-                                        [bet.id]: "",
+                                        [bet.id]: validation.error,
                                       }));
                                     } else {
                                       setStakeErrors((prev) => ({
                                         ...prev,
-                                        [bet.id]: validation.error,
+                                        [bet.id]: "",
                                       }));
                                     }
                                   }}
                                   onBlur={(e) => {
                                     const value = Number(e.target.value);
-                                    const minStake =
-                                      user?.bettingLimits?.minStake || 10;
-                                    if (value < minStake) {
-                                      dispatch(
-                                        updateBetSlipStake({
-                                          id: bet.id,
-                                          stake: minStake,
-                                        })
+                                    // Trigger validation on blur to show errors
+                                    if (value) {
+                                      const validation = validateStake(
+                                        value,
+                                        bet.id
                                       );
-                                      setStakeErrors((prev) => ({
-                                        ...prev,
-                                        [bet.id]: "",
-                                      }));
+                                      if (!validation.isValid) {
+                                        setStakeErrors((prev) => ({
+                                          ...prev,
+                                          [bet.id]: validation.error,
+                                        }));
+                                      }
                                     }
                                   }}
                                   inputProps={{
-                                    min: user?.bettingLimits?.minStake || 10,
-                                    max:
-                                      user?.bettingLimits?.maxStake || 100000,
+                                    min: 0,
                                     step: 1,
                                   }}
                                   helperText={
                                     stakeErrors[bet.id] ||
-                                    `Min: ${user?.bettingLimits?.minStake || 10} | Max: ${user?.bettingLimits?.maxStake || 100000}`
+                                    `Min: ${user?.bettingLimits?.minStake || 200} | Max: ${user?.bettingLimits?.maxStake || 1000000}`
                                   }
                                   error={!!stakeErrors[bet.id]}
                                   sx={{

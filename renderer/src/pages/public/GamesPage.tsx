@@ -895,14 +895,14 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     // Regular user flow - add to bet slip
     const betSlipItem = {
       id: `${game.id}-${betType}-${selection}`,
-      gameId: game.id,
+      gameId: game.externalId || game.id, // Use externalId for validation API
       homeTeam: game.homeTeam,
       awayTeam: game.awayTeam,
       betType,
       selection,
       odds: reducedOdds,
-      stake: user?.bettingLimits?.minStake || 10, // Use user's minimum stake
-      potentialWinnings: (user?.bettingLimits?.minStake || 10) * reducedOdds,
+      stake: 0, // No default stake - user must input
+      potentialWinnings: 0,
       bookmaker: "Betzone",
       gameTime: game.matchTime,
       sportKey:
@@ -947,7 +947,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         stake: stake,
         selections: [
           {
-            gameId: game.id,
+            gameId: game.externalId || game.id, // Use externalId for validation API
             homeTeam: game.homeTeam,
             awayTeam: game.awayTeam,
             betType: betType,
@@ -1011,12 +1011,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     <Typography variant="h3" fontWeight="bold">
                       ⚽ Games & Odds
                     </Typography>
-                    <Typography
+                    {/* <Typography
                       variant="h6"
                       sx={{ opacity: 0.9, fontWeight: 300 }}
                     >
                       Live betting odds and game information
-                    </Typography>
+                    </Typography> */}
                   </Box>
                 </Box>
                 <Stack direction="row" spacing={2}>
