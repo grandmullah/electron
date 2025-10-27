@@ -223,7 +223,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
           <Grid item xs={12} md={3}>
             <TextField
               fullWidth
-              label="Search bets (first 3 characters match)..."
+              label="Search by team, selection, or bet ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -263,7 +263,8 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                   },
                 },
               }}
-              placeholder="Type first 3 characters to match..."
+              placeholder="Type team name or bet ID (UUID)..."
+              helperText="Enter bet ID for direct API lookup"
               size="small"
             />
           </Grid>

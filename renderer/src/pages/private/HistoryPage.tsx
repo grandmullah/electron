@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
 import { useAppSelector } from "../../store/hooks";
 import { Header } from "../../components/Header";
 import { DisplayBet } from "../../types/history";
@@ -75,16 +76,179 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [apiSearchTerm, setApiSearchTerm] = useState<string | null>(null);
 
   const user = useAppSelector((state) => state.auth.user);
 
   // Debounce search term
   useEffect(() => {
+    console.log("⏱️ [DEBOUNCE] Starting timer for:", searchTerm);
     const timer = setTimeout(() => {
+      console.log("⏱️ [DEBOUNCE] Timer complete, setting:", searchTerm);
       setDebouncedSearchTerm(searchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
+    }, 500);
+    return () => {
+      console.log("⏱️ [DEBOUNCE] Clearing timer");
+      clearTimeout(timer);
+    };
   }, [searchTerm]);
+
+  // Check if search term is a bet ID (UUID format)
+  const isBetIdSearch = (term: string): boolean => {
+    const trimmed = term.trim();
+    console.log(
+      "🔍 [UUID CHECK] Checking:",
+      trimmed,
+      "Length:",
+      trimmed.length
+    );
+
+    // Must be at least 8 characters to be considered a UUID
+    if (trimmed.length < 8) {
+      console.log(
+        "🔍 [UUID CHECK] Too short (need 8+ chars), using client-side search"
+      );
+      return false;
+    }
+
+    // Check if it contains only hex characters (and optional hyphens)
+    const hexWithDashesRegex = /^[0-9a-f-]+$/i;
+    if (!hexWithDashesRegex.test(trimmed)) {
+      console.log(
+        "🔍 [UUID CHECK] Non-hex characters found, using client-side search"
+      );
+      return false;
+    }
+
+    // UUID format: 8-4-4-4-12 characters
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // Also check for partial UUID (at least 8 hex characters with optional structure)
+    const partialUuidRegex =
+      /^[0-9a-f]{8,}(-[0-9a-f]{4})?(-[0-9a-f]{4})?(-[0-9a-f]{4})?(-[0-9a-f]{0,12})?$/i;
+
+    const isFullMatch = uuidRegex.test(trimmed);
+    const isPartialMatch = partialUuidRegex.test(trimmed);
+    const result = isFullMatch || isPartialMatch;
+
+    console.log(
+      "🔍 [UUID CHECK] Full:",
+      isFullMatch,
+      "Partial:",
+      isPartialMatch,
+      "Result:",
+      result
+    );
+
+    return result;
+  };
+
+  // Determine if we should search by bet ID (must be 8+ chars AND look like UUID)
+  const shouldSearchById =
+    debouncedSearchTerm.trim().length >= 8 &&
+    isBetIdSearch(debouncedSearchTerm);
+  const betIdToSearch = shouldSearchById ? debouncedSearchTerm.trim() : null;
+
+  console.log("🎯 [DECISION] searchTerm:", searchTerm);
+  console.log("🎯 [DECISION] debouncedSearchTerm:", debouncedSearchTerm);
+  console.log("🎯 [DECISION] shouldSearchById:", shouldSearchById);
+  console.log("🎯 [DECISION] betIdToSearch:", betIdToSearch);
+  console.log(
+    "🎯 [DECISION] SWR Key:",
+    betIdToSearch ? `/bet-search/${betIdToSearch}` : null
+  );
+
+  // SWR fetcher for bet details
+  const betDetailsFetcher = async (key: string) => {
+    console.log("🌐 [FETCHER] CALLED! Key:", key);
+    const betId = key.replace("/bet-search/", "");
+    console.log("🌐 [FETCHER] Extracted betId:", betId);
+
+    try {
+      console.log("🌐 [FETCHER] Calling API...");
+      const betDetails = await BetHistoryService.getBetDetails(betId);
+      console.log("✅ [FETCHER] SUCCESS:", betDetails);
+      return betDetails;
+    } catch (error) {
+      console.error("❌ [FETCHER] ERROR:", error);
+      throw error;
+    }
+  };
+
+  // Use SWR for bet ID search (8+ hex chars)
+  const {
+    data: betDetailsData,
+    error: betDetailsError,
+    isLoading: isSearchingById,
+    isValidating,
+  } = useSWR(
+    betIdToSearch ? `/bet-search/${betIdToSearch}` : null,
+    betDetailsFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 2000,
+      onSuccess: (data) => console.log("✅ [SWR BET ID] onSuccess:", data),
+      onError: (err) => console.error("❌ [SWR BET ID] onError:", err),
+    }
+  );
+
+  // SWR fetcher for general text search (fallback when local search finds nothing)
+  const textSearchFetcher = async (key: string) => {
+    const searchText = key.replace("/text-search/", "");
+    console.log("🌐 [TEXT SEARCH FETCHER] CALLED! Searching for:", searchText);
+
+    try {
+      // Use the dedicated search API endpoint
+      console.log(
+        "🌐 [TEXT SEARCH FETCHER] Calling search API:",
+        `/api/bets/search?q=${searchText}&limit=50`
+      );
+      const results = await BetHistoryService.searchBets(searchText, 50);
+
+      console.log(
+        "✅ [TEXT SEARCH FETCHER] API returned:",
+        results.length,
+        "bets"
+      );
+      return results;
+    } catch (error) {
+      console.error("❌ [TEXT SEARCH FETCHER] ERROR:", error);
+      throw error;
+    }
+  };
+
+  // Use SWR for text search (3-7 chars, fallback when local finds nothing)
+  const {
+    data: textSearchData,
+    error: textSearchError,
+    isLoading: isSearchingText,
+  } = useSWR(
+    apiSearchTerm ? `/text-search/${apiSearchTerm}` : null,
+    textSearchFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 2000,
+      onSuccess: (data) =>
+        console.log("✅ [SWR TEXT SEARCH] onSuccess:", data?.length, "bets"),
+      onError: (err) => console.error("❌ [SWR TEXT SEARCH] onError:", err),
+    }
+  );
+
+  console.log("📊 [SWR STATE]", {
+    betIdKey: betIdToSearch ? `/bet-search/${betIdToSearch}` : null,
+    textSearchKey: apiSearchTerm ? `/text-search/${apiSearchTerm}` : null,
+    shouldSearchById,
+    betIdToSearch,
+    isSearchingById,
+    isSearchingText,
+    hasBetDetailsData: !!betDetailsData,
+    hasTextSearchData: !!textSearchData,
+    hasError: !!betDetailsError || !!textSearchError,
+  });
 
   // Load bet history
   const loadBetHistory = useCallback(async () => {
@@ -137,15 +301,69 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     loadBetHistory();
   }, [loadBetHistory]);
 
-  // Apply client-side filtering
+  // Apply client-side filtering or use SWR API search results
   useEffect(() => {
+    console.log("🔄 [FILTER EFFECT] Running...", {
+      shouldSearchById,
+      hasDetailsData: !!betDetailsData,
+      hasTextSearchData: !!textSearchData,
+      debouncedSearchTerm,
+    });
+
+    // Priority 1: If searching by bet ID (8+ hex chars) - use bet ID API
+    if (shouldSearchById) {
+      console.log("🔄 [FILTER EFFECT] Mode: API Bet ID Search");
+
+      if (betDetailsData) {
+        console.log("📊 [FILTER EFFECT] Got bet by ID from API");
+        const displayBet: DisplayBet = {
+          betId: betDetailsData.id || betDetailsData.betId,
+          betType: betDetailsData.betType || "single",
+          status: betDetailsData.status || "pending",
+          totalStake: betDetailsData.totalStake || betDetailsData.stake || 0,
+          potentialWinnings:
+            betDetailsData.potentialWinnings ||
+            betDetailsData.potentialWin ||
+            0,
+          createdAt:
+            betDetailsData.createdAt ||
+            betDetailsData.placedAt ||
+            new Date().toISOString(),
+          selections: betDetailsData.selections || [],
+          paymentStatus: betDetailsData.paymentStatus,
+          userId: betDetailsData.userId,
+        };
+
+        setFilteredBets([displayBet]);
+        setCurrentPage(1);
+      } else if (betDetailsError) {
+        console.error("❌ [FILTER EFFECT] Bet ID API error:", betDetailsError);
+        setFilteredBets([]);
+      } else {
+        console.log("⏳ [FILTER EFFECT] Waiting for bet ID API...");
+      }
+      return;
+    }
+
+    // Priority 2: If we have API text search results (fallback from local search)
+    if (textSearchData) {
+      console.log("🔄 [FILTER EFFECT] Mode: Using API Text Search Results");
+      setFilteredBets(textSearchData);
+      setCurrentPage(1);
+      return;
+    }
+
+    console.log("🔄 [FILTER EFFECT] Mode: Client-side filtering");
+
+    // Priority 3: Client-side filtering
     let filtered = [...bets];
 
-    // Apply search term filter (first 3 characters match)
-    if (debouncedSearchTerm.trim()) {
+    // Apply search term filter (3+ characters)
+    if (debouncedSearchTerm.trim() && debouncedSearchTerm.trim().length >= 3) {
       const searchTerm = debouncedSearchTerm.trim().toLowerCase();
+      console.log("🔍 [FILTER EFFECT] Filtering locally for:", searchTerm);
+
       filtered = filtered.filter((bet) => {
-        // Check if any selection matches the first 3 characters
         return bet.selections.some((selection) => {
           const homeTeam = selection.homeTeam.toLowerCase();
           const awayTeam = selection.awayTeam.toLowerCase();
@@ -156,10 +374,31 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
             homeTeam.startsWith(searchTerm) ||
             awayTeam.startsWith(searchTerm) ||
             selectionText.startsWith(searchTerm) ||
-            betId.startsWith(searchTerm)
+            betId.includes(searchTerm)
           );
         });
       });
+
+      console.log(
+        "🔍 [FILTER EFFECT] Local filter found",
+        filtered.length,
+        "bets"
+      );
+
+      // FALLBACK: If local search finds nothing AND we haven't triggered API search yet
+      if (filtered.length === 0 && !apiSearchTerm && !isSearchingText) {
+        console.log(
+          "🔄 [FILTER EFFECT] Local search empty, triggering API fallback search"
+        );
+        setApiSearchTerm(searchTerm);
+        return; // Wait for API results
+      }
+    } else {
+      // Clear API search if search term is cleared or too short
+      if (apiSearchTerm) {
+        console.log("🔄 [FILTER EFFECT] Clearing API search");
+        setApiSearchTerm(null);
+      }
     }
 
     // Apply status filter
@@ -184,10 +423,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
     // Apply date filters
     if (dateFrom) {
-      filtered = filtered.filter((bet) => new Date(bet.createdAt) >= dateFrom);
+      filtered = filtered.filter(
+        (bet) => bet.createdAt && new Date(bet.createdAt) >= dateFrom
+      );
     }
     if (dateTo) {
-      filtered = filtered.filter((bet) => new Date(bet.createdAt) <= dateTo);
+      filtered = filtered.filter(
+        (bet) => bet.createdAt && new Date(bet.createdAt) <= dateTo
+      );
     }
 
     setFilteredBets(filtered);
@@ -199,7 +442,24 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     paymentStatusFilter,
     dateFrom,
     dateTo,
+    shouldSearchById,
+    betDetailsData,
+    betDetailsError,
+    textSearchData,
+    apiSearchTerm,
+    isSearchingText,
   ]);
+
+  // Reset API search term when debounced search term changes
+  useEffect(() => {
+    if (
+      apiSearchTerm &&
+      debouncedSearchTerm.trim().toLowerCase() !== apiSearchTerm
+    ) {
+      console.log("🔄 [RESET] Clearing API search due to search term change");
+      setApiSearchTerm(null);
+    }
+  }, [debouncedSearchTerm, apiSearchTerm]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredBets.length / itemsPerPage);
@@ -434,20 +694,29 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
         <Alert icon={<IconInfoCircle />} severity="info" sx={{ mb: 3 }}>
           <Typography variant="subtitle2">
             Showing {filteredBets.length} bets
+            {isSearchingById && " (Searching by bet ID...)"}
           </Typography>
           <Typography variant="body2">
-            {filteredBets.length !== bets.length
-              ? `Filtered from ${bets.length} total bets`
-              : "All bets displayed"}
+            {isSearchingById
+              ? "Looking up bet details from API..."
+              : filteredBets.length !== bets.length
+                ? `Filtered from ${bets.length} total bets`
+                : "All bets displayed"}
           </Typography>
         </Alert>
 
         {/* Loading State */}
-        {isLoadingBets ? (
+        {isLoadingBets || isSearchingById || isSearchingText ? (
           <Paper sx={{ p: 4, textAlign: "center" }}>
             <Stack alignItems="center" spacing={2}>
               <CircularProgress size={48} />
-              <Typography variant="h6">Loading bet history...</Typography>
+              <Typography variant="h6">
+                {isSearchingById
+                  ? "Searching for bet by ID..."
+                  : isSearchingText
+                    ? "Searching API for matches..."
+                    : "Loading bet history..."}
+              </Typography>
             </Stack>
           </Paper>
         ) : betError ? (

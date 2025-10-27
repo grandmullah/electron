@@ -256,6 +256,136 @@ export class BetHistoryService {
             }
       }
 
+      // Search bets by query string
+      static async searchBets(query: string, limit: number = 50): Promise<DisplayBet[]> {
+            try {
+                  const token = this.getAuthToken();
+
+                  const queryParams = new URLSearchParams();
+                  queryParams.append('q', query);
+                  queryParams.append('limit', limit.toString());
+
+                  const url = `${API_BASE_URL}/bets/search?${queryParams.toString()}`;
+
+                  console.log('Searching bets with URL:', url);
+
+                  const response = await axios.get(url, {
+                        headers: {
+                              'Authorization': `Bearer ${token}`,
+                              'Content-Type': 'application/json',
+                        },
+                        timeout: 10000,
+                  });
+
+                  console.log('Search API response:', response.data);
+
+                  // Search API returns comprehensive bet data with scores, payment status, etc.
+                  if (response.data.success && response.data.data && response.data.data.results) {
+                        const results = response.data.data.results;
+
+                        console.log('📦 [SEARCH] Transforming search results:', results.length, 'bets');
+                        console.log('📦 [SEARCH] Raw bet from API:', JSON.stringify(results[0], null, 2));
+
+                        // Transform search results to DisplayBet format
+                        const displayBets: DisplayBet[] = results.map((bet: any) => {
+                              console.log(`\n🔍 [BET ${bet.betId}] Raw data:`, {
+                                    betId: bet.betId,
+                                    status: bet.status,
+                                    result: bet.result,
+                                    paymentStatus: bet.paymentStatus,
+                                    selectionsCount: bet.selections?.length
+                              });
+
+                              // Transform selections to include all fields including gameScore
+                              const transformedSelections = (bet.selections || []).map((selection: any, idx: number) => {
+                                    console.log(`  📌 [SELECTION ${idx + 1}/${bet.selections.length}] Raw:`, {
+                                          homeTeam: selection.homeTeam,
+                                          awayTeam: selection.awayTeam,
+                                          selection: selection.selection,
+                                          selectionOutcome: selection.selectionOutcome,
+                                          gameScore: selection.gameScore
+                                    });
+
+                                    return {
+                                          selectionId: selection.selectionId,
+                                          betId: bet.betId,
+                                          gameId: selection.gameId,
+                                          homeTeam: selection.homeTeam,
+                                          awayTeam: selection.awayTeam,
+                                          betType: selection.betType,
+                                          selection: selection.selection,
+                                          odds: selection.odds,
+                                          gameScore: selection.gameScore, // Include game scores
+                                          selectionOutcome: selection.selectionOutcome,
+                                          selectionSettlementReason: selection.selectionSettlementReason,
+                                    };
+                              });
+
+                              console.log(`✅ [BET ${bet.betId}] Transformed - Status: ${bet.status}, Result: ${bet.result}, Payment: ${bet.paymentStatus?.status}`);
+
+                              const transformedBet = {
+                                    betId: bet.betId,
+                                    betType: bet.betType || 'single',
+                                    status: bet.status || 'pending',
+                                    result: bet.result,
+
+                                    // Financial Information
+                                    totalStake: bet.totalStake || 0,
+                                    combinedOdds: bet.combinedOdds,
+                                    potentialWinnings: bet.potentialWinnings || 0,
+                                    actualWinnings: bet.actualWinnings,
+                                    taxPercentage: bet.taxPercentage,
+                                    taxAmount: bet.taxAmount,
+                                    netWinnings: bet.netWinnings,
+
+                                    // Timestamps
+                                    createdAt: bet.timestamp || new Date().toISOString(),
+                                    settledAt: bet.settledAt,
+                                    cancelledAt: bet.cancelledAt,
+
+                                    // Settlement Info
+                                    settlementReason: bet.settlementReason,
+
+                                    // Payment Status (full object)
+                                    paymentStatus: bet.paymentStatus,
+
+                                    // User & Shop Info
+                                    userId: bet.user?.id,
+                                    user: bet.user,
+                                    shop: bet.shop,
+
+                                    // Selections with scores
+                                    selections: transformedSelections,
+                              };
+
+                              console.log(`📤 [BET ${bet.betId}] Final transformed bet:`, {
+                                    betId: transformedBet.betId,
+                                    status: transformedBet.status,
+                                    result: transformedBet.result,
+                                    paymentStatus: transformedBet.paymentStatus?.status,
+                                    selectionsWithOutcomes: transformedBet.selections.map(s => ({
+                                          teams: `${s.homeTeam} vs ${s.awayTeam}`,
+                                          outcome: s.selectionOutcome,
+                                          score: s.gameScore
+                                    }))
+                              });
+
+                              return transformedBet;
+                        });
+
+                        console.log('✅ [SEARCH] All transformed display bets:', displayBets.length);
+                        console.log('✅ [SEARCH] First bet complete data:', JSON.stringify(displayBets[0], null, 2));
+                        return displayBets;
+                  }
+
+                  console.log('No results found or unexpected response format');
+                  return [];
+            } catch (error: any) {
+                  console.error('Error searching bets:', error);
+                  throw this.handleError(error);
+            }
+      }
+
       // Get active bets for a user
       static async getActiveBets(): Promise<NewBetHistoryResponse> {
             try {
@@ -493,6 +623,7 @@ export class BetHistoryService {
 // Export convenience functions
 export const getUserBets = (filters?: BetHistoryFilters) => BetHistoryService.getUserBets(filters);
 export const getBetDetails = (betId: string) => BetHistoryService.getBetDetails(betId);
+export const searchBets = (query: string, limit?: number) => BetHistoryService.searchBets(query, limit);
 export const getActiveBets = () => BetHistoryService.getActiveBets();
 export const cancelBet = (betId: string, reason?: string) => BetHistoryService.cancelBet(betId, reason);
 export const settleBet = (betId: string, result: 'won' | 'lost') => BetHistoryService.settleBet(betId, result);
