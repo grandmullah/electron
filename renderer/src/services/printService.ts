@@ -92,23 +92,27 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
             win.printText("Shop: ", 0, 0, true, false, false, 0, 0); // Bold label
             win.printText(`${shopDisplay}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
-            // Print date and time (use actual bet creation time from API)
+            // Print date and time in CET timezone (use actual bet creation time from API)
             const betDate = bet.createdAt;
             const betDateTime = new Date(betDate);
-            const betDateStr = betDateTime.toLocaleDateString('en-US', {
+
+            // Format date and time in CET timezone (Europe/Paris is CET/CEST)
+            const betDateTimeStr = betDateTime.toLocaleString('en-GB', {
+                  timeZone: 'Europe/Paris',
                   year: 'numeric',
                   month: '2-digit',
-                  day: '2-digit'
-            });
-            const betTimeStr = betDateTime.toLocaleTimeString('en-US', {
+                  day: '2-digit',
                   hour: '2-digit',
                   minute: '2-digit',
-                  hour12: true
+                  second: '2-digit',
+                  hour12: false
             });
-            win.printText("Date: ", 0, 0, true, false, false, 0, 0); // Bold label
-            win.printText(`${betDateStr}\n`, 0, 0, false, false, false, 0, 0); // Normal value
-            win.printText("Time: ", 0, 0, true, false, false, 0, 0); // Bold label
-            win.printText(`${betTimeStr}\n`, 0, 0, false, false, false, 0, 0); // Normal value
+
+            // Split into date and time parts
+            const [datePart, timePart] = betDateTimeStr.split(', ');
+
+            win.printText("Date/Time (CET): ", 0, 0, true, false, false, 0, 0); // Bold label
+            win.printText(`${datePart} ${timePart}\n`, 0, 0, false, false, false, 0, 0); // Normal value
 
             win.printText("\n", 0, 0, false, false, false, 0, 0);
 
@@ -169,13 +173,22 @@ export async function printThermalTicket(bet: AnyBet, user?: any, combinedOdds?:
                   // Get last 4 characters of game ID
                   const gameIdLast4 = gameId.length >= 4 ? gameId.slice(-4) : gameId;
 
-                  // Add game start time and result type (FT/HT) - use actual game data from API
+                  // Add game start time and result type (FT/HT) in CET timezone - use actual game data from API
                   const gameStartTime = selection.gameStartTime || selection.gameTime;
-                  const formattedStartTime = gameStartTime ? new Date(gameStartTime).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                  }) : '';
+                  let formattedStartTime = '';
+                  if (gameStartTime) {
+                        const gameDateTime = new Date(gameStartTime);
+                        // Format in CET timezone with date and time
+                        const gameTimeStr = gameDateTime.toLocaleString('en-GB', {
+                              timeZone: 'Europe/Paris',
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                        });
+                        formattedStartTime = gameTimeStr.replace(', ', ' '); // e.g., "25/10 14:30"
+                  }
                   const resultType = selection.resultType ? String(selection.resultType).toUpperCase() : 'FT'; // Default to FT if not specified
 
                   const selectionText = `${index + 1}. ${homeTeam} vs ${awayTeam}`;
