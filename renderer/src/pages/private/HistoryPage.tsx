@@ -485,15 +485,31 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   }, [debouncedSearchTerm, apiSearchTerm]);
 
   // Pagination calculations
-  // Note: When using server-side pagination, filteredBets already contains only the current page
-  // Client-side filtering is only applied to search results or when filters are used
-  const totalPages = Math.ceil(filteredBets.length / itemsPerPage);
+  // For server-side pagination: use total from API response
+  // For client-side filtering (search): use filteredBets length
+  const isSearchActive = debouncedSearchTerm.trim().length > 0;
+  const totalBetsCount = isSearchActive
+    ? filteredBets.length // Client-side search: use filtered results
+    : betHistoryData?.data.total || 0; // Server-side: use API total
+
+  const totalPages = Math.ceil(totalBetsCount / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalBetsCount);
 
   // For server-side pagination: show all filtered bets (already paginated by API)
-  // For client-side filtering (search): slice the results
+  // For client-side filtering (search): show filtered results
   const currentBets = filteredBets;
+
+  console.log("📄 [PAGINATION CALC]", {
+    isSearchActive,
+    totalBetsCount,
+    totalPages,
+    currentPage,
+    startIndex,
+    endIndex,
+    filteredBetsLength: filteredBets.length,
+    apiTotal: betHistoryData?.data.total,
+  });
 
   // Pagination handlers - trigger API reload when page changes
   const goToPage = (page: number) => {
@@ -807,8 +823,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
             {/* MUI Pagination */}
             <MUIPagination
               startIndex={startIndex}
-              endIndex={Math.min(endIndex, filteredBets.length)}
-              total={filteredBets.length}
+              endIndex={endIndex}
+              total={totalBetsCount}
               currentPage={currentPage}
               totalPages={totalPages}
               itemsPerPage={itemsPerPage}
