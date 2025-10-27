@@ -17,8 +17,9 @@ export interface BetHistoryFilters {
       betType?: 'single' | 'multibet';
       dateFrom?: string;
       dateTo?: string;
-      limit?: number;
-      offset?: number;
+      page?: number;      // Page number (default: 1)
+      limit?: number;     // Bets per page (default: 20, max: 100)
+      offset?: number;    // Alternative to page
       includeShopBets?: boolean;
 }
 
@@ -54,6 +55,19 @@ export class BetHistoryService {
 
                   // Build query parameters
                   const queryParams = new URLSearchParams();
+
+                  // Pagination parameters
+                  if (filters?.page) {
+                        queryParams.append('page', filters.page.toString());
+                  }
+                  if (filters?.limit) {
+                        queryParams.append('limit', filters.limit.toString());
+                  } else if (filters?.offset !== undefined) {
+                        // Fallback to offset if page not provided
+                        queryParams.append('offset', filters.offset.toString());
+                  }
+
+                  // Filter parameters
                   if (filters?.status) {
                         queryParams.append('status', filters.status);
                   }
@@ -65,12 +79,6 @@ export class BetHistoryService {
                   }
                   if (filters?.dateTo) {
                         queryParams.append('dateTo', filters.dateTo);
-                  }
-                  if (filters?.limit) {
-                        queryParams.append('limit', filters.limit.toString());
-                  }
-                  if (filters?.offset) {
-                        queryParams.append('offset', filters.offset.toString());
                   }
                   if (filters?.includeShopBets) {
                         queryParams.append('includeShopBets', 'true');

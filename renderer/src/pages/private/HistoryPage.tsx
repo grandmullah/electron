@@ -45,9 +45,7 @@ interface HistoryPageProps {
 }
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
-  const [bets, setBets] = useState<DisplayBet[]>([]);
-  const [isLoadingBets, setIsLoadingBets] = useState(true);
-  const [betError, setBetError] = useState<string | null>(null);
+  // Main bets data is now managed by SWR (defined below)
   const [filteredBets, setFilteredBets] = useState<DisplayBet[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -79,6 +77,82 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const [apiSearchTerm, setApiSearchTerm] = useState<string | null>(null);
 
   const user = useAppSelector((state) => state.auth.user);
+
+  // Build SWR key for bet history pagination
+  const buildBetHistoryKey = () => {
+    if (!user?.shop_id) return null;
+
+    const params = new URLSearchParams();
+    params.append("page", currentPage.toString());
+    params.append("limit", itemsPerPage.toString());
+
+    if (betStatusFilter !== "all") params.append("status", betStatusFilter);
+    if (betTypeFilter !== "all") params.append("betType", betTypeFilter);
+    if (dateFrom) params.append("dateFrom", dateFrom.toISOString());
+    if (dateTo) params.append("dateTo", dateTo.toISOString());
+
+    return `/bet-history/${user.shop_id}?${params.toString()}`;
+  };
+
+  // SWR fetcher for bet history
+  const betHistoryFetcher = async (key: string) => {
+    console.log("📡 [SWR BET HISTORY] Fetching:", key);
+
+    const filters: BetHistoryFilters = {
+      page: currentPage,
+      limit: itemsPerPage,
+      ...(betStatusFilter !== "all" && {
+        status: betStatusFilter as
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "settled"
+          | "cancelled",
+      }),
+      ...(betTypeFilter !== "all" && {
+        betType: betTypeFilter as "single" | "multibet",
+      }),
+      ...(dateFrom && { dateFrom: dateFrom.toISOString() }),
+      ...(dateTo && { dateTo: dateTo.toISOString() }),
+    };
+
+    const response = await BetHistoryService.getUserBets(filters);
+    console.log(
+      "✅ [SWR BET HISTORY] Fetched:",
+      response.data.total,
+      "total bets"
+    );
+
+    return response;
+  };
+
+  // Use SWR for bet history with pagination
+  const {
+    data: betHistoryData,
+    error: betHistoryError,
+    isLoading: isLoadingBets,
+    mutate: mutateBetHistory,
+  } = useSWR(buildBetHistoryKey(), betHistoryFetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 1000,
+    keepPreviousData: true, // Keep showing old data while fetching new page
+  });
+
+  // Extract bets from SWR data
+  const bets = betHistoryData
+    ? [...betHistoryData.data.singleBets, ...betHistoryData.data.multibets]
+    : [];
+
+  const betError = betHistoryError?.message || null;
+
+  console.log("📊 [BET HISTORY SWR]", {
+    key: buildBetHistoryKey(),
+    isLoading: isLoadingBets,
+    betsCount: bets.length,
+    totalInDB: betHistoryData?.data.total,
+    hasError: !!betHistoryError,
+  });
 
   // Debounce search term
   useEffect(() => {
@@ -250,57 +324,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     hasError: !!betDetailsError || !!textSearchError,
   });
 
-  // Load bet history
-  const loadBetHistory = useCallback(async () => {
-    if (!user?.shop_id) return;
-
-    setIsLoadingBets(true);
-    setBetError(null);
-
-    try {
-      const filters: BetHistoryFilters = {
-        ...(betStatusFilter !== "all" && {
-          status: betStatusFilter as
-            | "pending"
-            | "accepted"
-            | "rejected"
-            | "settled"
-            | "cancelled",
-        }),
-        ...(betTypeFilter !== "all" && {
-          betType: betTypeFilter as "single" | "multibet",
-        }),
-        ...(dateFrom && { dateFrom: dateFrom.toISOString() }),
-        ...(dateTo && { dateTo: dateTo.toISOString() }),
-      };
-
-      const response = await BetHistoryService.getUserBets(filters);
-      console.log("Bet history response (new structure):", response);
-      console.log("Single bets:", response.data.singleBets);
-      console.log("Multibets:", response.data.multibets);
-
-      // Combine single bets and multibets into a single array
-      const displayBets = [
-        ...response.data.singleBets,
-        ...response.data.multibets,
-      ];
-
-      console.log("Mapped display bets:", displayBets);
-      setBets(displayBets);
-      // Note: filteredBets will be set by the client-side filtering useEffect
-    } catch (error: any) {
-      console.error("Error loading bet history:", error);
-      setBetError(error.message || "Failed to load bet history");
-    } finally {
-      setIsLoadingBets(false);
-    }
-  }, [user?.shop_id, betStatusFilter, betTypeFilter, dateFrom, dateTo]);
-
-  // Load bet history on component mount and when filters change
-  useEffect(() => {
-    loadBetHistory();
-  }, [loadBetHistory]);
-
   // Apply client-side filtering or use SWR API search results
   useEffect(() => {
     console.log("🔄 [FILTER EFFECT] Running...", {
@@ -462,22 +485,37 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   }, [debouncedSearchTerm, apiSearchTerm]);
 
   // Pagination calculations
+  // Note: When using server-side pagination, filteredBets already contains only the current page
+  // Client-side filtering is only applied to search results or when filters are used
   const totalPages = Math.ceil(filteredBets.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentBets = filteredBets.slice(startIndex, endIndex);
 
-  // Pagination handlers
+  // For server-side pagination: show all filtered bets (already paginated by API)
+  // For client-side filtering (search): slice the results
+  const currentBets = filteredBets;
+
+  // Pagination handlers - trigger API reload when page changes
   const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    const newPage = Math.max(1, Math.min(page, totalPages));
+    console.log("📄 [PAGINATION] Going to page:", newPage);
+    setCurrentPage(newPage);
   };
 
   const goToPrevPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
+    setCurrentPage((prev) => {
+      const newPage = Math.max(1, prev - 1);
+      console.log("📄 [PAGINATION] Previous page:", newPage);
+      return newPage;
+    });
   };
 
   const goToNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+    setCurrentPage((prev) => {
+      const newPage = Math.min(totalPages, prev + 1);
+      console.log("📄 [PAGINATION] Next page:", newPage);
+      return newPage;
+    });
   };
 
   // Filter handlers
@@ -493,7 +531,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   const handleApplyFilters = () => {
     setCurrentPage(1);
-    loadBetHistory();
+    // SWR will automatically refetch when key changes
   };
 
   // Export handler
@@ -574,7 +612,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   const handlePayoutComplete = () => {
     // Refresh the bet history to reflect the payout completion
-    loadBetHistory();
+    mutateBetHistory(); // Revalidate SWR cache
     setShowPayoutModal(false);
     setSelectedPayoutBet(null);
   };
@@ -602,7 +640,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       if (response.success) {
         setCancelSuccess(response.message || "Bet cancelled successfully");
         // Refresh the bet history
-        loadBetHistory();
+        mutateBetHistory(); // Revalidate SWR cache
         // Close dialog after a short delay
         setTimeout(() => {
           setShowCancelDialog(false);
@@ -724,7 +762,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
             icon={<IconAlertCircle />}
             severity="error"
             action={
-              <Button onClick={loadBetHistory} color="inherit" size="small">
+              <Button
+                onClick={() => mutateBetHistory()}
+                color="inherit"
+                size="small"
+              >
                 Try Again
               </Button>
             }
@@ -771,8 +813,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
               totalPages={totalPages}
               itemsPerPage={itemsPerPage}
               setItemsPerPage={(n) => {
+                console.log("📄 [PAGINATION] Changing items per page to:", n);
                 setItemsPerPage(n);
-                setCurrentPage(1);
+                setCurrentPage(1); // Reset to page 1 when changing page size
               }}
               goToPrevPage={goToPrevPage}
               goToNextPage={goToNextPage}
