@@ -620,11 +620,15 @@ setTimeout(() => {
                   }
             } else {
                   // Check if any window is responsive
+                  // Note: Minimized windows are still valid and shouldn't trigger emergency mode
                   let hasResponsiveWindow = false;
                   for (const window of windows) {
-                        if (!window.isDestroyed() && window.isVisible()) {
-                              hasResponsiveWindow = true;
-                              break;
+                        if (!window.isDestroyed()) {
+                              // Accept visible windows OR minimized windows (they're still functional)
+                              if (window.isVisible() || window.isMinimized()) {
+                                    hasResponsiveWindow = true;
+                                    break;
+                              }
                         }
                   }
 
