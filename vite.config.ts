@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => ({
             outDir: 'dist/renderer',
             sourcemap: mode !== 'production', // Disable sourcemaps in prod
             chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
+            minify: 'esbuild', // Use esbuild for minification
+            // Remove console logs in production
+            esbuild: mode === 'production' ? {
+                  drop: ['console', 'debugger'],
+            } : undefined,
             rollupOptions: {
                   input: {
                         main: resolve(__dirname, 'renderer/src/main.tsx'),

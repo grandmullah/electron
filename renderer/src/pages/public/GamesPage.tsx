@@ -740,6 +740,88 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   `
                       : ""
                   }
+                  
+                  <!-- 1st Half H2H -->
+                  ${
+                    game.h2h_h1?.home || game.h2h_h1?.draw || game.h2h_h1?.away
+                      ? `
+                    <div class="betting-option-vertical ${!game.h2h_h1?.home ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H1-1</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h1?.home ? "clickable" : ""}">${game.h2h_h1?.home || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!game.h2h_h1?.draw ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H1-X</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h1?.draw ? "clickable" : ""}">${game.h2h_h1?.draw || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!game.h2h_h1?.away ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H1-2</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h1?.away ? "clickable" : ""}">${game.h2h_h1?.away || "-"}</div>
+                    </div>
+                  `
+                      : ""
+                  }
+                  
+                  <!-- 2nd Half H2H -->
+                  ${
+                    game.h2h_h2?.home || game.h2h_h2?.draw || game.h2h_h2?.away
+                      ? `
+                    <div class="betting-option-vertical ${!game.h2h_h2?.home ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H2-1</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h2?.home ? "clickable" : ""}">${game.h2h_h2?.home || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!game.h2h_h2?.draw ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H2-X</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h2?.draw ? "clickable" : ""}">${game.h2h_h2?.draw || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!game.h2h_h2?.away ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H2-2</div>
+                      <div class="betting-option-value-vertical ${game.h2h_h2?.away ? "clickable" : ""}">${game.h2h_h2?.away || "-"}</div>
+                    </div>
+                  `
+                      : ""
+                  }
+                  
+                  <!-- 1st Half Totals -->
+                  ${
+                    game.totals_h1 && game.totals_h1.length > 0
+                      ? game.totals_h1
+                          .slice(0, 1)
+                          .map(
+                            (total) => `
+                    <div class="betting-option-vertical ${!total.over ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H1-O${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.over ? "clickable" : ""}">${total.over || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!total.under ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H1-U${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
+                    </div>
+                  `
+                          )
+                          .join("")
+                      : ""
+                  }
+                  
+                  <!-- 2nd Half Totals -->
+                  ${
+                    game.totals_h2 && game.totals_h2.length > 0
+                      ? game.totals_h2
+                          .slice(0, 1)
+                          .map(
+                            (total) => `
+                    <div class="betting-option-vertical ${!total.over ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H2-O${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.over ? "clickable" : ""}">${total.over || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!total.under ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">H2-U${total.point}</div>
+                      <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
+                    </div>
+                  `
+                          )
+                          .join("")
+                      : ""
+                  }
                 </div>
               </div>
             `;

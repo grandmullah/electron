@@ -196,6 +196,39 @@ export interface Game {
             awaySpreadOdds: number | string | null;
             spreadLine: number | string | null;
       };
+      // Half-time markets
+      h2h_h1?: {
+            home: number | string | null;
+            draw: number | string | null;
+            away: number | string | null;
+      };
+      h2h_h2?: {
+            home: number | string | null;
+            draw: number | string | null;
+            away: number | string | null;
+      };
+      totals_h1?: Array<{
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
+      totals_h2?: Array<{
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
+      team_totals_h1?: Array<{
+            team: string; // "home" or "away"
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
+      team_totals_h2?: Array<{
+            team: string; // "home" or "away"
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
       hasValidOdds: boolean;
       currentScore?: {
             home: number;

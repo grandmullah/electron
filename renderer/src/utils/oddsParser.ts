@@ -274,6 +274,67 @@ export function hasValidOdds(oddsData: {
 }
 
 /**
+ * Extract team totals (by team)
+ */
+export function extractTeamTotalsOdds(
+      outcomes: any[],
+      homeTeam: string,
+      awayTeam: string
+): Array<{ team: string; point: number; over: number | null; under: number | null }> {
+      if (!outcomes || outcomes.length === 0) return [];
+
+      const normalized = outcomes.map(normalizeOutcome);
+      const teamTotalsMap = new Map<string, Map<number, { over: number | null; under: number | null }>>();
+
+      normalized.forEach(outcome => {
+            const point = outcome.point;
+            if (point === null || typeof point !== 'number') return;
+
+            const name = outcome.name.toLowerCase();
+            let team = '';
+
+            if (name.includes(homeTeam.toLowerCase()) || name.includes('home')) {
+                  team = 'home';
+            } else if (name.includes(awayTeam.toLowerCase()) || name.includes('away')) {
+                  team = 'away';
+            } else {
+                  return; // Skip if can't determine team
+            }
+
+            if (!teamTotalsMap.has(team)) {
+                  teamTotalsMap.set(team, new Map());
+            }
+
+            const teamMap = teamTotalsMap.get(team)!;
+            if (!teamMap.has(point)) {
+                  teamMap.set(point, { over: null, under: null });
+            }
+
+            const entry = teamMap.get(point)!;
+            if (name.includes('over')) {
+                  entry.over = outcome.price;
+            } else if (name.includes('under')) {
+                  entry.under = outcome.price;
+            }
+      });
+
+      const result: Array<{ team: string; point: number; over: number | null; under: number | null }> = [];
+
+      teamTotalsMap.forEach((pointsMap, team) => {
+            pointsMap.forEach((data, point) => {
+                  if (data.over !== null || data.under !== null) {
+                        result.push({ team, point, over: data.over, under: data.under });
+                  }
+            });
+      });
+
+      return result.sort((a, b) => {
+            if (a.team === b.team) return a.point - b.point;
+            return a.team === 'home' ? -1 : 1;
+      });
+}
+
+/**
  * Parse all odds from GameOdds array (new backend format)
  */
 export function parseOddsFromGameOddsArray(
@@ -281,18 +342,34 @@ export function parseOddsFromGameOddsArray(
       homeTeam: string,
       awayTeam: string
 ) {
-      // Group odds by market
+      // Group odds by market (including half-time markets)
       const h2hOdds = odds.filter(o => o.market_key === 'h2h');
       const dcOdds = odds.filter(o => o.market_key === 'double_chance');
       const totalsOdds = odds.filter(o => o.market_key === 'totals');
       const bttsOdds = odds.filter(o => o.market_key === 'btts');
       const spreadsOdds = odds.filter(o => o.market_key === 'spreads');
 
+      // Half-time markets
+      const h2h_h1_Odds = odds.filter(o => o.market_key === 'h2h_h1');
+      const h2h_h2_Odds = odds.filter(o => o.market_key === 'h2h_h2');
+      const totals_h1_Odds = odds.filter(o => o.market_key === 'totals_h1');
+      const totals_h2_Odds = odds.filter(o => o.market_key === 'totals_h2');
+      const team_totals_h1_Odds = odds.filter(o => o.market_key === 'team_totals_h1');
+      const team_totals_h2_Odds = odds.filter(o => o.market_key === 'team_totals_h2');
+
       const h2h = extractH2HOdds(h2hOdds, homeTeam, awayTeam);
       const doubleChance = extractDoubleChanceOdds(dcOdds, homeTeam, awayTeam);
       const totals = extractTotalsOdds(totalsOdds);
       const bothTeamsToScore = extractBTTSOdds(bttsOdds);
       const spreads = extractSpreadOdds(spreadsOdds, homeTeam, awayTeam);
+
+      // Parse half-time markets
+      const h2h_h1 = extractH2HOdds(h2h_h1_Odds, homeTeam, awayTeam);
+      const h2h_h2 = extractH2HOdds(h2h_h2_Odds, homeTeam, awayTeam);
+      const totals_h1 = extractTotalsOdds(totals_h1_Odds);
+      const totals_h2 = extractTotalsOdds(totals_h2_Odds);
+      const team_totals_h1 = extractTeamTotalsOdds(team_totals_h1_Odds, homeTeam, awayTeam);
+      const team_totals_h2 = extractTeamTotalsOdds(team_totals_h2_Odds, homeTeam, awayTeam);
 
       const oddsData = {
             homeOdds: h2h.homeOdds,
@@ -310,6 +387,25 @@ export function parseOddsFromGameOddsArray(
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,
             },
+            // Half-time markets (only include if they have data)
+            ...(h2h_h1.homeOdds || h2h_h1.drawOdds || h2h_h1.awayOdds ? {
+                  h2h_h1: {
+                        home: h2h_h1.homeOdds,
+                        draw: h2h_h1.drawOdds,
+                        away: h2h_h1.awayOdds,
+                  }
+            } : {}),
+            ...(h2h_h2.homeOdds || h2h_h2.drawOdds || h2h_h2.awayOdds ? {
+                  h2h_h2: {
+                        home: h2h_h2.homeOdds,
+                        draw: h2h_h2.drawOdds,
+                        away: h2h_h2.awayOdds,
+                  }
+            } : {}),
+            ...(totals_h1.length > 0 ? { totals_h1 } : {}),
+            ...(totals_h2.length > 0 ? { totals_h2 } : {}),
+            ...(team_totals_h1.length > 0 ? { team_totals_h1 } : {}),
+            ...(team_totals_h2.length > 0 ? { team_totals_h2 } : {}),
             hasValidOdds: hasValidOdds(oddsData),
       };
 }
@@ -358,11 +454,27 @@ export function parseOddsFromBookmakersArray(
       const bttsMarket = findMarketFromBookmakers(bookmakers, 'btts');
       const spreadsMarket = findMarketFromBookmakers(bookmakers, 'spreads');
 
+      // Half-time markets
+      const h2h_h1_Market = findMarketFromBookmakers(bookmakers, 'h2h_h1');
+      const h2h_h2_Market = findMarketFromBookmakers(bookmakers, 'h2h_h2');
+      const totals_h1_Market = findMarketFromBookmakers(bookmakers, 'totals_h1');
+      const totals_h2_Market = findMarketFromBookmakers(bookmakers, 'totals_h2');
+      const team_totals_h1_Market = findMarketFromBookmakers(bookmakers, 'team_totals_h1');
+      const team_totals_h2_Market = findMarketFromBookmakers(bookmakers, 'team_totals_h2');
+
       const h2h = extractH2HOdds(h2hMarket?.outcomes || [], homeTeam, awayTeam);
       const doubleChance = extractDoubleChanceOdds(dcMarket?.outcomes || [], homeTeam, awayTeam);
       const totals = extractTotalsOdds(totalsMarket?.outcomes || []);
       const bothTeamsToScore = extractBTTSOdds(bttsMarket?.outcomes || []);
       const spreads = extractSpreadOdds(spreadsMarket?.outcomes || [], homeTeam, awayTeam);
+
+      // Parse half-time markets
+      const h2h_h1 = extractH2HOdds(h2h_h1_Market?.outcomes || [], homeTeam, awayTeam);
+      const h2h_h2 = extractH2HOdds(h2h_h2_Market?.outcomes || [], homeTeam, awayTeam);
+      const totals_h1 = extractTotalsOdds(totals_h1_Market?.outcomes || []);
+      const totals_h2 = extractTotalsOdds(totals_h2_Market?.outcomes || []);
+      const team_totals_h1 = extractTeamTotalsOdds(team_totals_h1_Market?.outcomes || [], homeTeam, awayTeam);
+      const team_totals_h2 = extractTeamTotalsOdds(team_totals_h2_Market?.outcomes || [], homeTeam, awayTeam);
 
       const oddsData = {
             homeOdds: h2h.homeOdds,
@@ -380,6 +492,25 @@ export function parseOddsFromBookmakersArray(
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,
             },
+            // Half-time markets (only include if they have data)
+            ...(h2h_h1.homeOdds || h2h_h1.drawOdds || h2h_h1.awayOdds ? {
+                  h2h_h1: {
+                        home: h2h_h1.homeOdds,
+                        draw: h2h_h1.drawOdds,
+                        away: h2h_h1.awayOdds,
+                  }
+            } : {}),
+            ...(h2h_h2.homeOdds || h2h_h2.drawOdds || h2h_h2.awayOdds ? {
+                  h2h_h2: {
+                        home: h2h_h2.homeOdds,
+                        draw: h2h_h2.drawOdds,
+                        away: h2h_h2.awayOdds,
+                  }
+            } : {}),
+            ...(totals_h1.length > 0 ? { totals_h1 } : {}),
+            ...(totals_h2.length > 0 ? { totals_h2 } : {}),
+            ...(team_totals_h1.length > 0 ? { team_totals_h1 } : {}),
+            ...(team_totals_h2.length > 0 ? { team_totals_h2 } : {}),
             hasValidOdds: hasValidOdds(oddsData),
       };
 }

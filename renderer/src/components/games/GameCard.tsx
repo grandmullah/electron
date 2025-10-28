@@ -7,6 +7,8 @@ import {
   Stack,
   Button,
   IconButton,
+  Collapse,
+  Divider,
 } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { Game } from "../../services/gamesService";
@@ -760,6 +762,217 @@ export const GameCard: React.FC<GameCardProps> = ({
             </Box>
           </Stack>
         </Box>
+
+        {/* Expanded Section - Half-Time Markets */}
+        <Collapse in={expandedGames.has(game.id)} timeout="auto" unmountOnExit>
+          <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.1)" }} />
+
+          {/* Horizontal scrollable container like main row */}
+          <Box
+            sx={{
+              overflowX: "auto",
+              overflowY: "hidden",
+              mb: 2,
+              "&::-webkit-scrollbar": {
+                height: "4px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: "2px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(255,255,255,0.3)",
+                borderRadius: "2px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "rgba(255,255,255,0.5)",
+              },
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={{ xs: 0.25, sm: 0.5, md: 0.75 }}
+              sx={{
+                width: "100%",
+                px: 0.5,
+              }}
+            >
+              {/* First Half H2H */}
+              {game.h2h_h1 && (
+                <Box
+                  textAlign="center"
+                  sx={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    px: 0.5,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    color="rgba(255,255,255,0.8)"
+                    gutterBottom
+                    display="block"
+                    sx={{
+                      fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                    }}
+                  >
+                    1ST HALF - 3 WAY
+                  </Typography>
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        1
+                      </Typography>
+                      <BettingOption
+                        betType="1st Half 3 Way"
+                        selection="Home"
+                        odds={game.h2h_h1.home}
+                        label="1"
+                      />
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        X
+                      </Typography>
+                      <BettingOption
+                        betType="1st Half 3 Way"
+                        selection="Draw"
+                        odds={game.h2h_h1.draw}
+                        label="X"
+                      />
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        2
+                      </Typography>
+                      <BettingOption
+                        betType="1st Half 3 Way"
+                        selection="Away"
+                        odds={game.h2h_h1.away}
+                        label="2"
+                      />
+                    </Box>
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Second Half H2H */}
+              {game.h2h_h2 && (
+                <Box
+                  textAlign="center"
+                  sx={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    px: 0.5,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    color="rgba(255,255,255,0.8)"
+                    gutterBottom
+                    display="block"
+                    sx={{
+                      fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                    }}
+                  >
+                    2ND HALF - 3 WAY
+                  </Typography>
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        1
+                      </Typography>
+                      <BettingOption
+                        betType="2nd Half 3 Way"
+                        selection="Home"
+                        odds={game.h2h_h2.home}
+                        label="1"
+                      />
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        X
+                      </Typography>
+                      <BettingOption
+                        betType="2nd Half 3 Way"
+                        selection="Draw"
+                        odds={game.h2h_h2.draw}
+                        label="X"
+                      />
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.6)"
+                        display="block"
+                        mb={0.5}
+                      >
+                        2
+                      </Typography>
+                      <BettingOption
+                        betType="2nd Half 3 Way"
+                        selection="Away"
+                        odds={game.h2h_h2.away}
+                        label="2"
+                      />
+                    </Box>
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+          </Box>
+
+          {/* No Extra Odds Available */}
+          {!game.h2h_h1 &&
+            !game.h2h_h2 &&
+            (!game.totals_h1 || game.totals_h1.length === 0) &&
+            (!game.totals_h2 || game.totals_h2.length === 0) &&
+            (!game.team_totals_h1 || game.team_totals_h1.length === 0) &&
+            (!game.team_totals_h2 || game.team_totals_h2.length === 0) && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 2,
+                  mx: 2,
+                  bgcolor: "rgba(255,193,7,0.05)",
+                  border: "1px dashed rgba(255,193,7,0.3)",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="body2" color="rgba(255,193,7,0.8)">
+                  ℹ️ No additional half-time markets available for this game
+                </Typography>
+              </Box>
+            )}
+        </Collapse>
       </CardContent>
     </Card>
   );

@@ -135,6 +135,40 @@ export class BetSlipService {
       private static deriveMarketTypeFromBetType(betType: string): string {
             const key = (betType || '').toLowerCase();
 
+            // Handle Half-Time Markets FIRST (before general markets)
+            // First Half markets
+            if (key.includes('1st half') || key.includes('first half')) {
+                  if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
+                        return 'h2h_h1';
+                  }
+                  if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
+                        // Check if it's team totals
+                        if (key.includes('total') && !key.includes('totals')) {
+                              return 'team_totals_h1';
+                        }
+                        return 'totals_h1';
+                  }
+                  if (key.includes('double')) return 'double_chance_h1';
+                  if (key.includes('both') || key.includes('btts')) return 'btts_h1';
+            }
+
+            // Second Half markets
+            if (key.includes('2nd half') || key.includes('second half')) {
+                  if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
+                        return 'h2h_h2';
+                  }
+                  if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
+                        // Check if it's team totals
+                        if (key.includes('total') && !key.includes('totals')) {
+                              return 'team_totals_h2';
+                        }
+                        return 'totals_h2';
+                  }
+                  if (key.includes('double')) return 'double_chance_h2';
+                  if (key.includes('both') || key.includes('btts')) return 'btts_h2';
+            }
+
+            // Handle Full Match Markets (default)
             // Handle Double Chance markets
             if (key.includes('double')) return 'double_chance';
 
@@ -156,6 +190,8 @@ export class BetSlipService {
 
             switch (marketType) {
                   case 'h2h':
+                  case 'h2h_h1':  // First half H2H
+                  case 'h2h_h2':  // Second half H2H
                         // Handle H2H selections (Home, Draw, Away)
                         if (selection === 'home') return bet.homeTeam;
                         if (selection === 'away') return bet.awayTeam;
@@ -167,7 +203,9 @@ export class BetSlipService {
 
                         return bet.selection;
 
-                  case 'double_chance': {
+                  case 'double_chance':
+                  case 'double_chance_h1':  // First half double chance
+                  case 'double_chance_h2':  // Second half double chance
                         // Map to the exact team names the backend expects (from API response)
                         if (selection === '1 or x' || selection === '1x' || selection.includes('home') && selection.includes('draw')) {
                               return `${bet.homeTeam} or Draw`;
@@ -179,22 +217,25 @@ export class BetSlipService {
                               return `${bet.homeTeam} or ${bet.awayTeam}`;
                         }
                         return bet.selection;
-                  }
 
-                  case 'totals': {
+                  case 'totals':
+                  case 'totals_h1':  // First half totals
+                  case 'totals_h2':  // Second half totals
+                  case 'team_totals_h1':  // First half team totals
+                  case 'team_totals_h2':  // Second half team totals
                         // Handle Over/Under selections
                         if (selection === 'over') return 'Over';
                         if (selection === 'under') return 'Under';
                         return bet.selection;
-                  }
 
-                  case 'btts': {
+                  case 'btts':
+                  case 'btts_h1':  // First half BTTS
+                  case 'btts_h2':  // Second half BTTS
                         // Handle Both Teams To Score selections
                         if (selection === 'yes' || selection === 'no') {
                               return bet.selection.charAt(0).toUpperCase() + bet.selection.slice(1).toLowerCase();
                         }
                         return bet.selection;
-                  }
 
                   default:
                         return bet.selection;
