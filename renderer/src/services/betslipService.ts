@@ -141,11 +141,11 @@ export class BetSlipService {
                   if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
                         return 'h2h_h1';
                   }
+                  // Check for team totals FIRST (before general over/under)
+                  if (key.includes('team total')) {
+                        return 'team_totals_h1';
+                  }
                   if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
-                        // Check if it's team totals
-                        if (key.includes('total') && !key.includes('totals')) {
-                              return 'team_totals_h1';
-                        }
                         return 'totals_h1';
                   }
                   if (key.includes('double')) return 'double_chance_h1';
@@ -157,11 +157,11 @@ export class BetSlipService {
                   if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
                         return 'h2h_h2';
                   }
+                  // Check for team totals FIRST (before general over/under)
+                  if (key.includes('team total')) {
+                        return 'team_totals_h2';
+                  }
                   if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
-                        // Check if it's team totals
-                        if (key.includes('total') && !key.includes('totals')) {
-                              return 'team_totals_h2';
-                        }
                         return 'totals_h2';
                   }
                   if (key.includes('double')) return 'double_chance_h2';

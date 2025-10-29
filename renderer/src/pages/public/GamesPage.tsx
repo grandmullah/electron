@@ -822,6 +822,66 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                           .join("")
                       : ""
                   }
+                  
+                  <!-- 1st Half Team Totals -->
+                  ${
+                    game.team_totals_h1 && game.team_totals_h1.length > 0
+                      ? game.team_totals_h1
+                          .slice(0, 2)
+                          .map((teamTotal) => {
+                            const teamName =
+                              (teamTotal.team === "home"
+                                ? game.homeTeam
+                                : game.awayTeam) || "";
+                            const shortName = (
+                              teamName.split(" ").slice(-1)[0] || ""
+                            )
+                              .substring(0, 4)
+                              .toUpperCase();
+                            return `
+                    <div class="betting-option-vertical ${!teamTotal.over ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">${shortName} H1-O${teamTotal.point}</div>
+                      <div class="betting-option-value-vertical ${teamTotal.over ? "clickable" : ""}">${teamTotal.over || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!teamTotal.under ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">${shortName} H1-U${teamTotal.point}</div>
+                      <div class="betting-option-value-vertical ${teamTotal.under ? "clickable" : ""}">${teamTotal.under || "-"}</div>
+                    </div>
+                  `;
+                          })
+                          .join("")
+                      : ""
+                  }
+                  
+                  <!-- 2nd Half Team Totals -->
+                  ${
+                    game.team_totals_h2 && game.team_totals_h2.length > 0
+                      ? game.team_totals_h2
+                          .slice(0, 2)
+                          .map((teamTotal) => {
+                            const teamName =
+                              (teamTotal.team === "home"
+                                ? game.homeTeam
+                                : game.awayTeam) || "";
+                            const shortName = (
+                              teamName.split(" ").slice(-1)[0] || ""
+                            )
+                              .substring(0, 4)
+                              .toUpperCase();
+                            return `
+                    <div class="betting-option-vertical ${!teamTotal.over ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">${shortName} H2-O${teamTotal.point}</div>
+                      <div class="betting-option-value-vertical ${teamTotal.over ? "clickable" : ""}">${teamTotal.over || "-"}</div>
+                    </div>
+                    <div class="betting-option-vertical ${!teamTotal.under ? "disabled" : ""}">
+                      <div class="betting-option-label-vertical">${shortName} H2-U${teamTotal.point}</div>
+                      <div class="betting-option-value-vertical ${teamTotal.under ? "clickable" : ""}">${teamTotal.under || "-"}</div>
+                    </div>
+                  `;
+                          })
+                          .join("")
+                      : ""
+                  }
                 </div>
               </div>
             `;

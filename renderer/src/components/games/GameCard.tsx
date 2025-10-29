@@ -523,174 +523,199 @@ export const GameCard: React.FC<GameCardProps> = ({
             </Box>
 
             {/* Totals Odds - Dynamic width based on content */}
-            {game.totals && game.totals.length > 0 && (
-              <Box
-                textAlign="center"
-                sx={{
-                  flex: "0 0 auto",
-                  minWidth: "fit-content",
-                  maxWidth: {
-                    xs: "280px",
-                    sm: "350px",
-                    md: "400px",
-                  },
-                  px: 0.5,
-                  overflow: "hidden",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  fontWeight="bold"
-                  color="rgba(255,255,255,0.8)"
-                  gutterBottom
-                  display="block"
-                  mb={0.5}
-                  sx={{
-                    fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
-                  }}
-                >
-                  TOTALS
-                </Typography>
+            {game.totals &&
+              game.totals.length > 0 &&
+              (() => {
+                // Filter out .25 and .75 points if corresponding .5 exists
+                const allPoints = game.totals.map((t) => t.point);
+                const filteredTotals = game.totals.filter((total) => {
+                  const point = total.point;
+                  const decimal = point % 1; // Get decimal part
 
-                {/* Totals layout: 3 points per row */}
-                <Box sx={{ overflow: "hidden" }}>
-                  {/* Create rows of 3 totals each */}
-                  {Array.from(
-                    { length: Math.ceil(game.totals.length / 3) },
-                    (_, rowIndex) => (
-                      <Stack
-                        key={rowIndex}
-                        direction="row"
-                        spacing={{ xs: 0.4, sm: 0.5, md: 0.6 }}
-                        justifyContent="space-between"
-                        mb={
-                          rowIndex < Math.ceil(game.totals.length / 3) - 1
-                            ? 0.5
-                            : 0
-                        }
-                        sx={{ overflow: "hidden", width: "100%" }}
-                      >
-                        {game.totals
-                          .sort((a, b) => a.point - b.point) // Sort by point value ascending
-                          .slice(rowIndex * 3, (rowIndex + 1) * 3)
-                          .map((total, index) => (
-                            <Box
-                              key={rowIndex * 3 + index}
-                              textAlign="center"
-                              sx={{
-                                flex: "1 1 0",
-                                minWidth: 0,
-                                overflow: "hidden",
-                              }}
-                            >
-                              <Typography
-                                variant="caption"
-                                color="rgba(255,255,255,0.6)"
-                                display="block"
-                                mb={0.1}
-                                sx={{
-                                  fontSize: {
-                                    xs: "0.45rem",
-                                    sm: "0.5rem",
-                                    md: "0.55rem",
-                                  },
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {total.point}
-                              </Typography>
-                              <Stack
-                                direction="row"
-                                spacing={{ xs: 0.5, sm: 0.6, md: 0.7 }}
-                                justifyContent="center"
-                              >
+                  // If it's .25 or .75, check if corresponding .5 exists
+                  if (decimal === 0.25) {
+                    const correspondingHalf = Math.floor(point) + 0.5;
+                    return !allPoints.includes(correspondingHalf);
+                  }
+                  if (decimal === 0.75) {
+                    const correspondingHalf = Math.floor(point) + 0.5;
+                    return !allPoints.includes(correspondingHalf);
+                  }
+
+                  // Keep all other points (.0, .5)
+                  return true;
+                });
+
+                return filteredTotals.length > 0 ? (
+                  <Box
+                    textAlign="center"
+                    sx={{
+                      flex: "0 0 auto",
+                      minWidth: "fit-content",
+                      maxWidth: {
+                        xs: "280px",
+                        sm: "350px",
+                        md: "400px",
+                      },
+                      px: 0.5,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight="bold"
+                      color="rgba(255,255,255,0.8)"
+                      gutterBottom
+                      display="block"
+                      mb={0.5}
+                      sx={{
+                        fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                      }}
+                    >
+                      TOTALS
+                    </Typography>
+
+                    {/* Totals layout: 3 points per row */}
+                    <Box sx={{ overflow: "hidden" }}>
+                      {/* Create rows of 3 totals each */}
+                      {Array.from(
+                        { length: Math.ceil(filteredTotals.length / 3) },
+                        (_, rowIndex) => (
+                          <Stack
+                            key={rowIndex}
+                            direction="row"
+                            spacing={{ xs: 0.4, sm: 0.5, md: 0.6 }}
+                            justifyContent="space-between"
+                            mb={
+                              rowIndex <
+                              Math.ceil(filteredTotals.length / 3) - 1
+                                ? 0.5
+                                : 0
+                            }
+                            sx={{ overflow: "hidden", width: "100%" }}
+                          >
+                            {filteredTotals
+                              .sort((a, b) => a.point - b.point) // Sort by point value ascending
+                              .slice(rowIndex * 3, (rowIndex + 1) * 3)
+                              .map((total, index) => (
                                 <Box
+                                  key={rowIndex * 3 + index}
                                   textAlign="center"
                                   sx={{
                                     flex: "1 1 0",
-                                    minWidth: {
-                                      xs: "24px",
-                                      sm: "28px",
-                                      md: "32px",
-                                    },
-                                    maxWidth: {
-                                      xs: "35px",
-                                      sm: "40px",
-                                      md: "45px",
-                                    },
+                                    minWidth: 0,
+                                    overflow: "hidden",
                                   }}
                                 >
                                   <Typography
                                     variant="caption"
-                                    color="rgba(255,255,255,0.4)"
+                                    color="rgba(255,255,255,0.6)"
                                     display="block"
-                                    mb={0.05}
+                                    mb={0.1}
                                     sx={{
                                       fontSize: {
-                                        xs: "0.35rem",
-                                        sm: "0.4rem",
-                                        md: "0.45rem",
+                                        xs: "0.45rem",
+                                        sm: "0.5rem",
+                                        md: "0.55rem",
                                       },
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
                                     }}
                                   >
-                                    O
+                                    {total.point}
                                   </Typography>
-                                  <BettingOption
-                                    betType={`Over/Under ${total.point}`}
-                                    selection={`Over ${total.point}`}
-                                    odds={total.over}
-                                    label="Over"
-                                  />
-                                </Box>
-                                <Box
-                                  textAlign="center"
-                                  sx={{
-                                    flex: "1 1 0",
-                                    minWidth: {
-                                      xs: "24px",
-                                      sm: "28px",
-                                      md: "32px",
-                                    },
-                                    maxWidth: {
-                                      xs: "35px",
-                                      sm: "40px",
-                                      md: "45px",
-                                    },
-                                  }}
-                                >
-                                  <Typography
-                                    variant="caption"
-                                    color="rgba(255,255,255,0.4)"
-                                    display="block"
-                                    mb={0.05}
-                                    sx={{
-                                      fontSize: {
-                                        xs: "0.35rem",
-                                        sm: "0.4rem",
-                                        md: "0.45rem",
-                                      },
-                                    }}
+                                  <Stack
+                                    direction="row"
+                                    spacing={{ xs: 0.5, sm: 0.6, md: 0.7 }}
+                                    justifyContent="center"
                                   >
-                                    U
-                                  </Typography>
-                                  <BettingOption
-                                    betType={`Over/Under ${total.point}`}
-                                    selection={`Under ${total.point}`}
-                                    odds={total.under}
-                                    label="Under"
-                                  />
+                                    <Box
+                                      textAlign="center"
+                                      sx={{
+                                        flex: "1 1 0",
+                                        minWidth: {
+                                          xs: "24px",
+                                          sm: "28px",
+                                          md: "32px",
+                                        },
+                                        maxWidth: {
+                                          xs: "35px",
+                                          sm: "40px",
+                                          md: "45px",
+                                        },
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="rgba(255,255,255,0.4)"
+                                        display="block"
+                                        mb={0.05}
+                                        sx={{
+                                          fontSize: {
+                                            xs: "0.35rem",
+                                            sm: "0.4rem",
+                                            md: "0.45rem",
+                                          },
+                                        }}
+                                      >
+                                        O
+                                      </Typography>
+                                      <BettingOption
+                                        betType={`Over/Under ${total.point}`}
+                                        selection={`Over ${total.point}`}
+                                        odds={total.over}
+                                        label="Over"
+                                      />
+                                    </Box>
+                                    <Box
+                                      textAlign="center"
+                                      sx={{
+                                        flex: "1 1 0",
+                                        minWidth: {
+                                          xs: "24px",
+                                          sm: "28px",
+                                          md: "32px",
+                                        },
+                                        maxWidth: {
+                                          xs: "35px",
+                                          sm: "40px",
+                                          md: "45px",
+                                        },
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="rgba(255,255,255,0.4)"
+                                        display="block"
+                                        mb={0.05}
+                                        sx={{
+                                          fontSize: {
+                                            xs: "0.35rem",
+                                            sm: "0.4rem",
+                                            md: "0.45rem",
+                                          },
+                                        }}
+                                      >
+                                        U
+                                      </Typography>
+                                      <BettingOption
+                                        betType={`Over/Under ${total.point}`}
+                                        selection={`Under ${total.point}`}
+                                        odds={total.under}
+                                        label="Under"
+                                      />
+                                    </Box>
+                                  </Stack>
                                 </Box>
-                              </Stack>
-                            </Box>
-                          ))}
-                      </Stack>
-                    )
-                  )}
-                </Box>
-              </Box>
-            )}
+                              ))}
+                          </Stack>
+                        )
+                      )}
+                    </Box>
+                  </Box>
+                ) : null;
+              })()}
 
             {/* Both Teams to Score Odds */}
             <Box
@@ -947,6 +972,348 @@ export const GameCard: React.FC<GameCardProps> = ({
                   </Stack>
                 </Box>
               )}
+
+              {/* First Half Totals */}
+              {game.totals_h1 && game.totals_h1.length > 0 && (
+                <Box
+                  textAlign="center"
+                  sx={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    px: 0.5,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    color="rgba(255,255,255,0.8)"
+                    gutterBottom
+                    display="block"
+                    sx={{
+                      fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                    }}
+                  >
+                    1ST HALF - O/U
+                  </Typography>
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    {game.totals_h1.slice(0, 1).map((total, idx) => (
+                      <React.Fragment key={idx}>
+                        <Box textAlign="center">
+                          <Typography
+                            variant="caption"
+                            color="rgba(255,255,255,0.6)"
+                            display="block"
+                            mb={0.5}
+                          >
+                            O{total.point}
+                          </Typography>
+                          <BettingOption
+                            betType="1st Half Over/Under"
+                            selection={`Over ${total.point}`}
+                            odds={total.over}
+                            label={`O${total.point}`}
+                          />
+                        </Box>
+                        <Box textAlign="center">
+                          <Typography
+                            variant="caption"
+                            color="rgba(255,255,255,0.6)"
+                            display="block"
+                            mb={0.5}
+                          >
+                            U{total.point}
+                          </Typography>
+                          <BettingOption
+                            betType="1st Half Over/Under"
+                            selection={`Under ${total.point}`}
+                            odds={total.under}
+                            label={`U${total.point}`}
+                          />
+                        </Box>
+                      </React.Fragment>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Second Half Totals */}
+              {game.totals_h2 && game.totals_h2.length > 0 && (
+                <Box
+                  textAlign="center"
+                  sx={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    px: 0.5,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    color="rgba(255,255,255,0.8)"
+                    gutterBottom
+                    display="block"
+                    sx={{
+                      fontSize: { xs: "0.6rem", sm: "0.65rem", md: "0.7rem" },
+                    }}
+                  >
+                    2ND HALF - O/U
+                  </Typography>
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    {game.totals_h2.slice(0, 1).map((total, idx) => (
+                      <React.Fragment key={idx}>
+                        <Box textAlign="center">
+                          <Typography
+                            variant="caption"
+                            color="rgba(255,255,255,0.6)"
+                            display="block"
+                            mb={0.5}
+                          >
+                            O{total.point}
+                          </Typography>
+                          <BettingOption
+                            betType="2nd Half Over/Under"
+                            selection={`Over ${total.point}`}
+                            odds={total.over}
+                            label={`O${total.point}`}
+                          />
+                        </Box>
+                        <Box textAlign="center">
+                          <Typography
+                            variant="caption"
+                            color="rgba(255,255,255,0.6)"
+                            display="block"
+                            mb={0.5}
+                          >
+                            U{total.point}
+                          </Typography>
+                          <BettingOption
+                            betType="2nd Half Over/Under"
+                            selection={`Under ${total.point}`}
+                            odds={total.under}
+                            label={`U${total.point}`}
+                          />
+                        </Box>
+                      </React.Fragment>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* First Half Team Totals */}
+              {game.team_totals_h1 &&
+                game.team_totals_h1.length > 0 &&
+                (() => {
+                  // Filter out .25 and .75 points if corresponding .5 exists
+                  const allPoints = game.team_totals_h1.map((t) => t.point);
+                  const filteredTeamTotals = game.team_totals_h1.filter(
+                    (total) => {
+                      const point = total.point;
+                      const decimal = point % 1;
+
+                      if (decimal === 0.25) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
+                      if (decimal === 0.75) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
+
+                      return true;
+                    }
+                  );
+
+                  return filteredTeamTotals.length > 0 ? (
+                    <Box
+                      textAlign="center"
+                      sx={{
+                        flex: "1 1 0",
+                        minWidth: 0,
+                        px: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="rgba(255,255,255,0.8)"
+                        gutterBottom
+                        display="block"
+                        sx={{
+                          fontSize: {
+                            xs: "0.6rem",
+                            sm: "0.65rem",
+                            md: "0.7rem",
+                          },
+                        }}
+                      >
+                        1ST HALF - TEAM O/U
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
+                        {filteredTeamTotals
+                          .slice(0, 2)
+                          .map((teamTotal, idx) => {
+                            const teamName =
+                              (teamTotal.team === "home"
+                                ? game.homeTeam
+                                : game.awayTeam) || "";
+                            const shortName = (
+                              teamName.split(" ").slice(-1)[0] || ""
+                            ).substring(0, 4);
+                            return (
+                              <React.Fragment key={idx}>
+                                <Box textAlign="center">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.6)"
+                                    display="block"
+                                    mb={0.5}
+                                    sx={{ fontSize: "0.55rem" }}
+                                  >
+                                    {shortName} O{teamTotal.point}
+                                  </Typography>
+                                  <BettingOption
+                                    betType="1st Half Team Total"
+                                    selection={`${teamName} Over ${teamTotal.point}`}
+                                    odds={teamTotal.over}
+                                    label={`O${teamTotal.point}`}
+                                  />
+                                </Box>
+                                <Box textAlign="center">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.6)"
+                                    display="block"
+                                    mb={0.5}
+                                    sx={{ fontSize: "0.55rem" }}
+                                  >
+                                    {shortName} U{teamTotal.point}
+                                  </Typography>
+                                  <BettingOption
+                                    betType="1st Half Team Total"
+                                    selection={`${teamName} Under ${teamTotal.point}`}
+                                    odds={teamTotal.under}
+                                    label={`U${teamTotal.point}`}
+                                  />
+                                </Box>
+                              </React.Fragment>
+                            );
+                          })}
+                      </Stack>
+                    </Box>
+                  ) : null;
+                })()}
+
+              {/* Second Half Team Totals */}
+              {game.team_totals_h2 &&
+                game.team_totals_h2.length > 0 &&
+                (() => {
+                  // Filter out .25 and .75 points if corresponding .5 exists
+                  const allPoints = game.team_totals_h2.map((t) => t.point);
+                  const filteredTeamTotals = game.team_totals_h2.filter(
+                    (total) => {
+                      const point = total.point;
+                      const decimal = point % 1;
+
+                      if (decimal === 0.25) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
+                      if (decimal === 0.75) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
+
+                      return true;
+                    }
+                  );
+
+                  return filteredTeamTotals.length > 0 ? (
+                    <Box
+                      textAlign="center"
+                      sx={{
+                        flex: "1 1 0",
+                        minWidth: 0,
+                        px: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="rgba(255,255,255,0.8)"
+                        gutterBottom
+                        display="block"
+                        sx={{
+                          fontSize: {
+                            xs: "0.6rem",
+                            sm: "0.65rem",
+                            md: "0.7rem",
+                          },
+                        }}
+                      >
+                        2ND HALF - TEAM O/U
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
+                        {filteredTeamTotals
+                          .slice(0, 2)
+                          .map((teamTotal, idx) => {
+                            const teamName =
+                              (teamTotal.team === "home"
+                                ? game.homeTeam
+                                : game.awayTeam) || "";
+                            const shortName = (
+                              teamName.split(" ").slice(-1)[0] || ""
+                            ).substring(0, 4);
+                            return (
+                              <React.Fragment key={idx}>
+                                <Box textAlign="center">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.6)"
+                                    display="block"
+                                    mb={0.5}
+                                    sx={{ fontSize: "0.55rem" }}
+                                  >
+                                    {shortName} O{teamTotal.point}
+                                  </Typography>
+                                  <BettingOption
+                                    betType="2nd Half Team Total"
+                                    selection={`${teamName} Over ${teamTotal.point}`}
+                                    odds={teamTotal.over}
+                                    label={`O${teamTotal.point}`}
+                                  />
+                                </Box>
+                                <Box textAlign="center">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.6)"
+                                    display="block"
+                                    mb={0.5}
+                                    sx={{ fontSize: "0.55rem" }}
+                                  >
+                                    {shortName} U{teamTotal.point}
+                                  </Typography>
+                                  <BettingOption
+                                    betType="2nd Half Team Total"
+                                    selection={`${teamName} Under ${teamTotal.point}`}
+                                    odds={teamTotal.under}
+                                    label={`U${teamTotal.point}`}
+                                  />
+                                </Box>
+                              </React.Fragment>
+                            );
+                          })}
+                      </Stack>
+                    </Box>
+                  ) : null;
+                })()}
             </Stack>
           </Box>
 

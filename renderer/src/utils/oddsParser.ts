@@ -12,6 +12,7 @@ interface GenericOutcome {
       name: string;
       price: number;
       point?: number | null;
+      description?: string; // Team name for team totals
 }
 
 /**
@@ -22,6 +23,7 @@ export function normalizeOutcome(outcome: any): GenericOutcome {
             name: outcome.name || outcome.outcome_name || '',
             price: outcome.price || outcome.outcome_price || 0,
             point: outcome.point ?? outcome.outcome_point ?? null,
+            description: outcome.description, // For team totals
       };
 }
 
@@ -291,14 +293,27 @@ export function extractTeamTotalsOdds(
             if (point === null || typeof point !== 'number') return;
 
             const name = outcome.name.toLowerCase();
+            const description = (outcome.description || '').toLowerCase();
             let team = '';
 
-            if (name.includes(homeTeam.toLowerCase()) || name.includes('home')) {
-                  team = 'home';
-            } else if (name.includes(awayTeam.toLowerCase()) || name.includes('away')) {
-                  team = 'away';
-            } else {
-                  return; // Skip if can't determine team
+            // Check description field first (new API format)
+            if (description) {
+                  if (description.includes(homeTeam.toLowerCase()) || description === 'home') {
+                        team = 'home';
+                  } else if (description.includes(awayTeam.toLowerCase()) || description === 'away') {
+                        team = 'away';
+                  }
+            }
+
+            // Fallback to parsing name field (legacy format)
+            if (!team) {
+                  if (name.includes(homeTeam.toLowerCase()) || name.includes('home')) {
+                        team = 'home';
+                  } else if (name.includes(awayTeam.toLowerCase()) || name.includes('away')) {
+                        team = 'away';
+                  } else {
+                        return; // Skip if can't determine team
+                  }
             }
 
             if (!teamTotalsMap.has(team)) {
