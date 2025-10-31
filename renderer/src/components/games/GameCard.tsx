@@ -527,10 +527,17 @@ export const GameCard: React.FC<GameCardProps> = ({
               game.totals.length > 0 &&
               (() => {
                 // Filter out .25 and .75 points if corresponding .5 exists
+                // Also filter out .0 if corresponding .5 exists
                 const allPoints = game.totals.map((t) => t.point);
                 const filteredTotals = game.totals.filter((total) => {
                   const point = total.point;
                   const decimal = point % 1; // Get decimal part
+
+                  // If it's .0, check if corresponding .5 exists
+                  if (decimal === 0) {
+                    const correspondingHalf = Math.floor(point) + 0.5;
+                    return !allPoints.includes(correspondingHalf);
+                  }
 
                   // If it's .25 or .75, check if corresponding .5 exists
                   if (decimal === 0.25) {
@@ -542,7 +549,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                     return !allPoints.includes(correspondingHalf);
                   }
 
-                  // Keep all other points (.0, .5)
+                  // Keep all other points (.5)
                   return true;
                 });
 
@@ -1104,11 +1111,18 @@ export const GameCard: React.FC<GameCardProps> = ({
                 game.team_totals_h1.length > 0 &&
                 (() => {
                   // Filter out .25 and .75 points if corresponding .5 exists
+                  // Also filter out .0 if corresponding .5 exists
                   const allPoints = game.team_totals_h1.map((t) => t.point);
                   const filteredTeamTotals = game.team_totals_h1.filter(
                     (total) => {
                       const point = total.point;
                       const decimal = point % 1;
+
+                      // If it's .0, check if corresponding .5 exists
+                      if (decimal === 0) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
 
                       if (decimal === 0.25) {
                         const correspondingHalf = Math.floor(point) + 0.5;
@@ -1123,12 +1137,33 @@ export const GameCard: React.FC<GameCardProps> = ({
                     }
                   );
 
-                  return filteredTeamTotals.length > 0 ? (
+                  // Group by point value
+                  const pointsMap = new Map<
+                    number,
+                    { home?: any; away?: any }
+                  >();
+                  filteredTeamTotals.forEach((total) => {
+                    if (!pointsMap.has(total.point)) {
+                      pointsMap.set(total.point, {});
+                    }
+                    const entry = pointsMap.get(total.point)!;
+                    if (total.team === "home") {
+                      entry.home = total;
+                    } else {
+                      entry.away = total;
+                    }
+                  });
+
+                  const sortedPoints = Array.from(pointsMap.entries()).sort(
+                    (a, b) => a[0] - b[0]
+                  );
+
+                  return sortedPoints.length > 0 ? (
                     <Box
                       textAlign="center"
                       sx={{
-                        flex: "1 1 0",
-                        minWidth: 0,
+                        flex: "0 0 auto",
+                        minWidth: "fit-content",
                         px: 0.5,
                       }}
                     >
@@ -1152,56 +1187,120 @@ export const GameCard: React.FC<GameCardProps> = ({
                         direction="row"
                         spacing={1}
                         justifyContent="center"
+                        flexWrap="wrap"
+                        gap={0.5}
                       >
-                        {filteredTeamTotals
-                          .slice(0, 2)
-                          .map((teamTotal, idx) => {
-                            const teamName =
-                              (teamTotal.team === "home"
-                                ? game.homeTeam
-                                : game.awayTeam) || "";
-                            const shortName = (
-                              teamName.split(" ").slice(-1)[0] || ""
-                            ).substring(0, 4);
-                            return (
-                              <React.Fragment key={idx}>
-                                <Box textAlign="center">
-                                  <Typography
-                                    variant="caption"
-                                    color="rgba(255,255,255,0.6)"
-                                    display="block"
-                                    mb={0.5}
-                                    sx={{ fontSize: "0.55rem" }}
-                                  >
-                                    {shortName} O{teamTotal.point}
-                                  </Typography>
-                                  <BettingOption
-                                    betType="1st Half Team Total"
-                                    selection={`${teamName} Over ${teamTotal.point}`}
-                                    odds={teamTotal.over}
-                                    label={`O${teamTotal.point}`}
-                                  />
-                                </Box>
-                                <Box textAlign="center">
-                                  <Typography
-                                    variant="caption"
-                                    color="rgba(255,255,255,0.6)"
-                                    display="block"
-                                    mb={0.5}
-                                    sx={{ fontSize: "0.55rem" }}
-                                  >
-                                    {shortName} U{teamTotal.point}
-                                  </Typography>
-                                  <BettingOption
-                                    betType="1st Half Team Total"
-                                    selection={`${teamName} Under ${teamTotal.point}`}
-                                    odds={teamTotal.under}
-                                    label={`U${teamTotal.point}`}
-                                  />
-                                </Box>
-                              </React.Fragment>
-                            );
-                          })}
+                        {sortedPoints.map(([point, teams]) => (
+                          <Box key={point} textAlign="center">
+                            <Typography
+                              variant="caption"
+                              color="rgba(255,255,255,0.5)"
+                              display="block"
+                              mb={0.3}
+                              sx={{ fontSize: "0.5rem" }}
+                            >
+                              {point}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5}>
+                              {teams.home && (
+                                <Stack direction="column" spacing={0.3}>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.homeTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      O
+                                    </Typography>
+                                    <BettingOption
+                                      betType="1st Half Team Total"
+                                      selection={`${game.homeTeam} Over ${point}`}
+                                      odds={teams.home.over}
+                                      label="O"
+                                    />
+                                  </Box>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.homeTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      U
+                                    </Typography>
+                                    <BettingOption
+                                      betType="1st Half Team Total"
+                                      selection={`${game.homeTeam} Under ${point}`}
+                                      odds={teams.home.under}
+                                      label="U"
+                                    />
+                                  </Box>
+                                </Stack>
+                              )}
+                              {teams.away && (
+                                <Stack direction="column" spacing={0.3}>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.awayTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      O
+                                    </Typography>
+                                    <BettingOption
+                                      betType="1st Half Team Total"
+                                      selection={`${game.awayTeam} Over ${point}`}
+                                      odds={teams.away.over}
+                                      label="O"
+                                    />
+                                  </Box>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.awayTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      U
+                                    </Typography>
+                                    <BettingOption
+                                      betType="1st Half Team Total"
+                                      selection={`${game.awayTeam} Under ${point}`}
+                                      odds={teams.away.under}
+                                      label="U"
+                                    />
+                                  </Box>
+                                </Stack>
+                              )}
+                            </Stack>
+                          </Box>
+                        ))}
                       </Stack>
                     </Box>
                   ) : null;
@@ -1212,11 +1311,18 @@ export const GameCard: React.FC<GameCardProps> = ({
                 game.team_totals_h2.length > 0 &&
                 (() => {
                   // Filter out .25 and .75 points if corresponding .5 exists
+                  // Also filter out .0 if corresponding .5 exists
                   const allPoints = game.team_totals_h2.map((t) => t.point);
                   const filteredTeamTotals = game.team_totals_h2.filter(
                     (total) => {
                       const point = total.point;
                       const decimal = point % 1;
+
+                      // If it's .0, check if corresponding .5 exists
+                      if (decimal === 0) {
+                        const correspondingHalf = Math.floor(point) + 0.5;
+                        return !allPoints.includes(correspondingHalf);
+                      }
 
                       if (decimal === 0.25) {
                         const correspondingHalf = Math.floor(point) + 0.5;
@@ -1231,12 +1337,33 @@ export const GameCard: React.FC<GameCardProps> = ({
                     }
                   );
 
-                  return filteredTeamTotals.length > 0 ? (
+                  // Group by point value
+                  const pointsMap = new Map<
+                    number,
+                    { home?: any; away?: any }
+                  >();
+                  filteredTeamTotals.forEach((total) => {
+                    if (!pointsMap.has(total.point)) {
+                      pointsMap.set(total.point, {});
+                    }
+                    const entry = pointsMap.get(total.point)!;
+                    if (total.team === "home") {
+                      entry.home = total;
+                    } else {
+                      entry.away = total;
+                    }
+                  });
+
+                  const sortedPoints = Array.from(pointsMap.entries()).sort(
+                    (a, b) => a[0] - b[0]
+                  );
+
+                  return sortedPoints.length > 0 ? (
                     <Box
                       textAlign="center"
                       sx={{
-                        flex: "1 1 0",
-                        minWidth: 0,
+                        flex: "0 0 auto",
+                        minWidth: "fit-content",
                         px: 0.5,
                       }}
                     >
@@ -1260,56 +1387,120 @@ export const GameCard: React.FC<GameCardProps> = ({
                         direction="row"
                         spacing={1}
                         justifyContent="center"
+                        flexWrap="wrap"
+                        gap={0.5}
                       >
-                        {filteredTeamTotals
-                          .slice(0, 2)
-                          .map((teamTotal, idx) => {
-                            const teamName =
-                              (teamTotal.team === "home"
-                                ? game.homeTeam
-                                : game.awayTeam) || "";
-                            const shortName = (
-                              teamName.split(" ").slice(-1)[0] || ""
-                            ).substring(0, 4);
-                            return (
-                              <React.Fragment key={idx}>
-                                <Box textAlign="center">
-                                  <Typography
-                                    variant="caption"
-                                    color="rgba(255,255,255,0.6)"
-                                    display="block"
-                                    mb={0.5}
-                                    sx={{ fontSize: "0.55rem" }}
-                                  >
-                                    {shortName} O{teamTotal.point}
-                                  </Typography>
-                                  <BettingOption
-                                    betType="2nd Half Team Total"
-                                    selection={`${teamName} Over ${teamTotal.point}`}
-                                    odds={teamTotal.over}
-                                    label={`O${teamTotal.point}`}
-                                  />
-                                </Box>
-                                <Box textAlign="center">
-                                  <Typography
-                                    variant="caption"
-                                    color="rgba(255,255,255,0.6)"
-                                    display="block"
-                                    mb={0.5}
-                                    sx={{ fontSize: "0.55rem" }}
-                                  >
-                                    {shortName} U{teamTotal.point}
-                                  </Typography>
-                                  <BettingOption
-                                    betType="2nd Half Team Total"
-                                    selection={`${teamName} Under ${teamTotal.point}`}
-                                    odds={teamTotal.under}
-                                    label={`U${teamTotal.point}`}
-                                  />
-                                </Box>
-                              </React.Fragment>
-                            );
-                          })}
+                        {sortedPoints.map(([point, teams]) => (
+                          <Box key={point} textAlign="center">
+                            <Typography
+                              variant="caption"
+                              color="rgba(255,255,255,0.5)"
+                              display="block"
+                              mb={0.3}
+                              sx={{ fontSize: "0.5rem" }}
+                            >
+                              {point}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5}>
+                              {teams.home && (
+                                <Stack direction="column" spacing={0.3}>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.homeTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      O
+                                    </Typography>
+                                    <BettingOption
+                                      betType="2nd Half Team Total"
+                                      selection={`${game.homeTeam} Over ${point}`}
+                                      odds={teams.home.over}
+                                      label="O"
+                                    />
+                                  </Box>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.homeTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      U
+                                    </Typography>
+                                    <BettingOption
+                                      betType="2nd Half Team Total"
+                                      selection={`${game.homeTeam} Under ${point}`}
+                                      odds={teams.home.under}
+                                      label="U"
+                                    />
+                                  </Box>
+                                </Stack>
+                              )}
+                              {teams.away && (
+                                <Stack direction="column" spacing={0.3}>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.awayTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      O
+                                    </Typography>
+                                    <BettingOption
+                                      betType="2nd Half Team Total"
+                                      selection={`${game.awayTeam} Over ${point}`}
+                                      odds={teams.away.over}
+                                      label="O"
+                                    />
+                                  </Box>
+                                  <Box textAlign="center">
+                                    <Typography
+                                      variant="caption"
+                                      color="rgba(255,255,255,0.6)"
+                                      display="block"
+                                      mb={0.2}
+                                      sx={{ fontSize: "0.45rem" }}
+                                    >
+                                      {(
+                                        (game.awayTeam || "")
+                                          .split(" ")
+                                          .slice(-1)[0] || ""
+                                      ).substring(0, 3)}{" "}
+                                      U
+                                    </Typography>
+                                    <BettingOption
+                                      betType="2nd Half Team Total"
+                                      selection={`${game.awayTeam} Under ${point}`}
+                                      odds={teams.away.under}
+                                      label="U"
+                                    />
+                                  </Box>
+                                </Stack>
+                              )}
+                            </Stack>
+                          </Box>
+                        ))}
                       </Stack>
                     </Box>
                   ) : null;
