@@ -529,24 +529,32 @@ export const GameCard: React.FC<GameCardProps> = ({
                 // Filter out .25 and .75 points if corresponding .5 exists
                 // Also filter out .0 if corresponding .5 exists
                 const allPoints = game.totals.map((t) => t.point);
+
+                // Helper to check if a value exists in array (with floating point tolerance)
+                const hasValue = (value: number) => {
+                  return allPoints.some((p) => Math.abs(p - value) < 0.001);
+                };
+
                 const filteredTotals = game.totals.filter((total) => {
                   const point = total.point;
                   const decimal = point % 1; // Get decimal part
+                  const isWholeNumber =
+                    Math.abs(decimal) < 0.001 || Math.abs(decimal - 1) < 0.001;
 
-                  // If it's .0, check if corresponding .5 exists
-                  if (decimal === 0) {
+                  // If it's .0 (whole number), check if corresponding .5 exists
+                  if (isWholeNumber) {
                     const correspondingHalf = Math.floor(point) + 0.5;
-                    return !allPoints.includes(correspondingHalf);
+                    return !hasValue(correspondingHalf);
                   }
 
                   // If it's .25 or .75, check if corresponding .5 exists
-                  if (decimal === 0.25) {
+                  if (Math.abs(decimal - 0.25) < 0.001) {
                     const correspondingHalf = Math.floor(point) + 0.5;
-                    return !allPoints.includes(correspondingHalf);
+                    return !hasValue(correspondingHalf);
                   }
-                  if (decimal === 0.75) {
+                  if (Math.abs(decimal - 0.75) < 0.001) {
                     const correspondingHalf = Math.floor(point) + 0.5;
-                    return !allPoints.includes(correspondingHalf);
+                    return !hasValue(correspondingHalf);
                   }
 
                   // Keep all other points (.5)
@@ -1113,24 +1121,33 @@ export const GameCard: React.FC<GameCardProps> = ({
                   // Filter out .25 and .75 points if corresponding .5 exists
                   // Also filter out .0 if corresponding .5 exists
                   const allPoints = game.team_totals_h1.map((t) => t.point);
+
+                  // Helper to check if a value exists in array (with floating point tolerance)
+                  const hasValue = (value: number) => {
+                    return allPoints.some((p) => Math.abs(p - value) < 0.001);
+                  };
+
                   const filteredTeamTotals = game.team_totals_h1.filter(
                     (total) => {
                       const point = total.point;
                       const decimal = point % 1;
+                      const isWholeNumber =
+                        Math.abs(decimal) < 0.001 ||
+                        Math.abs(decimal - 1) < 0.001;
 
-                      // If it's .0, check if corresponding .5 exists
-                      if (decimal === 0) {
+                      // If it's .0 (whole number), check if corresponding .5 exists
+                      if (isWholeNumber) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
 
-                      if (decimal === 0.25) {
+                      if (Math.abs(decimal - 0.25) < 0.001) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
-                      if (decimal === 0.75) {
+                      if (Math.abs(decimal - 0.75) < 0.001) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
 
                       return true;
@@ -1313,24 +1330,33 @@ export const GameCard: React.FC<GameCardProps> = ({
                   // Filter out .25 and .75 points if corresponding .5 exists
                   // Also filter out .0 if corresponding .5 exists
                   const allPoints = game.team_totals_h2.map((t) => t.point);
+
+                  // Helper to check if a value exists in array (with floating point tolerance)
+                  const hasValue = (value: number) => {
+                    return allPoints.some((p) => Math.abs(p - value) < 0.001);
+                  };
+
                   const filteredTeamTotals = game.team_totals_h2.filter(
                     (total) => {
                       const point = total.point;
                       const decimal = point % 1;
+                      const isWholeNumber =
+                        Math.abs(decimal) < 0.001 ||
+                        Math.abs(decimal - 1) < 0.001;
 
-                      // If it's .0, check if corresponding .5 exists
-                      if (decimal === 0) {
+                      // If it's .0 (whole number), check if corresponding .5 exists
+                      if (isWholeNumber) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
 
-                      if (decimal === 0.25) {
+                      if (Math.abs(decimal - 0.25) < 0.001) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
-                      if (decimal === 0.75) {
+                      if (Math.abs(decimal - 0.75) < 0.001) {
                         const correspondingHalf = Math.floor(point) + 0.5;
-                        return !allPoints.includes(correspondingHalf);
+                        return !hasValue(correspondingHalf);
                       }
 
                       return true;

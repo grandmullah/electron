@@ -536,148 +536,151 @@ export const Header: React.FC<HeaderProps> = ({
                   </MenuItem>
 
                   {/* Shop Information */}
-                  {user.shop && (
-                    <>
-                      <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
-                      <Box
+                  {user.shop && [
+                    <Divider
+                      key="shop-divider"
+                      sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }}
+                    />,
+                    <Box
+                      key="shop-header"
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        bgcolor: "rgba(255, 255, 255, 0.03)",
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
                         sx={{
-                          px: 2,
-                          py: 1,
-                          bgcolor: "rgba(255, 255, 255, 0.03)",
-                          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "rgba(255, 255, 255, 0.9)",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
                         }}
                       >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "rgba(255, 255, 255, 0.9)",
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                          }}
-                        >
-                          Shop Information
-                        </Typography>
-                      </Box>
-
+                        Shop Information
+                      </Typography>
+                    </Box>,
+                    <MenuItem
+                      key="shop-name"
+                      sx={{ justifyContent: "space-between", py: 1.5 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                      >
+                        Shop Name
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "white" }}
+                      >
+                        {user.shop.shop_name}
+                      </Typography>
+                    </MenuItem>,
+                    <MenuItem
+                      key="shop-code"
+                      sx={{ justifyContent: "space-between", py: 1.5 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                      >
+                        Shop Code
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "white" }}
+                      >
+                        {user.shop.shop_code}
+                      </Typography>
+                    </MenuItem>,
+                    user.role === "agent" && (
                       <MenuItem
+                        key="commission-rate"
                         sx={{ justifyContent: "space-between", py: 1.5 }}
                       >
                         <Typography
                           variant="body2"
                           sx={{ color: "rgba(255, 255, 255, 0.6)" }}
                         >
-                          Shop Name
+                          Commission Rate
                         </Typography>
                         <Typography
                           variant="body2"
                           sx={{ fontWeight: 600, color: "white" }}
                         >
-                          {user.shop.shop_name}
+                          {user.shop.commission_rate}%
                         </Typography>
                       </MenuItem>
-
-                      <MenuItem
-                        sx={{ justifyContent: "space-between", py: 1.5 }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
-                        >
-                          Shop Code
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, color: "white" }}
-                        >
-                          {user.shop.shop_code}
-                        </Typography>
-                      </MenuItem>
-
-                      {user.role === "agent" && (
-                        <MenuItem
-                          sx={{ justifyContent: "space-between", py: 1.5 }}
-                        >
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "rgba(255, 255, 255, 0.6)" }}
-                          >
-                            Commission Rate
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, color: "white" }}
-                          >
-                            {user.shop.commission_rate}%
-                          </Typography>
-                        </MenuItem>
-                      )}
-                    </>
-                  )}
+                    ),
+                  ]}
 
                   {/* Betting Limits */}
-                  {user.bettingLimits && (
-                    <>
-                      <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
-                      <Box
+                  {user.bettingLimits && [
+                    <Divider
+                      key="limits-divider"
+                      sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }}
+                    />,
+                    <Box
+                      key="limits-header"
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        bgcolor: "rgba(255, 255, 255, 0.03)",
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
                         sx={{
-                          px: 2,
-                          py: 1,
-                          bgcolor: "rgba(255, 255, 255, 0.03)",
-                          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "rgba(255, 255, 255, 0.9)",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
                         }}
                       >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "rgba(255, 255, 255, 0.9)",
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                          }}
-                        >
-                          Betting Limits
-                        </Typography>
-                      </Box>
-
-                      <MenuItem
-                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                        Betting Limits
+                      </Typography>
+                    </Box>,
+                    <MenuItem
+                      key="min-max-stake"
+                      sx={{ justifyContent: "space-between", py: 1.5 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255, 255, 255, 0.6)" }}
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
-                        >
-                          Min/Max Stake
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, color: "white" }}
-                        >
-                          {user.currency}{" "}
-                          {user.bettingLimits.minStake.toFixed(2)} -{" "}
-                          {user.bettingLimits.maxStake.toFixed(2)}
-                        </Typography>
-                      </MenuItem>
-
-                      <MenuItem
-                        sx={{ justifyContent: "space-between", py: 1.5 }}
+                        Min/Max Stake
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "white" }}
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "rgba(255, 255, 255, 0.6)" }}
-                        >
-                          Max Daily Loss
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, color: "white" }}
-                        >
-                          {user.currency}{" "}
-                          {user.bettingLimits.maxDailyLoss.toFixed(2)}
-                        </Typography>
-                      </MenuItem>
-                    </>
-                  )}
+                        {user.currency} {user.bettingLimits.minStake.toFixed(2)}{" "}
+                        - {user.bettingLimits.maxStake.toFixed(2)}
+                      </Typography>
+                    </MenuItem>,
+                    <MenuItem
+                      key="max-daily-loss"
+                      sx={{ justifyContent: "space-between", py: 1.5 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                      >
+                        Max Daily Loss
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "white" }}
+                      >
+                        {user.currency}{" "}
+                        {user.bettingLimits.maxDailyLoss.toFixed(2)}
+                      </Typography>
+                    </MenuItem>,
+                  ]}
 
                   <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
 
