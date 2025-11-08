@@ -32,6 +32,7 @@ import {
   ThumbDown as ThumbDownIcon,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
+import GameScoreDisplay from "./GameScoreDisplay";
 
 interface BetTicketModalProps {
   bet: DisplayBet;
@@ -674,28 +675,21 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                 {/* Game Score & Settlement Row */}
                 <Box display="flex" alignItems="center" gap={3}>
                   {/* Game Score */}
-                  {selection.gameScore &&
-                    selection.gameScore.homeScore !== undefined &&
-                    selection.gameScore.awayScore !== undefined && (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                          Score:
-                        </Typography>
-                        <Chip
-                          label={`${selection.gameScore.homeScore} - ${selection.gameScore.awayScore}`}
-                          size="small"
-                          sx={{
-                            background: "rgba(76, 175, 80, 0.2)",
-                            color: "#4caf50",
-                            border: "1px solid rgba(76, 175, 80, 0.3)",
-                            fontWeight: 600,
-                          }}
-                        />
-                      </Box>
-                    )}
+                  {selection.gameScore && (
+                    <Stack direction="row" alignItems="center" gap={1}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
+                      >
+                        Score:
+                      </Typography>
+                      <GameScoreDisplay
+                        score={selection.gameScore}
+                        variant="detailed"
+                        size="medium"
+                      />
+                    </Stack>
+                  )}
 
                   {/* Settlement Reason */}
                   {selection.selectionSettlementReason && (

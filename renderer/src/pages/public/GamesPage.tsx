@@ -56,6 +56,7 @@ import {
   EmojiEvents as TrophyIcon,
   TrendingUp as TrendingUpIcon,
   Search as SearchIcon,
+  FileDownload as FileDownloadIcon,
 } from "@mui/icons-material";
 
 interface GamesPageProps {
@@ -146,6 +147,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Game indexes now come from the API via team_index field
   // No local index creation needed
@@ -907,6 +909,344 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     };
   };
 
+  // Helper function to convert date to CAT (Central Africa Time, UTC+2)
+  const convertToCAT = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      // CAT is UTC+2
+      const catOffset = 2 * 60; // 2 hours in minutes
+      const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+      const catDate = new Date(utc + catOffset * 60000);
+
+      // Format as: YYYY-MM-DD HH:MM (CAT)
+      const year = catDate.getUTCFullYear();
+      const month = String(catDate.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(catDate.getUTCDate()).padStart(2, "0");
+      const hours = String(catDate.getUTCHours()).padStart(2, "0");
+      const minutes = String(catDate.getUTCMinutes()).padStart(2, "0");
+
+      return `${year}-${month}-${day} ${hours}:${minutes} (CAT)`;
+    } catch (error) {
+      // If conversion fails, return original string
+      return dateString;
+    }
+  };
+
+  // Export games to Excel function
+  const handleExportToExcel = async () => {
+    if (!games || games.length === 0) {
+      alert("No games data to export");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Check if electronAPI is available
+      if (!window.electronAPI?.showSaveDialog) {
+        // Fallback to browser download if Electron API is not available
+        alert(
+          "File dialog not available in this environment. Using default download location."
+        );
+      }
+
+      // Dynamically import xlsx library
+      const XLSX = await import("xlsx");
+
+      // Helper function to filter totals (same logic as GameCard)
+      // Filter out .25 and .75 points if corresponding .5 exists
+      // Also filter out .0 if corresponding .5 exists
+      const filterTotals = (
+        totals: Array<{
+          point: number;
+          over: number | string | null;
+          under: number | string | null;
+        }>
+      ) => {
+        if (!totals || totals.length === 0) return [];
+
+        const allPoints = totals.map((t) => t.point);
+
+        // Helper to check if a value exists in array (with floating point tolerance)
+        const hasValue = (value: number) => {
+          return allPoints.some((p) => Math.abs(p - value) < 0.001);
+        };
+
+        return totals.filter((total) => {
+          const point = total.point;
+          const decimal = point % 1; // Get decimal part
+          const isWholeNumber =
+            Math.abs(decimal) < 0.001 || Math.abs(decimal - 1) < 0.001;
+
+          // If it's .0 (whole number), check if corresponding .5 exists
+          if (isWholeNumber) {
+            const correspondingHalf = Math.floor(point) + 0.5;
+            return !hasValue(correspondingHalf);
+          }
+
+          // If it's .25 or .75, check if corresponding .5 exists
+          if (Math.abs(decimal - 0.25) < 0.001) {
+            const correspondingHalf = Math.floor(point) + 0.5;
+            return !hasValue(correspondingHalf);
+          }
+          if (Math.abs(decimal - 0.75) < 0.001) {
+            const correspondingHalf = Math.floor(point) + 0.5;
+            return !hasValue(correspondingHalf);
+          }
+
+          // Keep all other points (.5)
+          return true;
+        });
+      };
+
+      // Collect all unique total points across all games (after filtering) to create consistent columns
+      const allTotalPoints = new Set<number>();
+      const allHalfTimeTotalPoints = new Set<number>();
+      const allSecondHalfTotalPoints = new Set<number>();
+      games.forEach((game) => {
+        if (game.totals && game.totals.length > 0) {
+          const filteredTotals = filterTotals(game.totals);
+          filteredTotals.forEach((total) => {
+            allTotalPoints.add(total.point);
+          });
+        }
+        // Collect halftime totals
+        if (game.totals_h1 && game.totals_h1.length > 0) {
+          const filteredH1Totals = filterTotals(game.totals_h1);
+          filteredH1Totals.forEach((total) => {
+            allHalfTimeTotalPoints.add(total.point);
+          });
+        }
+        // Collect second half totals
+        if (game.totals_h2 && game.totals_h2.length > 0) {
+          const filteredH2Totals = filterTotals(game.totals_h2);
+          filteredH2Totals.forEach((total) => {
+            allSecondHalfTotalPoints.add(total.point);
+          });
+        }
+      });
+
+      // Sort total points for consistent column ordering
+      const sortedTotalPoints = Array.from(allTotalPoints).sort(
+        (a, b) => a - b
+      );
+      const sortedHalfTimeTotalPoints = Array.from(allHalfTimeTotalPoints).sort(
+        (a, b) => a - b
+      );
+      const sortedSecondHalfTotalPoints = Array.from(
+        allSecondHalfTotalPoints
+      ).sort((a, b) => a - b);
+
+      // Prepare data for export - flatten the games data
+      const exportData = games.map((game) => {
+        // Flatten nested structures for Excel
+        const row: any = {
+          "Game ID": game.id,
+          "External ID": game.externalId || "",
+          "Home Team": game.homeTeam,
+          "Away Team": game.awayTeam,
+          League: game.league,
+          Sport: game.sportKey,
+          Status: game.status,
+          "Match Time (CAT)": convertToCAT(game.matchTime),
+          "Home Odds": game.homeOdds || "",
+          "Draw Odds": game.drawOdds || "",
+          "Away Odds": game.awayOdds || "",
+        };
+
+        // Add double chance odds
+        if (game.doubleChance) {
+          row["DC 1X"] = game.doubleChance.homeOrDraw || "";
+          row["DC X2"] = game.doubleChance.drawOrAway || "";
+          row["DC 12"] = game.doubleChance.homeOrAway || "";
+        }
+
+        // Add BTTS odds
+        if (game.bothTeamsToScore) {
+          row["BTTS Yes"] = game.bothTeamsToScore.yes || "";
+          row["BTTS No"] = game.bothTeamsToScore.no || "";
+        }
+
+        // Add halftime H2H odds
+        if (game.h2h_h1) {
+          row["H1 Home"] = game.h2h_h1.home || "";
+          row["H1 Draw"] = game.h2h_h1.draw || "";
+          row["H1 Away"] = game.h2h_h1.away || "";
+        }
+
+        // Add second half H2H odds
+        if (game.h2h_h2) {
+          row["H2 Home"] = game.h2h_h2.home || "";
+          row["H2 Draw"] = game.h2h_h2.draw || "";
+          row["H2 Away"] = game.h2h_h2.away || "";
+        }
+
+        // Add current score if available
+        if (game.currentScore) {
+          row["Home Score"] = game.currentScore.home || 0;
+          row["Away Score"] = game.currentScore.away || 0;
+        }
+
+        // Add fulltime totals as separate columns (with filtering applied)
+        const filteredTotals = filterTotals(game.totals || []);
+        const totalsMap = new Map<
+          number,
+          { over: number | string | null; under: number | string | null }
+        >();
+        filteredTotals.forEach((total) => {
+          totalsMap.set(total.point, {
+            over: total.over,
+            under: total.under,
+          });
+        });
+
+        // Add columns for each unique total point found across all games
+        sortedTotalPoints.forEach((point) => {
+          const total = totalsMap.get(point);
+          row[`Totals ${point} Over`] = total?.over || "";
+          row[`Totals ${point} Under`] = total?.under || "";
+        });
+
+        // Add halftime totals as separate columns (with filtering applied)
+        const filteredH1Totals = filterTotals(game.totals_h1 || []);
+        const h1TotalsMap = new Map<
+          number,
+          { over: number | string | null; under: number | string | null }
+        >();
+        filteredH1Totals.forEach((total) => {
+          h1TotalsMap.set(total.point, {
+            over: total.over,
+            under: total.under,
+          });
+        });
+
+        // Add columns for each unique halftime total point found across all games
+        sortedHalfTimeTotalPoints.forEach((point) => {
+          const total = h1TotalsMap.get(point);
+          row[`H1 Totals ${point} Over`] = total?.over || "";
+          row[`H1 Totals ${point} Under`] = total?.under || "";
+        });
+
+        // Add second half totals as separate columns (with filtering applied)
+        const filteredH2Totals = filterTotals(game.totals_h2 || []);
+        const h2TotalsMap = new Map<
+          number,
+          { over: number | string | null; under: number | string | null }
+        >();
+        filteredH2Totals.forEach((total) => {
+          h2TotalsMap.set(total.point, {
+            over: total.over,
+            under: total.under,
+          });
+        });
+
+        // Add columns for each unique second half total point found across all games
+        sortedSecondHalfTotalPoints.forEach((point) => {
+          const total = h2TotalsMap.get(point);
+          row[`H2 Totals ${point} Over`] = total?.over || "";
+          row[`H2 Totals ${point} Under`] = total?.under || "";
+        });
+
+        return row;
+      });
+
+      // Create a new workbook
+      const workbook = XLSX.utils.book_new();
+
+      // Convert data to worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths for better readability
+      // Use more appropriate widths for different column types
+      const headers = Object.keys(exportData[0] || {});
+      const wscols = headers.map((header) => {
+        // Narrower columns for odds and IDs
+        if (
+          header.includes("Odds") ||
+          header.includes("ID") ||
+          header.includes("DC") ||
+          header.includes("BTTS") ||
+          header.includes("Totals") ||
+          header.includes("Score")
+        ) {
+          return { wch: 12 };
+        }
+        // Medium width for teams and league
+        if (
+          header.includes("Team") ||
+          header === "League" ||
+          header === "Sport" ||
+          header === "Status"
+        ) {
+          return { wch: 20 };
+        }
+        // Wider for match time
+        if (header.includes("Match Time")) {
+          return { wch: 25 };
+        }
+        // Default width
+        return { wch: 15 };
+      });
+      worksheet["!cols"] = wscols;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Games");
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split("T")[0];
+      const defaultFilename = `betzone-games-${timestamp}.xlsx`;
+
+      let filePath: string | undefined;
+
+      // Use Electron file dialog if available
+      if (window.electronAPI?.showSaveDialog) {
+        const result = await window.electronAPI.showSaveDialog({
+          title: "Save Games Export",
+          defaultPath: defaultFilename,
+          filters: [
+            { name: "Excel Files", extensions: ["xlsx"] },
+            { name: "All Files", extensions: ["*"] },
+          ],
+        });
+
+        if (result.canceled) {
+          setIsExporting(false);
+          return;
+        }
+
+        filePath = result.filePath;
+      }
+
+      // Write file using the selected path or default download
+      if (filePath && window.electronAPI?.writeExcelFile) {
+        // In Electron, use IPC to write file to the selected location
+        const buffer = XLSX.write(workbook, {
+          type: "array",
+          bookType: "xlsx",
+        });
+        const result = await window.electronAPI.writeExcelFile(
+          filePath,
+          buffer
+        );
+        if (result.success) {
+          console.log(`✅ Excel file exported: ${filePath}`);
+          alert(`Games data exported successfully to ${filePath}`);
+        } else {
+          throw new Error(result.error || "Failed to write file");
+        }
+      } else {
+        // Fallback to browser download
+        XLSX.writeFile(workbook, defaultFilename);
+        console.log(`✅ Excel file exported: ${defaultFilename}`);
+        alert(`Games data exported successfully to ${defaultFilename}`);
+      }
+    } catch (error: any) {
+      console.error("Error exporting to Excel:", error);
+      alert(`Failed to export games: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const loadManagedUsers = async () => {
     try {
       const users = await AgentService.getManagedUsers();
@@ -1193,6 +1533,24 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   </Button>
                   <Button
                     variant="contained"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={handleExportToExcel}
+                    disabled={isExporting || !games || games.length === 0}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.3)",
+                      },
+                      "&.Mui-disabled": {
+                        opacity: 0.6,
+                      },
+                    }}
+                  >
+                    {isExporting ? "Exporting..." : "Export to Excel"}
+                  </Button>
+                  <Button
+                    variant="contained"
                     startIcon={<TestIcon />}
                     onClick={async () => {
                       try {
@@ -1317,6 +1675,24 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   }}
                 >
                   Print Games
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportToExcel}
+                  disabled={isExporting || !games || games.length === 0}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.2)",
+                    color: "white",
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.3)",
+                    },
+                    "&.Mui-disabled": {
+                      opacity: 0.6,
+                    },
+                  }}
+                >
+                  {isExporting ? "Exporting..." : "Export to Excel"}
                 </Button>
                 <Button
                   variant="contained"

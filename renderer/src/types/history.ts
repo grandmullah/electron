@@ -1,6 +1,12 @@
 export interface GameScore {
       homeScore?: number;
       awayScore?: number;
+      halftimeHomeScore?: number;
+      halftimeAwayScore?: number;
+      finalScore?: string;
+      gameStatus?: string;
+      gameTime?: string | null;
+      lastUpdated?: string | null;
       period?: string;
       status?: string;
 }
@@ -19,13 +25,7 @@ export interface BetHistorySelection {
       awayTeam: string;                 // Away team name
       betType: string;                  // Market type (e.g., "h2h", "totals", "double_chance", "btts")
       selection: string;                // Selected outcome (e.g., "Chelsea", "Draw or Away", "Over 2.5")
-      gameScore?: {                     // Current game scores and status
-            homeScore?: number;
-            awayScore?: number;
-            gameStatus?: string;        // "scheduled", "live", "finished", etc.
-            gameTime?: string | null;
-            lastUpdated?: string | null;
-      };
+      gameScore?: GameScore;            // Current game scores and status details
       odds?: OddsStructure;             // Selection odds with decimal, american, multiplier
       stake?: number;                   // Individual selection stake
       potentialWinnings?: number;       // Individual selection potential winnings

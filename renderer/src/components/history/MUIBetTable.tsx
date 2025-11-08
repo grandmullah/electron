@@ -50,6 +50,7 @@ import {
   ThumbDown as IconThumbDown,
 } from "@mui/icons-material";
 import { DisplayBet } from "../../types/history";
+import GameScoreDisplay from "./GameScoreDisplay";
 
 interface MUIBetTableProps {
   bets: DisplayBet[];
@@ -750,24 +751,11 @@ export const MUIBetTable: React.FC<MUIBetTableProps> = ({
                                   {selection.homeTeam} vs {selection.awayTeam}
                                 </Typography>
                                 {/* Game Score Display */}
-                                {selection.gameScore &&
-                                  selection.gameScore.homeScore !== undefined &&
-                                  selection.gameScore.awayScore !==
-                                    undefined && (
-                                    <Chip
-                                      label={`${selection.gameScore.homeScore} - ${selection.gameScore.awayScore}`}
-                                      size="small"
-                                      sx={{
-                                        background: "rgba(76, 175, 80, 0.2)",
-                                        color: "#4caf50",
-                                        border:
-                                          "1px solid rgba(76, 175, 80, 0.3)",
-                                        fontSize: "0.65rem",
-                                        height: "20px",
-                                        fontWeight: 600,
-                                      }}
-                                    />
-                                  )}
+                                {selection.gameScore && (
+                                  <GameScoreDisplay
+                                    score={selection.gameScore}
+                                  />
+                                )}
                               </Box>
                               <Typography
                                 variant="caption"

@@ -7,8 +7,97 @@ import {
       UserInfo,
       ShopSummary,
       PaymentStatus,
-      NewBetHistoryResponse
+      NewBetHistoryResponse,
+      GameScore
 } from '../types/history';
+
+const normalizeGameScore = (rawScore: any): GameScore | undefined => {
+      if (!rawScore) {
+            return undefined;
+      }
+
+      const source = typeof rawScore === 'object' ? rawScore : {};
+
+      const getNumber = (...candidates: unknown[]): number | undefined => {
+            for (const candidate of candidates) {
+                  if (typeof candidate === 'number' && !Number.isNaN(candidate)) {
+                        return candidate;
+                  }
+            }
+            return undefined;
+      };
+
+      const getString = (...candidates: unknown[]): string | undefined => {
+            for (const candidate of candidates) {
+                  if (typeof candidate === 'string' && candidate.trim().length > 0) {
+                        return candidate;
+                  }
+            }
+            return undefined;
+      };
+
+      const normalized: GameScore = {
+            homeScore: getNumber(
+                  source.homeScore,
+                  source.home,
+                  source.score?.home,
+                  source.fullTime?.home
+            ),
+            awayScore: getNumber(
+                  source.awayScore,
+                  source.away,
+                  source.score?.away,
+                  source.fullTime?.away
+            ),
+            halftimeHomeScore: getNumber(
+                  source.halftimeHomeScore,
+                  source.htHomeScore,
+                  source.halftime?.home
+            ),
+            halftimeAwayScore: getNumber(
+                  source.halftimeAwayScore,
+                  source.htAwayScore,
+                  source.halftime?.away
+            ),
+            finalScore: getString(
+                  source.finalScore,
+                  source.fullTimeScore,
+                  source.scoreline
+            ),
+            gameStatus: getString(
+                  source.gameStatus,
+                  source.status,
+                  source.state
+            ),
+            gameTime: getString(
+                  source.gameTime,
+                  source.matchTime,
+                  source.startTime,
+                  source.scheduledAt
+            ),
+            lastUpdated: getString(
+                  source.lastUpdated,
+                  source.updatedAt,
+                  source.lastUpdatedAt
+            ),
+            period: getString(source.period),
+            status: getString(source.status)
+      };
+
+      const hasData =
+            normalized.homeScore !== undefined ||
+            normalized.awayScore !== undefined ||
+            normalized.halftimeHomeScore !== undefined ||
+            normalized.halftimeAwayScore !== undefined ||
+            !!normalized.finalScore ||
+            !!normalized.gameStatus ||
+            !!normalized.gameTime ||
+            !!normalized.lastUpdated ||
+            !!normalized.period ||
+            !!normalized.status;
+
+      return hasData ? normalized : undefined;
+};
 
 // Types for bet history API
 
@@ -167,7 +256,7 @@ export class BetHistoryService {
                         awayTeam: selection.awayTeam,
                         betType: selection.betType,
                         selection: selection.selection,
-                        gameScore: selection.gameScore,
+                        gameScore: normalizeGameScore(selection.gameScore ?? selection.score),
                         // Only include odds, stake, potentialWinnings if they exist in the selection object
                         ...(selection.odds !== undefined && { odds: selection.odds }),
                         ...(selection.stake !== undefined && { stake: selection.stake }),
@@ -217,7 +306,7 @@ export class BetHistoryService {
                               awayTeam: selection.awayTeam,
                               betType: selection.betType,
                               selection: selection.selection,
-                              gameScore: selection.gameScore,
+                              gameScore: normalizeGameScore(selection.gameScore ?? selection.score),
                               // Only include odds, stake, potentialWinnings if they exist in the selection object
                               ...(selection.odds !== undefined && { odds: selection.odds }),
                               ...(selection.stake !== undefined && { stake: selection.stake }),
@@ -323,7 +412,7 @@ export class BetHistoryService {
                                           betType: selection.betType,
                                           selection: selection.selection,
                                           odds: selection.odds,
-                                          gameScore: selection.gameScore, // Include game scores
+                                          gameScore: normalizeGameScore(selection.gameScore ?? selection.score), // Include game scores
                                           selectionOutcome: selection.selectionOutcome,
                                           selectionSettlementReason: selection.selectionSettlementReason,
                                     };

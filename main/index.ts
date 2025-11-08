@@ -34,7 +34,7 @@ if (process.platform === 'win32' && process.env['ELECTRON_RUN_AS_NODE']) {
 // Import Electron only after sanitizing environment variables
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const electronModule = require('electron') as typeof import('electron');
-const { app, BrowserWindow } = electronModule;
+const { app, BrowserWindow, ipcMain } = electronModule;
 
 // Ensure app object is available
 if (!app) {
@@ -72,6 +72,26 @@ if (process.platform === 'win32') {
 
 // Add user-friendly error dialog on Windows crashes
 const { dialog } = electronModule;
+
+// IPC Handlers
+ipcMain.handle('show-save-dialog', async (_event, options) => {
+      if (!mainWindow) return { canceled: true };
+      const result = await dialog.showSaveDialog(mainWindow, options);
+      return result;
+});
+
+ipcMain.handle('write-excel-file', async (_event, filePath: string, buffer: ArrayBuffer) => {
+      try {
+            const fs = require('fs');
+            const Buffer = require('buffer').Buffer;
+            const nodeBuffer = Buffer.from(buffer);
+            fs.writeFileSync(filePath, nodeBuffer);
+            return { success: true };
+      } catch (error: any) {
+            console.error('Error writing file:', error);
+            return { success: false, error: error.message };
+      }
+});
 
 // Lightweight debug logger to help diagnose startup issues on user machines
 function writeDebugLog(message: string): void {
