@@ -166,9 +166,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }, [pendingPayouts, validateAllPayouts]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    const tabs = ["user", "shop", "payout", "financial", "bets", "governmentTax"];
+    const tabs = [
+      "user",
+      "shop",
+      "payout",
+      "financial",
+      "bets",
+      "governmentTax",
+    ];
     setActiveTab(
-      tabs[newValue] as "user" | "shop" | "payout" | "financial" | "bets" | "governmentTax"
+      tabs[newValue] as
+        | "user"
+        | "shop"
+        | "payout"
+        | "financial"
+        | "bets"
+        | "governmentTax"
     );
   };
 
@@ -181,7 +194,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
 
   const getTabIndex = (tab: string) => {
-    const tabs = ["user", "shop", "payout", "financial", "bets", "governmentTax"];
+    const tabs = [
+      "user",
+      "shop",
+      "payout",
+      "financial",
+      "bets",
+      "governmentTax",
+    ];
     return tabs.indexOf(tab);
   };
 
@@ -212,8 +232,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             position: "relative",
             overflow: "hidden",
           }}
-        >
-        </Paper>
+        ></Paper>
 
         {/* Dark Theme Tab Navigation */}
         <Paper
