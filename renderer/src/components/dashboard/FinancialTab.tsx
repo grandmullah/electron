@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
@@ -67,6 +67,8 @@ interface FinancialTabProps {
     formattedNetProfit: string;
     formattedTaxCollected: string;
   };
+  selectedRange: number;
+  onRangeChange: (days: number) => void;
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -81,12 +83,26 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   getProfitMarginColor,
   getWinRateColor,
   getFinancialAnalysis,
+  selectedRange,
+  onRangeChange,
 }) => {
   // Excel export state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportDays, setExportDays] = useState(30);
+  const [exportDays, setExportDays] = useState(selectedRange);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setExportDays(selectedRange);
+  }, [selectedRange]);
+
+  const rangeOptions = [
+    { label: "Last 30 days", value: 30 },
+    { label: "Last 90 days", value: 90 },
+    { label: "Last 180 days", value: 180 },
+    { label: "Last 365 days", value: 365 },
+    { label: "Last 730 days", value: 730 },
+  ];
 
   // Handle Excel export
   const handleExportToExcel = async () => {
@@ -167,7 +183,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           },
         }}
       >
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
           <Box display="flex" alignItems="center" gap={2}>
             <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
             <Box>
@@ -180,30 +196,69 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             </Box>
           </Box>
 
-          {/* Export Button */}
-          <Button
-            variant="contained"
-            startIcon={<FileDownloadIcon />}
-            onClick={() => setExportDialogOpen(true)}
-            sx={{
-              background: "linear-gradient(45deg, #4caf50, #45a049)",
-              color: "white",
-              fontWeight: "bold",
-              px: 3,
-              py: 1.5,
-              borderRadius: 0,
-              textTransform: "none",
-              fontSize: "0.9rem",
-              "&:hover": {
-                background: "linear-gradient(45deg, #45a049, #3d8b40)",
-                transform: "translateY(-1px)",
-                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)",
-              },
-              transition: "all 0.2s ease-in-out",
-            }}
-          >
-            Export to Excel
-          </Button>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <FormControl
+              variant="outlined"
+              size="small"
+              sx={{
+                minWidth: 180,
+                "& .MuiInputBase-root": {
+                  color: "white",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  borderRadius: 1,
+                },
+                "& .MuiSvgIcon-root": {
+                  color: "rgba(255,255,255,0.8)",
+                },
+              }}
+            >
+              <InputLabel id="financial-range-select-label" sx={{ color: "rgba(255,255,255,0.7)" }}>
+                Range
+              </InputLabel>
+              <Select
+                labelId="financial-range-select-label"
+                value={selectedRange}
+                label="Range"
+                onChange={(event) => onRangeChange(Number(event.target.value))}
+                sx={{
+                  "& .MuiSelect-select": {
+                    color: "white",
+                  },
+                }}
+              >
+                {rangeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Export Button */}
+            <Button
+              variant="contained"
+              startIcon={<FileDownloadIcon />}
+              onClick={() => setExportDialogOpen(true)}
+              sx={{
+                background: "linear-gradient(45deg, #4caf50, #45a049)",
+                color: "white",
+                fontWeight: "bold",
+                px: 3,
+                py: 1.5,
+                borderRadius: 0,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                "&:hover": {
+                  background: "linear-gradient(45deg, #45a049, #3d8b40)",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              Export to Excel
+            </Button>
+          </Stack>
         </Box>
       </Paper>
 

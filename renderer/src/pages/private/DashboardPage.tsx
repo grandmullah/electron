@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "../../store/hooks";
 import { Header } from "../../components/Header";
 import { DashboardTabs } from "../../components/dashboard/DashboardTabs";
@@ -11,7 +11,10 @@ import { GovernmentTaxTab } from "../../components/dashboard/GovernmentTaxTab";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { usePayoutData } from "../../hooks/usePayoutData";
 import { usePayoutSummary } from "../../hooks/usePayoutSummary";
-import { useFinancialSummary } from "../../hooks/useFinancialSummary";
+import {
+  useFinancialSummary,
+  DEFAULT_FINANCIAL_SUMMARY_DAYS,
+} from "../../hooks/useFinancialSummary";
 import { useBetsData } from "../../hooks/useBetsData";
 import {
   Container,
@@ -105,6 +108,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     formatCurrency,
   } = usePayoutSummary();
 
+  const [financialRange, setFinancialRange] = useState<number>(
+    DEFAULT_FINANCIAL_SUMMARY_DAYS
+  );
+
   const {
     financialSummary,
     periodSummaries,
@@ -124,13 +131,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       loadPendingPayouts();
       loadPayoutSummary();
     } else if (activeTab === "financial") {
-      loadFinancialSummary(30);
+      loadFinancialSummary(financialRange);
       loadFinancialSummaryForPeriods();
     } else if (activeTab === "bets") {
       loadRecentBets();
     }
   }, [
     activeTab,
+    financialRange,
     loadPendingPayouts,
     loadPayoutSummary,
     loadFinancialSummary,
@@ -163,6 +171,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       tabs[newValue] as "user" | "shop" | "payout" | "financial" | "bets" | "governmentTax"
     );
   };
+
+  const handleFinancialRangeChange = useCallback(
+    (days: number) => {
+      setFinancialRange(days);
+      loadFinancialSummary(days);
+    },
+    [loadFinancialSummary]
+  );
 
   const getTabIndex = (tab: string) => {
     const tabs = ["user", "shop", "payout", "financial", "bets", "governmentTax"];
@@ -197,44 +213,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             overflow: "hidden",
           }}
         >
-          <Box position="relative" zIndex={1}>
-            <Stack direction="row" alignItems="center" spacing={3} mb={3}>
-              <Avatar
-                sx={{
-                  width: 72,
-                  height: 72,
-                  background:
-                    "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-                  border: "3px solid rgba(25, 118, 210, 0.3)",
-                  boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
-                }}
-              >
-                <AssessmentIcon sx={{ fontSize: 36, color: "white" }} />
-              </Avatar>
-              <Box>
-                <Typography
-                  variant="h3"
-                  gutterBottom
-                  fontWeight="bold"
-                  sx={{
-                    color: "text.primary",
-                  }}
-                >
-                  📊 Dashboard
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 300,
-                    color: "text.secondary",
-                  }}
-                >
-                  Comprehensive overview of your betting activity and shop
-                  performance
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
         </Paper>
 
         {/* Dark Theme Tab Navigation */}
@@ -386,13 +364,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 isLoadingPeriods={isLoadingFinancialSummary}
                 periodsError={financialSummaryError}
                 onRetry={() => {
-                  loadFinancialSummary(30);
+                  loadFinancialSummary(financialRange);
                   loadFinancialSummaryForPeriods();
                 }}
                 formatCurrency={formatFinancialCurrency}
                 getProfitMarginColor={getProfitMarginColor}
                 getWinRateColor={getWinRateColor}
                 getFinancialAnalysis={getFinancialAnalysis}
+                selectedRange={financialRange}
+                onRangeChange={handleFinancialRangeChange}
               />
             )}
 

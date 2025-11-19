@@ -45,6 +45,33 @@ export interface TaxBreakdown {
       notYetCollected: number;
 }
 
+export interface GovernmentPaymentStatus {
+      fullyPaid: boolean;
+      hasPending: boolean;
+      neverPaid: boolean;
+}
+
+export interface GovernmentPaymentSummary {
+      totalTaxesPaidToGovernment: number;
+      pendingTaxesToPay: number;
+      paymentsInPeriod: number;
+      totalPaidInPeriod: number;
+      lastPaymentDate: string | null;
+      totalTaxCollected: number;
+      eligiblePayoutsCount: number;
+      remainingUnpaidTaxes: number;
+      paymentStatus?: GovernmentPaymentStatus;
+      recentPayments?: {
+            paymentDate: string;
+            amount: number;
+            reference?: string;
+            notes?: string;
+            paidBy?: string;
+      }[];
+      totalPayments?: number;
+      note?: string;
+}
+
 export interface TaxObligations {
       taxesCollectedByShop: number;
       taxesNotYetCollected: number;
@@ -52,6 +79,7 @@ export interface TaxObligations {
       taxRate: number;
       effectiveTaxCollected: number;
       breakdown: TaxBreakdown;
+      governmentPayments?: GovernmentPaymentSummary;
       note?: string;
 }
 

@@ -677,19 +677,19 @@ export const BetTicketModal: React.FC<BetTicketModalProps> = ({
                   {/* Game Score */}
                   {selection.gameScore && (
                     <Stack direction="row" alignItems="center" gap={1}>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: "rgba(255,255,255,0.6)" }}
-                      >
-                        Score:
-                      </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
+                          Score:
+                        </Typography>
                       <GameScoreDisplay
                         score={selection.gameScore}
                         variant="detailed"
                         size="medium"
-                      />
+                        />
                     </Stack>
-                  )}
+                    )}
 
                   {/* Settlement Reason */}
                   {selection.selectionSettlementReason && (

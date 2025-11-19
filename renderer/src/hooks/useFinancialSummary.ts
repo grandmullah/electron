@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { financialSummaryService, FinancialSummary } from '../services/financialSummaryService';
 
+export const DEFAULT_FINANCIAL_SUMMARY_DAYS = 365;
+
 export const useFinancialSummary = () => {
       const { user } = useAppSelector((state) => state.auth);
 
@@ -20,7 +22,7 @@ export const useFinancialSummary = () => {
       const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
       const [periodsError, setPeriodsError] = useState<string | null>(null);
 
-      const loadFinancialSummary = useCallback(async (days: number = 30) => {
+      const loadFinancialSummary = useCallback(async (days: number = DEFAULT_FINANCIAL_SUMMARY_DAYS) => {
             if (!user?.id) return;
 
             setIsLoadingFinancialSummary(true);
