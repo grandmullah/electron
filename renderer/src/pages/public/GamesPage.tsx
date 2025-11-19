@@ -89,8 +89,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   interface League {
     key: string;
     sportKey: string;
+    sportName?: string;
     name: string;
     displayName: string;
+    source?: string;
+    category?: string;
+    country?: string;
   }
 
   // SWR fetcher function for leagues
@@ -98,11 +102,38 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data.success) {
-      return data.data;
-    } else {
+    if (!data.success) {
       throw new Error(data.message || "Failed to fetch leagues");
     }
+
+    const leagues = Array.isArray(data.data?.leagues)
+      ? data.data.leagues
+      : Array.isArray(data.data)
+        ? data.data
+        : [];
+
+    return leagues.map((league: any) => {
+      const sportKey =
+        typeof league?.sport?.key === "string" ? league.sport.key : "unknown";
+      const sportName =
+        typeof league?.sport?.name === "string" ? league.sport.name : undefined;
+      const name = typeof league?.name === "string" ? league.name : "Unknown";
+      const country =
+        typeof league?.country === "string" ? league.country : undefined;
+
+      return {
+        key: league?.key ?? sportKey,
+        sportKey,
+        sportName,
+        name,
+        displayName: country ? `${name} (${country})` : name,
+        source:
+          typeof league?.source === "string" ? league.source : undefined,
+        category:
+          typeof league?.category === "string" ? league.category : undefined,
+        country,
+      } as League;
+    });
   };
 
   // SWR hook for leagues - NO fallback data to force using API response

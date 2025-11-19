@@ -7,6 +7,7 @@ import { ShopStatsTab } from "../../components/dashboard/ShopStatsTab";
 import { PayoutTab } from "../../components/dashboard/PayoutTab";
 import { FinancialTab } from "../../components/dashboard/FinancialTab";
 import { BetsTab } from "../../components/dashboard/BetsTab";
+import { GovernmentTaxTab } from "../../components/dashboard/GovernmentTaxTab";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { usePayoutData } from "../../hooks/usePayoutData";
 import { usePayoutSummary } from "../../hooks/usePayoutSummary";
@@ -37,6 +38,7 @@ import {
   TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
   Timeline as TimelineIcon,
+  AccountBalance as GovernmentIcon,
 } from "@mui/icons-material";
 
 interface NavigationParams {
@@ -60,7 +62,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Tab state - initialize with navigation params if provided
   const [activeTab, setActiveTab] = useState<
-    "user" | "shop" | "payout" | "financial" | "bets"
+    "user" | "shop" | "payout" | "financial" | "bets" | "governmentTax"
   >((navigationParams?.tab as any) || "user");
 
   // Use custom hooks for data management
@@ -156,14 +158,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }, [pendingPayouts, validateAllPayouts]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    const tabs = ["user", "shop", "payout", "financial", "bets"];
+    const tabs = ["user", "shop", "payout", "financial", "bets", "governmentTax"];
     setActiveTab(
-      tabs[newValue] as "user" | "shop" | "payout" | "financial" | "bets"
+      tabs[newValue] as "user" | "shop" | "payout" | "financial" | "bets" | "governmentTax"
     );
   };
 
   const getTabIndex = (tab: string) => {
-    const tabs = ["user", "shop", "payout", "financial", "bets"];
+    const tabs = ["user", "shop", "payout", "financial", "bets", "governmentTax"];
     return tabs.indexOf(tab);
   };
 
@@ -312,6 +314,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               iconPosition="start"
             />
             <Tab icon={<BetsIcon />} label="Recent Bets" iconPosition="start" />
+            <Tab
+              icon={<GovernmentIcon />}
+              label="Government Tax"
+              iconPosition="start"
+            />
           </Tabs>
         </Paper>
 
@@ -396,6 +403,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 betsError={betsError}
                 onLoadRecentBets={loadRecentBets}
               />
+            )}
+
+            {activeTab === "governmentTax" && (
+              <GovernmentTaxTab formatCurrency={formatCurrency} />
             )}
           </Box>
         </Fade>
