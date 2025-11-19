@@ -33,7 +33,11 @@ import {
   Warning as WarningIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
-import { governmentTaxService, PendingGovernmentTax, GovernmentTaxPayment } from "../../services/governmentTaxService";
+import {
+  governmentTaxService,
+  PendingGovernmentTax,
+  GovernmentTaxPayment,
+} from "../../services/governmentTaxService";
 import dayjs from "dayjs";
 
 interface GovernmentTaxTabProps {
@@ -43,13 +47,17 @@ interface GovernmentTaxTabProps {
 export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
   formatCurrency,
 }) => {
-  const [pendingTaxes, setPendingTaxes] = useState<PendingGovernmentTax | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<GovernmentTaxPayment[]>([]);
+  const [pendingTaxes, setPendingTaxes] = useState<PendingGovernmentTax | null>(
+    null
+  );
+  const [paymentHistory, setPaymentHistory] = useState<GovernmentTaxPayment[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Payment modal state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
@@ -92,7 +100,10 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
   const loadPaymentHistory = async (page: number) => {
     try {
       const offset = (page - 1) * itemsPerPage;
-      const history = await governmentTaxService.getPaymentHistory(itemsPerPage, offset);
+      const history = await governmentTaxService.getPaymentHistory(
+        itemsPerPage,
+        offset
+      );
       setPaymentHistory(history.payments);
       setHistoryTotal(history.pagination.total);
     } catch (err: any) {
@@ -100,7 +111,10 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
     }
   };
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+  const handlePageChange = (
+    _event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
     setCurrentPage(page);
     loadPaymentHistory(page);
   };
@@ -137,7 +151,7 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
         reference: "",
         notes: "",
       });
-      
+
       // Reload data
       await loadData();
       setCurrentPage(1);
@@ -152,7 +166,12 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -166,7 +185,11 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
         </Alert>
       )}
       {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>
+        <Alert
+          severity="success"
+          onClose={() => setSuccess(null)}
+          sx={{ mb: 2 }}
+        >
           {success}
         </Alert>
       )}
@@ -176,7 +199,8 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              background: "linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%)",
+              background:
+                "linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%)",
               border: "1px solid rgba(255, 193, 7, 0.3)",
             }}
           >
@@ -234,7 +258,9 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
                         Last Payment Date
                       </Typography>
                       <Typography variant="body1">
-                        {dayjs(pendingTaxes.lastPaymentDate).format("MMM D, YYYY")}
+                        {dayjs(pendingTaxes.lastPaymentDate).format(
+                          "MMM D, YYYY"
+                        )}
                       </Typography>
                     </Box>
                   )}
@@ -261,7 +287,9 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
                   )}
                 </Stack>
               ) : (
-                <Typography color="text.secondary">No pending taxes data available</Typography>
+                <Typography color="text.secondary">
+                  No pending taxes data available
+                </Typography>
               )}
             </CardContent>
           </Card>
@@ -297,9 +325,7 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
                           <TableCell align="right" fontWeight="bold">
                             {formatCurrency(payment.amount)}
                           </TableCell>
-                          <TableCell>
-                            {payment.reference || "-"}
-                          </TableCell>
+                          <TableCell>{payment.reference || "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -362,7 +388,9 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
                           <TableCell>{payment.notes || "-"}</TableCell>
                           <TableCell>{payment.paidBy || "-"}</TableCell>
                           <TableCell>
-                            {dayjs(payment.createdAt).format("MMM D, YYYY HH:mm")}
+                            {dayjs(payment.createdAt).format(
+                              "MMM D, YYYY HH:mm"
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -383,7 +411,9 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
               </>
             ) : (
               <Box textAlign="center" py={4}>
-                <InfoIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+                <InfoIcon
+                  sx={{ fontSize: 48, color: "text.secondary", mb: 2 }}
+                />
                 <Typography variant="h6" color="text.secondary">
                   No payment history available
                 </Typography>
@@ -414,10 +444,12 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
             {pendingTaxes && (
               <Alert severity="info" icon={<InfoIcon />}>
                 <Typography variant="body2" fontWeight="bold">
-                  Pending Amount: {formatCurrency(pendingTaxes.pendingTaxAmount)}
+                  Pending Amount:{" "}
+                  {formatCurrency(pendingTaxes.pendingTaxAmount)}
                 </Typography>
                 <Typography variant="caption">
-                  You can pay up to this amount. Payment will cover taxes from payouts completed
+                  You can pay up to this amount. Payment will cover taxes from
+                  payouts completed
                   {pendingTaxes.lastPaymentDate
                     ? ` after ${dayjs(pendingTaxes.lastPaymentDate).format("MMM D, YYYY")}`
                     : " from all completed payouts"}
@@ -490,8 +522,12 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
           <Button
             onClick={handleSubmitPayment}
             variant="contained"
-            disabled={isSubmitting || !paymentForm.amount || !paymentForm.paymentDate}
-            startIcon={isSubmitting ? <CircularProgress size={20} /> : <PaymentIcon />}
+            disabled={
+              isSubmitting || !paymentForm.amount || !paymentForm.paymentDate
+            }
+            startIcon={
+              isSubmitting ? <CircularProgress size={20} /> : <PaymentIcon />
+            }
           >
             {isSubmitting ? "Recording..." : "Record Payment"}
           </Button>
@@ -500,4 +536,3 @@ export const GovernmentTaxTab: React.FC<GovernmentTaxTabProps> = ({
     </Box>
   );
 };
-
