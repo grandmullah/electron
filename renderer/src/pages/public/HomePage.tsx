@@ -220,8 +220,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         response = await AuthService.login(loginData);
         console.log("Login successful:", response);
         
-        // Enforce agent-only login
-        if (response && response.user && response.user.role !== 'agent') {
+        // Enforce agent/super_agent/admin only login
+        const allowedRoles = ['agent', 'super_agent', 'admin'];
+        if (response && response.user && !allowedRoles.includes(response.user.role)) {
           dispatch(loginFailure("This application is for agents only. Please contact your administrator."));
           AuthService.logout();
           return;

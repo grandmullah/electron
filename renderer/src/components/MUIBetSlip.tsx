@@ -319,37 +319,37 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         // Standard user bet
         try {
           const response = await placeBets(
-        betSlipItems,
-        isMultibet,
-        stake,
-        user?.id,
-        user?.bettingLimits
-      );
+            betSlipItems,
+            isMultibet,
+            stake,
+            user?.id,
+            user?.bettingLimits
+          );
           result = response;
 
           if (Array.isArray(response)) {
-        // Single bets - result is an array
+            // Single bets - result is an array
             success =
               response.length > 0 && response.every((bet) => bet?.success);
-        betId =
+            betId =
               response.length > 0
                 ? response[0]?.betId ||
                   (response[0] as any)?.data?.betSlip?.id ||
                   (response[0] as any)?.data?.betSlip?.betId ||
-              ""
-            : "";
-        error =
+                  ""
+                : "";
+            error =
               response.length > 0
                 ? response[0]?.message || ""
                 : "No bets returned";
-      } else {
-        // Multibet - result is a single object
+          } else {
+            // Multibet - result is a single object
             success = response?.success || false;
-        betId =
+            betId =
               response?.betId ||
               (response as any)?.data?.betSlip?.id ||
               (response as any)?.data?.betSlip?.betId ||
-          "";
+              "";
             error = response?.message || "";
           }
         } catch (err: any) {
@@ -401,7 +401,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           // Additional fields for print service compatibility
           id: betId, // For print service
           betId: betId, // For print service
-          ticketNumber: (result as any)?.ticketNumber || (result as any)?.bet?.ticketNumber,
+          ticketNumber:
+            (result as any)?.ticketNumber || (result as any)?.bet?.ticketNumber,
           betType: isMultibet ? "multibet" : "single",
           totalStake: stake,
           potentialWinnings:
@@ -409,7 +410,10 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             (result as any)?.data?.betSlip?.potentialWinnings ||
             (result as any)?.potentialWinnings ||
             (result as any)?.bet?.potentialWinnings ||
-            stake * (isMultibet ? calculateCombinedOdds(betSlipItems) : betSlipItems[0]?.odds || 1),
+            stake *
+              (isMultibet
+                ? calculateCombinedOdds(betSlipItems)
+                : betSlipItems[0]?.odds || 1),
           taxAmount:
             (result as any)?.data?.summary?.taxAmount ||
             (result as any)?.data?.betSlip?.taxAmount,
@@ -419,7 +423,9 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           combinedOdds:
             (result as any)?.data?.betSlip?.odds?.decimal ||
             (result as any)?.data?.betSlip?.odds?.multiplier ||
-            (isMultibet ? calculateCombinedOdds(betSlipItems) : betSlipItems[0]?.odds || 1),
+            (isMultibet
+              ? calculateCombinedOdds(betSlipItems)
+              : betSlipItems[0]?.odds || 1),
           selections: betSlipItems.map((item, index) => ({
             selectionId: `sel-${betId}-${index}`,
             betId: betId,
@@ -434,7 +440,10 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             gameTime: item.gameTime, // Add game time for print receipt
             gameStartTime: item.gameTime, // Add as gameStartTime for compatibility
           })),
-          user: isAgentMode ? { ...user, name: "Walk-in Client", role: "user" } : user,
+          user:
+            isAgentMode && user
+              ? { ...user, name: "Walk-in Client", role: "user" }
+              : user,
           shop: user?.shop,
           createdAt: new Date().toISOString(),
           timestamp: new Date().toISOString(),

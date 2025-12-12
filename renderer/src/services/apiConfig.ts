@@ -22,11 +22,11 @@ const ENVIRONMENTS = {
             apiKey: API_KEYS.admin, // Same key works for local after DB setup
       },
       remote: {
-            url: 'http://64.227.130.74:8007/api',
+            url: 'https://api.betzone.co/api',
             apiKey: API_KEYS.admin, // Using admin key for agent application
       },
       staging: {
-            url: 'http://64.227.130.74:8009/api',
+            url: 'https://api-v1.betzone.co/api',
             apiKey: API_KEYS.admin, // Using admin key for agent application
       },
 };

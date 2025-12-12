@@ -6,7 +6,7 @@ export interface User {
       name: string;
       phoneNumber: string;
       isLoggedIn: boolean;
-      role: 'user' | 'agent' | 'admin';
+      role: 'user' | 'agent' | 'super_agent' | 'admin';
       agentId?: string; // If user is managed by an agent
       managedUsers?: string[]; // If user is an agent, list of managed user IDs
       balance: number;

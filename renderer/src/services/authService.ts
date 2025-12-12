@@ -6,7 +6,7 @@ export interface RegisterRequest {
       phone_number: string;
       password: string;
       country_code: string;
-      role: 'user' | 'agent' | 'admin';
+      role: 'user' | 'agent' | 'super_agent' | 'admin';
       currency: string;
       shop_code: string;
 }
@@ -49,7 +49,7 @@ export interface BackendUserPreferences {
 export interface AuthUser {
       id: string;
       phone_number: string;
-      role: 'user' | 'agent' | 'admin';
+      role: 'user' | 'agent' | 'super_agent' | 'admin';
       balance: number;
       currency: string;
       isActive: boolean;

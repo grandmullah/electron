@@ -10,6 +10,7 @@ import { PerformanceCard } from "./cards/PerformanceCard";
 import { PendingBetsCard } from "./cards/PendingBetsCard";
 import { FinancialSummary } from "../../services/financialSummaryService";
 import excelExportService from "../../services/excelExportService";
+import { DEFAULT_FINANCIAL_SUMMARY_DAYS } from "../../hooks/useFinancialSummary";
 import {
   Paper,
   Typography,
@@ -88,12 +89,16 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 }) => {
   // Excel export state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportDays, setExportDays] = useState(selectedRange);
+  const [exportDays, setExportDays] = useState(
+    selectedRange || DEFAULT_FINANCIAL_SUMMARY_DAYS
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
-    setExportDays(selectedRange);
+    if (selectedRange) {
+      setExportDays(selectedRange);
+    }
   }, [selectedRange]);
 
   const rangeOptions = [
@@ -183,7 +188,13 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           },
         }}
       >
-        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={2}
+        >
           <Box display="flex" alignItems="center" gap={2}>
             <AssessmentIcon color="primary" sx={{ fontSize: 32 }} />
             <Box>
@@ -212,7 +223,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 },
               }}
             >
-              <InputLabel id="financial-range-select-label" sx={{ color: "rgba(255,255,255,0.7)" }}>
+              <InputLabel
+                id="financial-range-select-label"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
                 Range
               </InputLabel>
               <Select
