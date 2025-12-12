@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { logout } from "../store/authSlice";
+import { logout, loginSuccess } from "../store/authSlice";
 import {
   addToBetSlip,
   removeFromBetSlip,
@@ -21,6 +21,7 @@ import { addAgentBet } from "../store/agentSlice";
 import BetSlipSummary from "./BetSlipSummary";
 import { BetSlipService } from "../services/betslipService";
 import { MUIBetSlip } from "./MUIBetSlip";
+import { SendMoneyModal } from "./SendMoneyModal";
 import {
   AppBar,
   Toolbar,
@@ -42,6 +43,8 @@ import {
   KeyboardArrowDown as ArrowDownIcon,
   KeyboardArrowUp as ArrowUpIcon,
   Logout as LogoutIcon,
+  Send as SendIcon,
+  AccountBalanceWallet as WalletIcon,
 } from "@mui/icons-material";
 
 interface HeaderProps {
@@ -49,14 +52,12 @@ interface HeaderProps {
     page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
   ) => void;
   currentPage: string;
-  selectedUser?: { id: string; phone_number: string } | null;
   isAgentMode?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   currentPage,
-  selectedUser,
   isAgentMode = false,
 }) => {
   const dispatch = useAppDispatch();
@@ -68,6 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
     multibetStake,
   } = useAppSelector((state) => state.betslip);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [showSendMoneyModal, setShowSendMoneyModal] = useState(false);
   const showUserDropdown = Boolean(anchorEl);
 
   const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -76,6 +78,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleUserMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleSendMoneySuccess = (newBalance: number) => {
+    // Update the user's balance in Redux store
+    if (user) {
+      dispatch(loginSuccess({ ...user, balance: newBalance }));
+    }
   };
 
   // Auto-enable multibet mode when multiple selections are added
@@ -314,7 +323,79 @@ export const Header: React.FC<HeaderProps> = ({
           </Box>
 
           {/* Right Section */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {/* Agent Balance Display */}
+            {user && user.role === "agent" && (
+              <Box
+                sx={{
+                  display: { xs: "none", md: "flex" },
+                  alignItems: "center",
+                  gap: 1,
+                  bgcolor: "rgba(25, 118, 210, 0.15)",
+                  border: "1px solid rgba(25, 118, 210, 0.3)",
+                  borderRadius: "12px",
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                <WalletIcon sx={{ color: "#42a5f5", fontSize: 20 }} />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "rgba(255,255,255,0.6)",
+                      fontSize: "0.7rem",
+                      display: "block",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Balance
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "#4ade80",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {user.currency} {user.balance.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Send Money Button (Agent only) */}
+            {user && user.role === "agent" && (
+              <Button
+                variant="contained"
+                startIcon={<SendIcon />}
+                onClick={() => setShowSendMoneyModal(true)}
+                sx={{
+                  display: { xs: "none", md: "flex" },
+                  background:
+                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "white",
+                  borderRadius: "12px",
+                  px: 2,
+                  py: 1,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  boxShadow: "0 4px 12px rgba(16, 185, 129, 0.4)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    boxShadow: "0 6px 16px rgba(16, 185, 129, 0.5)",
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                Send Money
+              </Button>
+            )}
+
             {/* Bet Slip Button */}
             {betSlipItems.length > 0 && (
               <IconButton
@@ -719,8 +800,14 @@ export const Header: React.FC<HeaderProps> = ({
       <MUIBetSlip
         isVisible={isBetSlipVisible}
         onClose={() => dispatch(hideBetSlip())}
-        selectedUser={selectedUser}
         isAgentMode={isAgentMode}
+      />
+
+      {/* Send Money Modal */}
+      <SendMoneyModal
+        isOpen={showSendMoneyModal}
+        onClose={() => setShowSendMoneyModal(false)}
+        onSuccess={handleSendMoneySuccess}
       />
     </>
   );

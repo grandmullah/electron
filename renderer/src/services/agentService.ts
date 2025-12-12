@@ -1,10 +1,12 @@
 import axios from 'axios';
-import { ManagedUser, AgentBet, CommissionTransaction } from '../store/agentSlice';
-import { API_BASE_URL } from './apiConfig';
+import { ManagedUser, AgentBet, CommissionTransaction, ManagedAgent } from '../store/agentSlice';
+import { API_BASE_URL, API_KEY } from './apiConfig';
 
 // Development mode fallback for testing without backend
 const isDevelopmentMode = true;
 const ENABLE_DEV_FALLBACK = true; // Set to true to enable mock responses
+
+import { BetSlipService } from './betslipService';
 
 // Types for API requests
 interface CreateUserRequest {
@@ -37,11 +39,29 @@ interface UpdateUserBalanceRequest {
       description: string;
 }
 
+// Removed ShopAgentSummary - using ManagedAgent from agentSlice instead
+
+interface PlaceShopBetRequest {
+      selections: Array<{
+            gameId: string;
+            homeTeam?: string;
+            awayTeam?: string;
+            marketType: string;
+            outcome: string;
+            odds: number | { decimal: number; american?: number; multiplier?: number };
+            bookmaker?: string;
+            gameTime?: string;
+            sportKey?: string;
+      }>;
+      stake: number;
+}
+
 class AgentService {
       private static getAuthHeaders(): Record<string, string> {
             const token = localStorage.getItem('authToken');
             return {
                   'Content-Type': 'application/json',
+                  'X-API-Key': API_KEY,
                   ...(token && { 'Authorization': `Bearer ${token}` }),
             };
       }
@@ -160,6 +180,68 @@ class AgentService {
                   return response.data;
             } catch (error: any) {
                   throw new Error(error.response?.data?.message || 'Failed to create user');
+            }
+      }
+
+      // Send money to a user (by phone number)
+      static async sendMoneyToUser(phoneNumber: string, amount: number, description?: string): Promise<{
+            success: boolean;
+            message: string;
+            transaction: {
+                  id: string;
+                  amount: number;
+                  recipientPhone: string;
+                  agentBalance: number;
+            };
+      }> {
+            try {
+                  console.log(`Sending ${amount} to ${phoneNumber}`);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/send-money`,
+                        {
+                              phone_number: phoneNumber,
+                              amount,
+                              description: description || 'Money transfer from agent'
+                        },
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Money transfer response:', response.data);
+                  return response.data;
+            } catch (error: any) {
+                  console.error('Failed to send money:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to send money');
+            }
+      }
+
+      // Get agents within the same shop (for super agents)
+      static async getShopAgents(): Promise<ManagedAgent[]> {
+            try {
+                  const response = await axios.get(`${API_BASE_URL}/shop/users`, {
+                        headers: this.getAuthHeaders(),
+                  });
+
+                  const data = response.data;
+                  if (data.success && Array.isArray(data.data)) {
+                        return data.data
+                              .filter((u: any) => u.role === 'agent' || u.role === 'super_agent')
+                              .map((u: any) => ({
+                                    id: u.id,
+                                    phone_number: u.phone_number,
+                                    role: u.role,
+                                    balance: Number(u.balance ?? 0),
+                                    is_active: Boolean(u.is_active),
+                                    created_at: u.created_at,
+                              }));
+                  }
+
+                  throw new Error(data.message || data.error || 'Failed to fetch shop agents');
+            } catch (error: any) {
+                  console.error('Failed to fetch shop agents:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to fetch shop agents');
             }
       }
 
@@ -305,6 +387,44 @@ class AgentService {
                   }
 
                   throw new Error(error.response?.data?.message || error.message || 'Failed to place bet for user');
+            }
+      }
+
+      static async placeShopBet(request: PlaceShopBetRequest): Promise<AgentBet> {
+            try {
+                  console.log('Placing shop bet:', request);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/shop/bets`,
+                        request,
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Shop bet placement response:', response.data);
+                  
+                  // Map response to AgentBet format if needed, or return as is
+                  // The backend returns: { success: true, bet: { id, ticketNumber, ... }, ticketNumber, message }
+                  // We need to return an AgentBet object to be compatible with the store
+                  const result = response.data;
+                  
+                  if (result.success && result.bet) {
+                        return {
+                              ...result.bet,
+                              status: 'accepted', // Shop bets are immediately accepted/printed
+                              totalStake: request.stake,
+                              // Add other fields if necessary for frontend compatibility
+                              createdAt: new Date().toISOString(),
+                              updatedAt: new Date().toISOString(),
+                              selections: request.selections
+                        };
+                  }
+                  
+                  throw new Error(result.message || 'Failed to place shop bet');
+            } catch (error: any) {
+                  console.error('Failed to place shop bet:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to place shop bet');
             }
       }
 
@@ -510,6 +630,26 @@ class AgentService {
                   return response.data;
             } catch (error: any) {
                   throw new Error(error.response?.data?.message || 'Failed to fetch user activity');
+            }
+      }
+
+      // Balance History
+      static async getBalanceHistory(limit: number = 50): Promise<any[]> {
+            try {
+                  console.log('Fetching balance history...');
+                  const response = await axios.get(`${API_BASE_URL}/agent/balance/history`, {
+                        headers: this.getAuthHeaders(),
+                        params: { limit },
+                  });
+
+                  console.log('Balance history response:', response.data);
+                  if (response.data.success && response.data.data) {
+                        return response.data.data;
+                  }
+                  return [];
+            } catch (error: any) {
+                  console.error('Failed to fetch balance history:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to fetch balance history');
             }
       }
 }

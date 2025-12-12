@@ -132,7 +132,7 @@ export class BetSlipService {
             throw new Error('User ID not found. Please try logging in again or refresh the page.');
       }
 
-      private static deriveMarketTypeFromBetType(betType: string): string {
+      public static deriveMarketTypeFromBetType(betType: string): string {
             const key = (betType || '').toLowerCase();
 
             // Handle Half-Time Markets FIRST (before general markets)
@@ -185,7 +185,7 @@ export class BetSlipService {
             return 'h2h';
       }
 
-      private static deriveOutcomeForMarket(bet: BetSlipItem, marketType: string): string {
+      public static deriveOutcomeForMarket(bet: BetSlipItem, marketType: string): string {
             const selection = (bet.selection || '').toLowerCase();
 
             switch (marketType) {
@@ -405,7 +405,7 @@ export class BetSlipService {
       }
 
       // Helper method to convert decimal odds to American
-      private static decimalToAmerican(decimal: number): number {
+      public static decimalToAmerican(decimal: number): number {
             if (decimal >= 2.0) {
                   return Math.round((decimal - 1) * 100);
             } else {

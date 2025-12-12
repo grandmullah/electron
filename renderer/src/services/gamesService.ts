@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from './apiConfig';
+import { API_BASE_URL, API_KEY } from './apiConfig';
 import {
       Game,
       GameDetails,
@@ -17,6 +17,15 @@ import {
 
 class GamesService {
       /**
+       * Get headers with API key for all requests
+       */
+      private static getHeaders(): Record<string, string> {
+            return {
+                  'Content-Type': 'application/json',
+                  'X-API-Key': API_KEY,
+            };
+      }
+      /**
        * Fetch odds for a specific league
        * @param leagueKey - The league identifier (e.g., 'soccer_epl')
        * @returns Promise<Game[]> - Array of games with odds
@@ -26,8 +35,10 @@ class GamesService {
                   // Use the correct API endpoint format: /api/leagues/{league_key}/odds
                   const path = `/leagues/${leagueKey}/odds`;
 
-                  // Make the API call
-                  const response = await axios.get(`${API_BASE_URL}${path}`);
+                  // Make the API call with API key header
+                  const response = await axios.get(`${API_BASE_URL}${path}`, {
+                        headers: this.getHeaders(),
+                  });
 
                   const games: Game[] = (response.data?.data || [])
                         .map((game: any) => {
@@ -51,7 +62,9 @@ class GamesService {
        */
       static async fetchGameById(gameId: string): Promise<Game> {
             try {
-                  const response = await axios.get<GameDetailsResponse>(`${API_BASE_URL}/games/${gameId}`);
+                  const response = await axios.get<GameDetailsResponse>(`${API_BASE_URL}/games/${gameId}`, {
+                        headers: this.getHeaders(),
+                  });
 
                   if (response.data?.success && response.data?.data) {
                         const gameDetails = response.data.data;
@@ -89,7 +102,9 @@ class GamesService {
                   const queryString = queryParams.toString();
                   const url = `${API_BASE_URL}/games/search${queryString ? `?${queryString}` : ''}`;
 
-                  const response = await axios.get<SearchResponse>(url);
+                  const response = await axios.get<SearchResponse>(url, {
+                        headers: this.getHeaders(),
+                  });
 
                   if (response.data?.success && response.data?.data) {
                         const games = Array.isArray(response.data.data) ? response.data.data : [];
@@ -118,7 +133,8 @@ class GamesService {
                   }
 
                   const response = await axios.get<AutocompleteResponse>(`${API_BASE_URL}/games/autocomplete`, {
-                        params: { q: query, limit }
+                        params: { q: query, limit },
+                        headers: this.getHeaders(),
                   });
 
                   if (response.data?.success && response.data?.data) {

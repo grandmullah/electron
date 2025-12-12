@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "../../components/Header";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { addToBetSlip, BetSlipItem } from "../../store/betslipSlice";
-import { ManagedUser } from "../../store/agentSlice";
-import AgentService from "../../services/agentService";
+import {
+  addToBetSlip,
+  BetSlipItem,
+  toggleBetSlipVisibility,
+} from "../../store/betslipSlice";
 import GamesService, { Game } from "../../services/gamesService";
 // Dynamic import for printService to enable code splitting
 import settingsService from "../../services/settingsService";
@@ -57,6 +59,7 @@ import {
   TrendingUp as TrendingUpIcon,
   Search as SearchIcon,
   FileDownload as FileDownloadIcon,
+  Receipt as ReceiptIcon,
 } from "@mui/icons-material";
 
 interface GamesPageProps {
@@ -99,7 +102,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
   // SWR fetcher function for leagues
   const leaguesFetcher = async (url: string): Promise<League[]> => {
-    const response = await fetch(url);
+    const { API_KEY } = await import("../../services/apiConfig");
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY,
+      },
+    });
     const data = await response.json();
 
     if (!data.success) {
@@ -170,9 +179,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   }, [supportedLeagues, leagueKey, leaguesLoading, leaguesError]);
 
   // Agent-specific state
-  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
-  const [showUserSelector, setShowUserSelector] = useState(false);
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showRefreshNotification, setShowRefreshNotification] = useState(false);
@@ -183,15 +189,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   // Game indexes now come from the API via team_index field
   // No local index creation needed
 
-  // Check if user is an agent and load managed users
+  // Check if user is an agent
   useEffect(() => {
     if (user && user.role === "agent") {
       setIsAgentMode(true);
-      loadManagedUsers();
     } else {
       setIsAgentMode(false);
-      setManagedUsers([]);
-      setSelectedUser(null);
     }
   }, [user]);
 
@@ -1278,15 +1281,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const loadManagedUsers = async () => {
-    try {
-      const users = await AgentService.getManagedUsers();
-      setManagedUsers(users);
-    } catch (error) {
-      console.error("Failed to load managed users:", error);
-    }
-  };
-
   // Update last updated timestamp when games change
   useEffect(() => {
     if (games.length > 0) {
@@ -1399,11 +1393,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   ) => {
     // Use original odds without reduction
     const reducedOdds = odds;
-    // If agent mode and no user selected, show user selector
-    if (isAgentMode && !selectedUser) {
-      setShowUserSelector(true);
-      return;
-    }
+    // Agent mode now only handles walk-in clients (shop bets), so no user selection needed
 
     // Regular user flow - add to bet slip
     const betSlipItem = {
@@ -1438,54 +1428,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleAgentBet = async (
-    game: Game,
-    betType: string,
-    selection: string,
-    odds: number,
-    stake: number
-  ) => {
-    if (!selectedUser) {
-      setShowUserSelector(true);
-      return;
-    }
-
-    // Use original odds without reduction
-    const reducedOdds = odds;
-
-    try {
-      const bet = await AgentService.placeBetForUser({
-        userId: selectedUser.id,
-        betType: "single",
-        stake: stake,
-        selections: [
-          {
-            gameId: game.externalId || game.id, // Use externalId for validation API
-            homeTeam: game.homeTeam,
-            awayTeam: game.awayTeam,
-            betType: betType,
-            selection: selection,
-            odds: reducedOdds,
-            bookmaker: "betzone",
-            gameTime: game.matchTime,
-            sportKey:
-              game.league === "Premier League"
-                ? "soccer_epl"
-                : "soccer_" + game.league.toLowerCase().replace(/\s+/g, "_"),
-          },
-        ],
-      });
-
-      // Show success message
-      alert(`Bet placed successfully for ${selectedUser.phone_number}!`);
-
-      // Reset selection
-      setSelectedUser(null);
-    } catch (error: any) {
-      alert(`Failed to place bet: ${error.message}`);
-    }
-  };
-
   if (isLoading) {
     return (
       <Box
@@ -1497,7 +1439,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         <Header
           onNavigate={onNavigate}
           currentPage="games"
-          selectedUser={selectedUser}
+          // selectedUser={selectedUser} // Disabled
           isAgentMode={isAgentMode}
         />
         <Container maxWidth="xl" sx={{ py: 4, px: 3 }}>
@@ -1635,7 +1577,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       <Header
         onNavigate={onNavigate}
         currentPage="games"
-        selectedUser={selectedUser}
+        // selectedUser={selectedUser} // Disabled
         isAgentMode={isAgentMode}
       />
 
@@ -1759,7 +1701,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
         {/* Main Content with Left Panel and Games */}
         <Box sx={{ display: "flex", gap: 3 }}>
-          {/* Left Panel - League Selector and Controls */}
+          {/* Left Panel - League Selector and Controls - Hidden on small/medium screens */}
           <Paper
             sx={{
               p: 3,
@@ -1775,6 +1717,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
               maxHeight: "calc(100vh - 100px)",
               overflowY: "auto",
+              display: { xs: "none", lg: "block" },
               "&::-webkit-scrollbar": {
                 width: "8px",
               },
@@ -1942,46 +1885,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         fontWeight="bold"
                         color="primary.main"
                       >
-                        Agent Mode Active
+                        Shop Agent Active
                       </Typography>
                     </Stack>
-                    {selectedUser && (
-                      <Box>
                         <Typography
-                          variant="body2"
+                      variant="caption"
                           color="text.secondary"
-                          gutterBottom
+                      align="center"
                         >
-                          Placing bet for:
+                      Processing walk-in client bets
                         </Typography>
-                        <Typography variant="body1" fontWeight="bold">
-                          {selectedUser.phone_number}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ${selectedUser.balance.toFixed(2)}{" "}
-                          {selectedUser.currency}
-                        </Typography>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          fullWidth
-                          onClick={() => setShowUserSelector(true)}
-                          sx={{ mt: 1 }}
-                        >
-                          Change User
-                        </Button>
-                      </Box>
-                    )}
-                    {!selectedUser && (
-                      <Button
-                        variant="contained"
-                        size="small"
-                        fullWidth
-                        onClick={() => setShowUserSelector(true)}
-                      >
-                        Select User
-                      </Button>
-                    )}
                   </Stack>
                 </Paper>
               </Box>
@@ -2132,130 +2045,66 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 )}
               </Box>
             )}
-
-            {/* User Selector Modal */}
-            <Dialog
-              open={showUserSelector}
-              onClose={() => setShowUserSelector(false)}
-              maxWidth="sm"
-              fullWidth
-              PaperProps={{
-                sx: {
-                  borderRadius: 3,
-                  background:
-                    "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
-                  boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-                },
-              }}
-            >
-              <DialogTitle
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  py: 2,
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={2}>
-                  <PersonIcon sx={{ fontSize: 28 }} />
-                  <Typography variant="h6" fontWeight="bold">
-                    Select User to Place Bet For
-                  </Typography>
-                </Box>
-                <IconButton
-                  onClick={() => setShowUserSelector(false)}
-                  sx={{ color: "white" }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </DialogTitle>
-
-              <DialogContent sx={{ p: 0 }}>
-                <List sx={{ p: 0 }}>
-                  {managedUsers
-                    .filter((user) => user.isActive)
-                    .map((user) => (
-                      <ListItem
-                        key={user.id}
-                        component="div"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowUserSelector(false);
-                        }}
-                        sx={{
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
-                          cursor: "pointer",
-                          "&:hover": {
-                            bgcolor: "action.hover",
-                          },
-                          "&:last-child": {
-                            borderBottom: "none",
-                          },
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: "primary.main" }}>
-                            {user.phone_number.charAt(1).toUpperCase()}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body1" fontWeight="bold">
-                              {user.phone_number}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {user.country_code} • {user.currency}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Balance: ${user.balance.toFixed(2)}{" "}
-                                {user.currency}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <Box display="flex" alignItems="center">
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: "50%",
-                              bgcolor: user.isActive
-                                ? "success.main"
-                                : "error.main",
-                            }}
-                          />
-                        </Box>
-                      </ListItem>
-                    ))}
-                </List>
-              </DialogContent>
-
-              <DialogActions sx={{ p: 3 }}>
-                <Button
-                  onClick={() => setShowUserSelector(false)}
-                  variant="outlined"
-                  startIcon={<CloseIcon />}
-                >
-                  Cancel
-                </Button>
-              </DialogActions>
-            </Dialog>
           </Box>
         </Box>
       </Container>
+
+      {/* Floating BetSlip Button - Only on small/medium screens */}
+        {betSlipItems.length > 0 && (
+          <Box
+            sx={{
+              display: { xs: "flex", lg: "none" },
+              position: "fixed",
+              right: { xs: 16, sm: 24 },
+              bottom: 80,
+              zIndex: 1000,
+              }}
+            >
+            <Badge
+              badgeContent={betSlipItems.length}
+                sx={{
+                "& .MuiBadge-badge": {
+                  bgcolor: "#ff6b6b",
+                  color: "white",
+                  fontWeight: 600,
+                  right: -8,
+                  top: -8,
+                  minWidth: 20,
+                  height: 20,
+                },
+              }}
+            >
+              <Button
+                variant="contained"
+                startIcon={<ReceiptIcon />}
+                onClick={() => dispatch(toggleBetSlipVisibility())}
+                        sx={{
+                  background:
+                    "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                  color: "white",
+                  borderRadius: "12px",
+                  px: 2,
+                  py: 1.5,
+                  fontWeight: 600,
+                  boxShadow: "0 4px 20px rgba(25, 118, 210, 0.4)",
+                          "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                    boxShadow: "0 6px 24px rgba(25, 118, 210, 0.5)",
+                    transform: "translateY(-2px)",
+                          },
+                        }}
+                      >
+                              <Typography
+                                variant="body2"
+                  sx={{ display: { xs: "none", sm: "block" } }}
+                              >
+                  Betslip
+                              </Typography>
+                </Button>
+            </Badge>
+          </Box>
+        )}
     </Box>
   );
-};
+  }

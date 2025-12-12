@@ -13,6 +13,7 @@ import {
 } from "../store/betslipSlice";
 import { placeBets, BetSlipService } from "../services/betslipService";
 import { addAgentBet } from "../store/agentSlice";
+import AgentService from "../services/agentService";
 import { printThermalTicket } from "../services/printService";
 import {
   Dialog,
@@ -52,14 +53,12 @@ import {
 interface MUIBetSlipProps {
   isVisible: boolean;
   onClose: () => void;
-  selectedUser?: { id: string; phone_number: string } | null | undefined;
   isAgentMode?: boolean;
 }
 
 export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
   isVisible,
   onClose,
-  selectedUser,
   isAgentMode = false,
 }) => {
   const dispatch = useAppDispatch();
@@ -69,7 +68,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
     multibetStake = 10,
   } = useAppSelector((state) => state.betslip);
   const { user } = useAppSelector((state) => state.auth);
-  const { managedUsers } = useAppSelector((state) => state.agent);
+  // Removed managedUsers selector as we don't need user selection anymore
 
   const [isPlacingBets, setIsPlacingBets] = useState(false);
   const [betSlipData, setBetSlipData] = useState<any>(null);
@@ -266,52 +265,106 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       );
       if (!validation.isValid) {
         alert(validation.error);
+        setIsPlacingBets(false);
         return;
       }
 
-      const result = await placeBets(
+      let result: any;
+      let success = false;
+      let betId = "";
+      let error = "";
+
+      if (isAgentMode) {
+        // Prepare selections for Agent Service
+        const selections = betSlipItems.map((item) => {
+          const marketType = BetSlipService.deriveMarketTypeFromBetType(
+            item.betType
+          );
+          const outcome = BetSlipService.deriveOutcomeForMarket(
+            item,
+            marketType
+          );
+          return {
+            gameId: item.gameId,
+            homeTeam: item.homeTeam,
+            awayTeam: item.awayTeam,
+            marketType,
+            outcome, // Human-readable outcome (team names / draw)
+            betType: item.betType, // Keep original betType for reference
+            selection: outcome, // Send descriptive selection instead of "1"/"X"
+            originalSelection: item.selection, // Preserve original for UI/debug
+            odds: item.odds,
+            bookmaker: "Betzone",
+            gameTime:
+              item.gameTime ||
+              new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            sportKey: item.sportKey || "soccer_epl",
+          };
+        });
+
+        // Always place shop bet (anonymous/walk-in) for agents
+        try {
+          const response = await AgentService.placeShopBet({
+            selections: selections as any,
+            stake,
+          });
+          result = response;
+          success = true;
+          betId = response.id;
+        } catch (err: any) {
+          success = false;
+          error = err.message;
+        }
+      } else {
+        // Standard user bet
+        try {
+          const response = await placeBets(
         betSlipItems,
         isMultibet,
         stake,
         user?.id,
         user?.bettingLimits
       );
+          result = response;
 
-      // Handle different response types for single bets vs multibets
-      let success = false;
-      let betId = "";
-      let error = "";
-
-      if (Array.isArray(result)) {
+          if (Array.isArray(response)) {
         // Single bets - result is an array
-        success = result.length > 0 && result.every((bet) => bet?.success);
+            success =
+              response.length > 0 && response.every((bet) => bet?.success);
         betId =
-          result.length > 0
-            ? result[0]?.betId ||
-              (result[0] as any)?.data?.betSlip?.id ||
-              (result[0] as any)?.data?.betSlip?.betId ||
+              response.length > 0
+                ? response[0]?.betId ||
+                  (response[0] as any)?.data?.betSlip?.id ||
+                  (response[0] as any)?.data?.betSlip?.betId ||
               ""
             : "";
         error =
-          result.length > 0 ? result[0]?.message || "" : "No bets returned";
+              response.length > 0
+                ? response[0]?.message || ""
+                : "No bets returned";
       } else {
         // Multibet - result is a single object
-        success = result?.success || false;
+            success = response?.success || false;
         betId =
-          result?.betId ||
-          (result as any)?.data?.betSlip?.id ||
-          (result as any)?.data?.betSlip?.betId ||
+              response?.betId ||
+              (response as any)?.data?.betSlip?.id ||
+              (response as any)?.data?.betSlip?.betId ||
           "";
-        error = result?.message || "";
+            error = response?.message || "";
+          }
+        } catch (err: any) {
+          success = false;
+          error = err.message;
+        }
       }
 
       if (success) {
-        if (isAgentMode && selectedUser) {
+        if (isAgentMode) {
           dispatch(
             addAgentBet({
               id: betId || `agent-bet-${Date.now()}`,
-              userId: selectedUser.id,
-              userPhone: selectedUser.phone_number,
+              userId: "walk-in", // Placeholder for walk-in client
+              userPhone: "Walk-in Client",
               userCountry: "SS",
               agentId: user?.id || "",
               betType: isMultibet ? "multibet" : "single",
@@ -343,16 +396,20 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         // Prepare bet data for success dialog and printing (using API response data directly)
         const betData = {
           // Use API response data directly
-          betSlip: (result as any)?.data?.betSlip,
+          betSlip: (result as any)?.data?.betSlip || result,
           summary: (result as any)?.data?.summary,
           // Additional fields for print service compatibility
           id: betId, // For print service
           betId: betId, // For print service
+          ticketNumber: (result as any)?.ticketNumber || (result as any)?.bet?.ticketNumber,
           betType: isMultibet ? "multibet" : "single",
           totalStake: stake,
           potentialWinnings:
             (result as any)?.data?.summary?.potentialWinnings ||
-            (result as any)?.data?.betSlip?.potentialWinnings,
+            (result as any)?.data?.betSlip?.potentialWinnings ||
+            (result as any)?.potentialWinnings ||
+            (result as any)?.bet?.potentialWinnings ||
+            stake * (isMultibet ? calculateCombinedOdds(betSlipItems) : betSlipItems[0]?.odds || 1),
           taxAmount:
             (result as any)?.data?.summary?.taxAmount ||
             (result as any)?.data?.betSlip?.taxAmount,
@@ -361,7 +418,8 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             (result as any)?.data?.betSlip?.netWinnings,
           combinedOdds:
             (result as any)?.data?.betSlip?.odds?.decimal ||
-            (result as any)?.data?.betSlip?.odds?.multiplier,
+            (result as any)?.data?.betSlip?.odds?.multiplier ||
+            (isMultibet ? calculateCombinedOdds(betSlipItems) : betSlipItems[0]?.odds || 1),
           selections: betSlipItems.map((item, index) => ({
             selectionId: `sel-${betId}-${index}`,
             betId: betId,
@@ -376,7 +434,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             gameTime: item.gameTime, // Add game time for print receipt
             gameStartTime: item.gameTime, // Add as gameStartTime for compatibility
           })),
-          user: user,
+          user: isAgentMode ? { ...user, name: "Walk-in Client", role: "user" } : user,
           shop: user?.shop,
           createdAt: new Date().toISOString(),
           timestamp: new Date().toISOString(),
@@ -499,9 +557,9 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
               Bet Slip ({betSlipItems?.length || 0} bets)
             </Typography>
           </Box>
-          {isAgentMode && selectedUser && (
+          {isAgentMode && (
             <Chip
-              label={`Placing for: ${selectedUser.phone_number}`}
+              label="Shop Bet (Walk-in)"
               color="secondary"
               variant="filled"
               sx={{ color: "white", bgcolor: "rgba(255,255,255,0.2)" }}

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './apiConfig';
+import { API_BASE_URL, API_KEY } from './apiConfig';
 
 // console.log('API_BASE_URL:', API_BASE_URL, 'Mode:', import.meta.env.MODE);
 
@@ -138,12 +138,14 @@ class AuthService {
             const token = localStorage.getItem('authToken');
             return {
                   'Content-Type': 'application/json',
+                  'X-API-Key': API_KEY,
                   ...(token && { 'Authorization': `Bearer ${token}` }),
             };
       }
 
       static async register(userData: RegisterRequest): Promise<AuthResponse> {
             try {
+                  console.log('Registering user with data:', { ...userData, password: '***' });
                   const response = await fetch(`${API_BASE_URL}/auth/register`, {
                         method: 'POST',
                         headers: {

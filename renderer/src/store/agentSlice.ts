@@ -29,6 +29,16 @@ export interface ManagedUser {
       };
 }
 
+// Type for agents (subset of ManagedUser for shop agents)
+export interface ManagedAgent {
+      id: string;
+      phone_number: string;
+      role: 'agent' | 'super_agent';
+      balance: number;
+      isActive: boolean;
+      createdAt: string;
+}
+
 export interface AgentBet {
       id: string;
       userId: string;
@@ -67,6 +77,7 @@ export interface CommissionTransaction {
 
 export interface AgentState {
       managedUsers: ManagedUser[];
+      managedAgents: ManagedAgent[];
       agentBets: AgentBet[];
       commissionTransactions: CommissionTransaction[];
       selectedUser: ManagedUser | null;
@@ -79,6 +90,7 @@ export interface AgentState {
 
 const initialState: AgentState = {
       managedUsers: [],
+      managedAgents: [],
       agentBets: [],
       commissionTransactions: [],
       selectedUser: null,
@@ -101,6 +113,9 @@ export const agentSlice = createSlice({
             },
             setManagedUsers: (state, action: PayloadAction<ManagedUser[]>) => {
                   state.managedUsers = action.payload;
+            },
+            setManagedAgents: (state, action: PayloadAction<ManagedAgent[]>) => {
+                  state.managedAgents = action.payload;
             },
             addManagedUser: (state, action: PayloadAction<ManagedUser>) => {
                   state.managedUsers.push(action.payload);
@@ -146,6 +161,7 @@ export const agentSlice = createSlice({
             },
             clearAgentData: (state) => {
                   state.managedUsers = [];
+                  state.managedAgents = [];
                   state.agentBets = [];
                   state.commissionTransactions = [];
                   state.selectedUser = null;
@@ -160,6 +176,7 @@ export const {
       setLoading,
       setError,
       setManagedUsers,
+      setManagedAgents,
       addManagedUser,
       updateManagedUser,
       removeManagedUser,

@@ -37,6 +37,7 @@ import {
   Stack,
   Card,
   CardContent,
+  Chip,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -59,6 +60,8 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const dispatch = useAppDispatch();
   const { user, isLoading, error } = useAppSelector((state) => state.auth);
+  const isAgentRole =
+    user?.role === "agent" || user?.role === "super_agent";
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [showAuthForm, setShowAuthForm] = useState(false);
@@ -216,6 +219,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         });
         response = await AuthService.login(loginData);
         console.log("Login successful:", response);
+        
+        // Enforce agent-only login
+        if (response && response.user && response.user.role !== 'agent') {
+          dispatch(loginFailure("This application is for agents only. Please contact your administrator."));
+          AuthService.logout();
+          return;
+        }
       } else {
         const registerData: RegisterRequest = {
           phone_number: fullPhoneNumber,
@@ -367,9 +377,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               >
                 🚀 Welcome back, {user.name}!
               </Typography>
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-                Your Ultimate Betting Experience
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                {isAgentRole 
+                  ? "Agent Dashboard - Manage Walk-in Clients"
+                  : "Your Ultimate Betting Experience"}
               </Typography>
+              {isAgentRole && (
+                <Chip
+                  label={user.role === "super_agent" ? "Super Agent Account" : "Agent Account"}
+                  color="primary"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    mb: 3,
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  }}
+                />
+              )}
 
               <Box
                 sx={{
@@ -469,7 +493,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 >
                   View Games
                 </Button>
-                {user.role === "agent" && (
+                {isAgentRole && (
                   <Button
                     variant="contained"
                     size="large"
@@ -546,9 +570,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ mb: 4, color: "rgba(255, 255, 255, 0.7)" }}
+                sx={{ mb: 2, color: "rgba(255, 255, 255, 0.7)" }}
               >
-                Your Ultimate Betting Experience
+                Agent Portal for Walk-in Betting
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ mb: 4, color: "rgba(255, 255, 255, 0.6)" }}
+              >
+                This application is for authorized agents only
               </Typography>
 
               <Stack
@@ -576,7 +606,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     },
                   }}
                 >
-                  Login / Register
+                  Agent Login
                 </Button>
                 <Button
                   variant="outlined"

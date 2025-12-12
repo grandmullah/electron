@@ -217,6 +217,14 @@ export interface Game {
             over: number | string | null;
             under: number | string | null;
       }>;
+      // Team totals (full-time)
+      teamTotals?: Array<{
+            team: string; // "home" or "away"
+            point: number;
+            over: number | string | null;
+            under: number | string | null;
+      }>;
+      // Team totals (half-time)
       team_totals_h1?: Array<{
             team: string; // "home" or "away"
             point: number;

@@ -298,20 +298,46 @@ export function extractTeamTotalsOdds(
 
             // Check description field first (new API format)
             if (description) {
-                  if (description.includes(homeTeam.toLowerCase()) || description === 'home') {
+                  const homeLower = homeTeam.toLowerCase().trim();
+                  const awayLower = awayTeam.toLowerCase().trim();
+                  const descLower = description.toLowerCase().trim();
+                  
+                  // More flexible matching - check exact match first, then contains
+                  // Also handle partial matches (e.g., "Arsenal" matches "Arsenal FC")
+                  if (descLower === homeLower || 
+                      descLower.includes(homeLower) || 
+                      homeLower.includes(descLower) ||
+                      descLower === 'home') {
                         team = 'home';
-                  } else if (description.includes(awayTeam.toLowerCase()) || description === 'away') {
+                  } else if (descLower === awayLower || 
+                            descLower.includes(awayLower) || 
+                            awayLower.includes(descLower) ||
+                            descLower === 'away') {
                         team = 'away';
                   }
             }
 
             // Fallback to parsing name field (legacy format)
             if (!team) {
-                  if (name.includes(homeTeam.toLowerCase()) || name.includes('home')) {
+                  const homeLower = homeTeam.toLowerCase().trim();
+                  const awayLower = awayTeam.toLowerCase().trim();
+                  
+                  // Check if name contains team name (e.g., "Arsenal Over" contains "Arsenal")
+                  if (name.includes(homeLower) || name.includes('home')) {
                         team = 'home';
-                  } else if (name.includes(awayTeam.toLowerCase()) || name.includes('away')) {
+                  } else if (name.includes(awayLower) || name.includes('away')) {
                         team = 'away';
                   } else {
+                        // Debug: log unmatched outcomes
+                        console.warn('⚠️ Team totals: Could not match team', { 
+                              name, 
+                              description, 
+                              homeTeam, 
+                              awayTeam,
+                              nameLower: name,
+                              homeLower,
+                              awayLower
+                        });
                         return; // Skip if can't determine team
                   }
             }
@@ -363,6 +389,7 @@ export function parseOddsFromGameOddsArray(
       const totalsOdds = odds.filter(o => o.market_key === 'totals');
       const bttsOdds = odds.filter(o => o.market_key === 'btts');
       const spreadsOdds = odds.filter(o => o.market_key === 'spreads');
+      const teamTotalsOdds = odds.filter(o => o.market_key === 'team_totals'); // Full-time team totals
 
       // Half-time markets
       const h2h_h1_Odds = odds.filter(o => o.market_key === 'h2h_h1');
@@ -377,6 +404,7 @@ export function parseOddsFromGameOddsArray(
       const totals = extractTotalsOdds(totalsOdds);
       const bothTeamsToScore = extractBTTSOdds(bttsOdds);
       const spreads = extractSpreadOdds(spreadsOdds, homeTeam, awayTeam);
+      const teamTotals = extractTeamTotalsOdds(teamTotalsOdds, homeTeam, awayTeam); // Full-time team totals
 
       // Parse half-time markets
       const h2h_h1 = extractH2HOdds(h2h_h1_Odds, homeTeam, awayTeam);
@@ -402,6 +430,8 @@ export function parseOddsFromGameOddsArray(
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,
             },
+            // Full-time team totals
+            ...(teamTotals.length > 0 ? { teamTotals } : {}),
             // Half-time markets (only include if they have data)
             ...(h2h_h1.homeOdds || h2h_h1.drawOdds || h2h_h1.awayOdds ? {
                   h2h_h1: {
@@ -468,6 +498,7 @@ export function parseOddsFromBookmakersArray(
       const totalsMarket = findMarketFromBookmakers(bookmakers, 'totals');
       const bttsMarket = findMarketFromBookmakers(bookmakers, 'btts');
       const spreadsMarket = findMarketFromBookmakers(bookmakers, 'spreads');
+      const teamTotalsMarket = findMarketFromBookmakers(bookmakers, 'team_totals'); // Full-time team totals
 
       // Half-time markets
       const h2h_h1_Market = findMarketFromBookmakers(bookmakers, 'h2h_h1');
@@ -482,6 +513,19 @@ export function parseOddsFromBookmakersArray(
       const totals = extractTotalsOdds(totalsMarket?.outcomes || []);
       const bothTeamsToScore = extractBTTSOdds(bttsMarket?.outcomes || []);
       const spreads = extractSpreadOdds(spreadsMarket?.outcomes || [], homeTeam, awayTeam);
+      const teamTotals = extractTeamTotalsOdds(teamTotalsMarket?.outcomes || [], homeTeam, awayTeam); // Full-time team totals
+      
+      // Debug logging for team totals
+      if (teamTotalsMarket && teamTotalsMarket.outcomes) {
+            console.log('🔍 Team Totals Parser Debug:', {
+                  marketFound: !!teamTotalsMarket,
+                  outcomesCount: teamTotalsMarket.outcomes.length,
+                  homeTeam,
+                  awayTeam,
+                  parsedCount: teamTotals.length,
+                  parsed: teamTotals
+            });
+      }
 
       // Parse half-time markets
       const h2h_h1 = extractH2HOdds(h2h_h1_Market?.outcomes || [], homeTeam, awayTeam);
@@ -507,6 +551,8 @@ export function parseOddsFromBookmakersArray(
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,
             },
+            // Full-time team totals
+            ...(teamTotals.length > 0 ? { teamTotals } : {}),
             // Half-time markets (only include if they have data)
             ...(h2h_h1.homeOdds || h2h_h1.drawOdds || h2h_h1.awayOdds ? {
                   h2h_h1: {
