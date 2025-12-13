@@ -393,6 +393,22 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           );
         }
 
+        // Calculate potential winnings
+        const calculatedPotentialWinnings =
+          (result as any)?.data?.summary?.potentialWinnings ||
+          (result as any)?.data?.betSlip?.potentialWinnings ||
+          (result as any)?.potentialWinnings ||
+          (result as any)?.bet?.potentialWinnings ||
+          stake *
+            (isMultibet
+              ? calculateCombinedOdds(betSlipItems)
+              : betSlipItems[0]?.odds || 1);
+
+        // Calculate 20% tax on potential winnings (independent of API response)
+        const calculatedTaxAmount = calculatedPotentialWinnings * 0.2;
+        const calculatedNetWinnings =
+          calculatedPotentialWinnings - calculatedTaxAmount;
+
         // Prepare bet data for success dialog and printing (using API response data directly)
         const betData = {
           // Use API response data directly
@@ -405,21 +421,11 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             (result as any)?.ticketNumber || (result as any)?.bet?.ticketNumber,
           betType: isMultibet ? "multibet" : "single",
           totalStake: stake,
-          potentialWinnings:
-            (result as any)?.data?.summary?.potentialWinnings ||
-            (result as any)?.data?.betSlip?.potentialWinnings ||
-            (result as any)?.potentialWinnings ||
-            (result as any)?.bet?.potentialWinnings ||
-            stake *
-              (isMultibet
-                ? calculateCombinedOdds(betSlipItems)
-                : betSlipItems[0]?.odds || 1),
-          taxAmount:
-            (result as any)?.data?.summary?.taxAmount ||
-            (result as any)?.data?.betSlip?.taxAmount,
-          netWinnings:
-            (result as any)?.data?.summary?.netWinnings ||
-            (result as any)?.data?.betSlip?.netWinnings,
+          potentialWinnings: calculatedPotentialWinnings,
+          // Use calculated tax amount (20% of potential winnings) - not dependent on API
+          taxAmount: calculatedTaxAmount,
+          // Use calculated net winnings (potential winnings - tax)
+          netWinnings: calculatedNetWinnings,
           combinedOdds:
             (result as any)?.data?.betSlip?.odds?.decimal ||
             (result as any)?.data?.betSlip?.odds?.multiplier ||
