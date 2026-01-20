@@ -13,7 +13,6 @@ import {
   Typography,
   Box,
   Button,
-  Grid,
   Card,
   CardContent,
   Tabs,
@@ -41,10 +40,12 @@ import {
   MenuItem,
   Stack,
   Tooltip,
+  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
+import Grid from "@mui/material/GridLegacy";
 import {
   Refresh as RefreshIcon,
   PlayArrow as PlayIcon,
@@ -186,11 +187,10 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     setIsLoading(true);
     setError(null);
     try {
-      const res = await ShopManagementService.searchUsers({
-        phone: usersPhoneQuery.trim() || undefined,
-        limit: 50,
-        offset: 0,
-      });
+      const phone = usersPhoneQuery.trim();
+      const res = await ShopManagementService.searchUsers(
+        phone.length > 0 ? { phone, limit: 50, offset: 0 } : { limit: 50, offset: 0 }
+      );
       setUsersResults(res);
       if (res.length === 0) setSuccess("No users found");
     } catch (err: any) {
@@ -744,26 +744,23 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
           sx={{
             p: 6,
             borderRadius: 3,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
             textAlign: "center",
             maxWidth: 500,
           }}
         >
           <CancelIcon sx={{ fontSize: 80, color: "error.main", mb: 2 }} />
-          <Typography variant="h4" gutterBottom color="white">
+          <Typography variant="h4" gutterBottom color="text.primary">
             Access Denied
           </Typography>
-          <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ mb: 3 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             You need admin privileges to access this page.
           </Typography>
           <Button
             variant="contained"
             onClick={() => onNavigate("home")}
-            sx={{
-              background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-            }}
           >
             Go to Home
           </Button>
@@ -790,9 +787,9 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             p: 3,
             mb: 3,
             borderRadius: 2,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
           <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -800,7 +797,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               <Typography variant="h4" fontWeight="bold" gutterBottom>
                 {isAdmin ? "⚙️ Game & League Management" : "⚙️ Game Management"}
               </Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+              <Typography variant="body2" color="text.secondary">
                 {isAdmin 
                   ? "Manage leagues, games, cron jobs, and postponed matches" 
                   : "Manage postponed matches and game-related operations"}
@@ -814,11 +811,11 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                 else if (activeTab === "cron") loadCronStatus();
               }}
               sx={{
-                borderColor: "rgba(255,255,255,0.3)",
-                color: "white",
+                borderColor: "divider",
+                color: "text.primary",
                 "&:hover": {
-                  borderColor: "rgba(255,255,255,0.5)",
-                  bgcolor: "rgba(255,255,255,0.1)",
+                  borderColor: "text.primary",
+                  bgcolor: "action.hover",
                 },
               }}
             >
@@ -845,9 +842,9 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
           sx={{
             mb: 3,
             borderRadius: 2,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
           <Tabs
@@ -855,14 +852,6 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             onChange={(_, val) => setActiveTab(val)}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{
-              "& .MuiTab-root": {
-                color: "rgba(255,255,255,0.7)",
-                "&.Mui-selected": {
-                  color: "white",
-                },
-              },
-            }}
           >
             {isAdmin && <Tab icon={<PowerIcon />} label="Leagues" value="leagues" />}
             {isAdmin && <Tab icon={<SettingsIcon />} label="Games" value="games" />}
@@ -881,12 +870,13 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               <Grid item xs={12} md={4}>
                 <Card
                   sx={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    bgcolor: "background.paper",
+                    border: 1,
+                    borderColor: "divider",
                   }}
                 >
                   <CardContent>
-                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                    <Typography variant="caption" color="text.secondary">
                       Total Leagues
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
@@ -898,15 +888,16 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               <Grid item xs={12} md={4}>
                 <Card
                   sx={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(76, 175, 80, 0.3)",
+                    bgcolor: "background.paper",
+                    border: 1,
+                    borderColor: "divider",
                   }}
                 >
                   <CardContent>
-                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                    <Typography variant="caption" color="text.secondary">
                       Active Leagues
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="#4caf50">
+                    <Typography variant="h4" fontWeight="bold" color="success.main">
                       {leagueStats.active}
                     </Typography>
                   </CardContent>
@@ -915,15 +906,16 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               <Grid item xs={12} md={4}>
                 <Card
                   sx={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(244, 67, 54, 0.3)",
+                    bgcolor: "background.paper",
+                    border: 1,
+                    borderColor: "divider",
                   }}
                 >
                   <CardContent>
-                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                    <Typography variant="caption" color="text.secondary">
                       Inactive Leagues
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="#f44336">
+                    <Typography variant="h4" fontWeight="bold" color="error.main">
                       {leagueStats.inactive}
                     </Typography>
                   </CardContent>
@@ -937,8 +929,9 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               sx={{
                 p: 2,
                 mb: 3,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
               }}
             >
               <Stack direction="row" spacing={2} flexWrap="wrap">
@@ -947,7 +940,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                   startIcon={<SyncIcon />}
                   onClick={handleSyncLeagues}
                   disabled={isLoading}
-                  sx={{ bgcolor: "#42a5f5" }}
+                  color="primary"
                 >
                   Sync Leagues
                 </Button>
@@ -956,7 +949,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                   startIcon={<RefreshIcon />}
                   onClick={handleInitializeLeagues}
                   disabled={isLoading}
-                  sx={{ bgcolor: "#66bb6a" }}
+                  color="success"
                 >
                   Initialize
                 </Button>
@@ -965,7 +958,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                   startIcon={<PowerIcon />}
                   onClick={handleActivateMultiple}
                   disabled={isLoading || selectedLeagues.length === 0}
-                  sx={{ bgcolor: "#ffa726" }}
+                  color="warning"
                 >
                   Activate Selected ({selectedLeagues.length})
                 </Button>
@@ -977,8 +970,9 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               elevation={3}
               sx={{
                 borderRadius: 2,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
               }}
             >
               {isLoading ? (
@@ -992,7 +986,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                       <TableRow>
                         <TableCell padding="checkbox">
                           <Checkbox
-                            sx={{ color: "rgba(255,255,255,0.7)" }}
+                            sx={{ color: "text.secondary" }}
                             checked={selectedLeagues.length === leagues.length && leagues.length > 0}
                             onChange={() => {
                               if (selectedLeagues.length === leagues.length) {
@@ -1003,11 +997,11 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                             }}
                           />
                         </TableCell>
-                        <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>League</TableCell>
-                        <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Key</TableCell>
-                        <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Status</TableCell>
-                        <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Region</TableCell>
-                        <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Actions</TableCell>
+                        <TableCell>League</TableCell>
+                        <TableCell>Key</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Region</TableCell>
+                        <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
