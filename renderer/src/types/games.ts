@@ -84,6 +84,10 @@ export interface GameSearchResult {
       awayTeam: string;
       commenceTime: string | Date;
       status: GameStatus;
+      // Featured games fields (management)
+      isFeatured?: boolean;
+      featuredRank?: number;
+      featuredUntil?: string | null;
       homeScore?: number;
       awayScore?: number;
       currentPeriod?: number;
@@ -171,6 +175,10 @@ export interface Game {
       league: string;
       sportKey: string;
       status: GameStatus;
+      // Featured games fields (management)
+      isFeatured?: boolean;
+      featuredRank?: number;
+      featuredUntil?: string | null;
       doubleChance: {
             homeOrDraw: number | string | null;
             homeOrAway: number | string | null;

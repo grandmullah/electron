@@ -5,4 +5,6 @@ export { GamesPage } from './public/GamesPage';
 // Private pages (require login)
 export { DashboardPage } from './private/DashboardPage';
 export { SettingsPage } from './private/SettingsPage';
-export { AgentPage } from './private/AgentPage'; 
+export { AgentPage } from './private/AgentPage';
+export { HistoryPage } from './private/HistoryPage';
+export { ManagementPage } from './private/ManagementPage'; 

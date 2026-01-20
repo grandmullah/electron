@@ -29,11 +29,11 @@ export interface ManagedUser {
       };
 }
 
-// Type for agents (subset of ManagedUser for shop agents)
+// Type for shop users shown in the "Agents" tab (shop-associated users)
 export interface ManagedAgent {
       id: string;
       phone_number: string;
-      role: 'agent' | 'super_agent';
+      role: 'user' | 'agent' | 'super_agent';
       balance: number;
       isActive: boolean;
       createdAt: string;

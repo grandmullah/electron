@@ -49,7 +49,7 @@ import {
 
 interface HeaderProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
   ) => void;
   currentPage: string;
   isAgentMode?: boolean;
@@ -130,11 +130,8 @@ export const Header: React.FC<HeaderProps> = ({
         position="sticky"
         elevation={0}
         sx={{
-          background:
-            "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+          // Let the global MUI theme control the app chrome styling
+          boxShadow: "none",
         }}
       >
         <Toolbar
@@ -284,7 +281,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {page}
                 </Button>
               ))}
-              {user && user.role === "agent" && (
+              {user && (user.role === "agent" || user.role === "super_agent" || user.role === "admin") && (
                 <Button
                   onClick={() => onNavigate("agent")}
                   sx={{
@@ -319,13 +316,48 @@ export const Header: React.FC<HeaderProps> = ({
                   Agent
                 </Button>
               )}
+              {user && (user.role === "super_agent" || user.role === "admin") && (
+                <Button
+                  onClick={() => onNavigate("management")}
+                  sx={{
+                    color:
+                      currentPage === "management"
+                        ? "#42a5f5"
+                        : "rgba(255, 255, 255, 0.7)",
+                    bgcolor:
+                      currentPage === "management"
+                        ? "rgba(25, 118, 210, 0.15)"
+                        : "transparent",
+                    border:
+                      currentPage === "management"
+                        ? "1px solid rgba(25, 118, 210, 0.4)"
+                        : "1px solid transparent",
+                    borderRadius: "8px",
+                    px: 2,
+                    py: 0.75,
+                    fontWeight: currentPage === "management" ? 600 : 500,
+                    fontSize: "0.95rem",
+                    textTransform: "none",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      color: "white",
+                      bgcolor: "rgba(255, 255, 255, 0.15)",
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    },
+                  }}
+                >
+                  Management
+                </Button>
+              )}
             </Stack>
           </Box>
 
           {/* Right Section */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {/* Agent Balance Display */}
-            {user && user.role === "agent" && (
+            {user && (user.role === "agent" || user.role === "super_agent") && (
               <Box
                 sx={{
                   display: { xs: "none", md: "flex" },
@@ -367,7 +399,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* Send Money Button (Agent only) */}
-            {user && user.role === "agent" && (
+            {user && (user.role === "agent" || user.role === "super_agent") && (
               <Button
                 variant="contained"
                 startIcon={<SendIcon />}
@@ -677,7 +709,7 @@ export const Header: React.FC<HeaderProps> = ({
                         {user.shop.shop_code}
                       </Typography>
                     </MenuItem>,
-                    user.role === "agent" && (
+                    (user.role === "agent" || user.role === "super_agent") && (
                       <MenuItem
                         key="commission-rate"
                         sx={{ justifyContent: "space-between", py: 1.5 }}

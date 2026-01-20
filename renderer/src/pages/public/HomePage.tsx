@@ -339,9 +339,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <Box
       sx={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        bgcolor: "background.default",
         minHeight: "100vh",
-        color: "#ffffff",
+        color: "text.primary",
       }}
     >
       <Header onNavigate={onNavigate} currentPage="home" />
@@ -355,10 +355,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               sx={{
                 p: 4,
                 borderRadius: 3,
-                background:
-                  "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "#ffffff",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                color: "text.primary",
                 textAlign: "center",
                 width: "100%",
                 maxWidth: 800,
@@ -370,7 +370,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 gutterBottom
                 sx={{
                   fontWeight: "bold",
-                  background: "linear-gradient(45deg, #1976d2, #42a5f5)",
+                  background: (theme) =>
+                    `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",
                   color: "transparent",
@@ -653,7 +654,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           }}
           sx={{
             "& .MuiBackdrop-root": {
-              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+              background: "rgba(3, 5, 9, 0.85)",
               backdropFilter: "blur(5px)",
             },
           }}

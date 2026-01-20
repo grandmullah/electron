@@ -208,7 +208,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <Box
       sx={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        bgcolor: "background.default",
         minHeight: "100vh",
         position: "relative",
         color: "text.primary",

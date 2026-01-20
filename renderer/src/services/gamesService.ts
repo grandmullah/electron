@@ -86,6 +86,15 @@ class GamesService {
        * @returns Promise<Game[]> - Array of matching games
        */
       static async searchGames(filters: GameSearchFilters): Promise<Game[]> {
+            const { games } = await this.searchGamesWithMeta(filters);
+            return games;
+      }
+
+      /**
+       * Search games with filters + pagination metadata
+       * Endpoint: GET /api/games/search
+       */
+      static async searchGamesWithMeta(filters: GameSearchFilters): Promise<{ games: Game[]; count: number }> {
             try {
                   // Build query string from filters
                   const queryParams = new URLSearchParams();
@@ -108,10 +117,13 @@ class GamesService {
 
                   if (response.data?.success && response.data?.data) {
                         const games = Array.isArray(response.data.data) ? response.data.data : [];
-                        return games.map((game: GameSearchResult) => this.transformSearchResult(game));
-                  } else {
-                        return [];
+                        return {
+                              games: games.map((game: GameSearchResult) => this.transformSearchResult(game)),
+                              count: Number(response.data.count || games.length || 0),
+                        };
                   }
+
+                  return { games: [], count: 0 };
             } catch (error: any) {
                   const message = error?.response?.data?.error || error.message || 'Failed to search games';
                   console.error('Search games error:', message);
@@ -277,6 +289,9 @@ class GamesService {
                   league: searchResult.leagueTitle,
                   sportKey: searchResult.sportKey,
                   status: searchResult.status,
+                  isFeatured: Boolean((searchResult as any).isFeatured ?? (searchResult as any).is_featured ?? false),
+                  featuredRank: (searchResult as any).featuredRank ?? (searchResult as any).featured_rank ?? 0,
+                  featuredUntil: (searchResult as any).featuredUntil ?? (searchResult as any).featured_until ?? null,
                   doubleChance: {
                         homeOrDraw: null,
                         homeOrAway: null,

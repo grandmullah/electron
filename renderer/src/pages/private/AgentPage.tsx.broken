@@ -101,9 +101,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
     null
   );
 
-  const isAdmin = user?.role === "admin";
-  const isAgentRole =
-    user?.role === "agent" || user?.role === "super_agent" || user?.role === "admin";
+  const isAgentRole = user?.role === "agent" || user?.role === "super_agent";
   const isSuperAgent = user?.role === "super_agent";
   
   // Debug logging
@@ -119,7 +117,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
     return (
       <Box
         sx={{
-          bgcolor: "background.default",
+          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
@@ -171,12 +169,6 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
-
-      // Admins can view this page, but agent-only data/actions are not guaranteed to apply.
-      // Avoid firing agent endpoints for admins by default.
-      if (isAdmin) {
-        return;
-      }
 
       if (activeTab === "agents" && isSuperAgent) {
         try {
@@ -319,34 +311,20 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
 
   const handleCreateAgentSuccess = (agent: ManagedAgent) => {
     // Refresh agents list to show new agent
-    setShowCreateAgentModal(false);
     loadAgentData();
   };
 
   return (
     <Box
       sx={{
-        bgcolor: "background.default",
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
         minHeight: "100vh",
-        color: "text.primary",
+        color: "#ffffff",
       }}
     >
       <Header onNavigate={onNavigate} currentPage="agent" />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {isAdmin && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Admin account detected. This page is primarily for shop agents/super agents; use the{" "}
-            <Button
-              variant="text"
-              onClick={() => onNavigate("management")}
-              sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
-            >
-              Management
-            </Button>{" "}
-            page for admin operations.
-          </Alert>
-        )}
         {/* Page Header */}
         <Paper
           elevation={3}
@@ -1064,7 +1042,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
             )}
 
             {/* Agents Tab (Super Agent only) */}
-            {activeTab === "agents" && isSuperAgent && (
+            {activeTab === "agents" && (
               <Paper
                 elevation={3}
                 sx={{
@@ -1082,7 +1060,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                   sx={{ mb: 3 }}
                 >
                   <Typography variant="h6" fontWeight="bold">
-                    Shop Users ({managedAgents.length})
+                    Managed Agents
                   </Typography>
                   <Button
                     variant="contained"
@@ -1114,10 +1092,10 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                       }}
                     />
                     <Typography variant="h6" color="rgba(255,255,255,0.7)">
-                      No users found
+                      No agents found
                     </Typography>
                     <Typography variant="body2" color="rgba(255,255,255,0.5)">
-                      Users in your shop will appear here
+                      Agents in your shop will appear here
                     </Typography>
                   </Box>
                 ) : (
@@ -1170,7 +1148,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                               />
                             </TableCell>
                             <TableCell sx={{ color: "white" }}>
-                              {user?.currency || "SSP"} {agent.balance.toFixed(2)}
+                              SSP {agent.balance.toFixed(2)}
                             </TableCell>
                             <TableCell>
                               <Chip
@@ -1183,39 +1161,30 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                               {new Date(agent.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              {agent.role === "agent" ? (
-                                <Tooltip title="Mint Balance">
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    startIcon={<MoneyIcon />}
-                                    onClick={() => {
-                                      setSelectedAgent(agent);
-                                      setShowMintBalanceModal(true);
-                                    }}
-                                    sx={{
+                              <Tooltip title="Mint Balance">
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  startIcon={<MoneyIcon />}
+                                  onClick={() => {
+                                    setSelectedAgent(agent);
+                                    setShowMintBalanceModal(true);
+                                  }}
+                                  sx={{
+                                    background:
+                                      "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                                    color: "white",
+                                    fontWeight: 600,
+                                    textTransform: "none",
+                                    "&:hover": {
                                       background:
-                                        "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                                      color: "white",
-                                      fontWeight: 600,
-                                      textTransform: "none",
-                                      "&:hover": {
-                                        background:
-                                          "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                                      },
-                                    }}
-                                  >
-                                    Mint
-                                  </Button>
-                                </Tooltip>
-                              ) : (
-                                <Typography
-                                  variant="body2"
-                                  sx={{ color: "rgba(255,255,255,0.5)" }}
+                                        "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                    },
+                                  }}
                                 >
-                                  —
-                                </Typography>
-                              )}
+                                  Mint
+                                </Button>
+                              </Tooltip>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -34,8 +34,28 @@ const ENVIRONMENTS = {
 // Select configuration based on environment
 const selectedConfig = ENVIRONMENTS[ENVIRONMENT];
 
-export const API_BASE_URL = selectedConfig.url;
-export const API_KEY = process.env['REACT_APP_API_KEY'] || selectedConfig.apiKey;
+const normalizeBaseUrl = (url: string): string => {
+      let normalized = (url || '').trim();
+      // Avoid http->https redirects (and any header-dropping issues across redirects)
+      normalized = normalized.replace(/^http:\/\/api\.betzone\.co\b/i, 'https://api.betzone.co');
+      // Strip trailing slashes for consistent URL joining
+      normalized = normalized.replace(/\/+$/g, '');
+      return normalized;
+};
+
+export const API_BASE_URL = normalizeBaseUrl(selectedConfig.url);
+
+// Vite renderer builds don't reliably expose process.env; keep this resilient.
+const envApiKey =
+      (typeof process !== 'undefined' && (process as any)?.env?.REACT_APP_API_KEY) ||
+      undefined;
+export const API_KEY = envApiKey || selectedConfig.apiKey;
+
+// Fallbacks: helpful if a DNS/edge config causes redirect loops for one host.
+export const API_BASE_URL_CANDIDATES = [
+      API_BASE_URL,
+      normalizeBaseUrl('https://api-v1.betzone.co/api'),
+].filter((v, i, arr) => v && arr.indexOf(v) === i);
 
 // Helper function to get common headers for API requests
 export const getApiHeaders = (includeAuth: boolean = true): Record<string, string> => {

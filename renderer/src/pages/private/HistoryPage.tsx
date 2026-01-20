@@ -710,7 +710,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   return (
     <Box
       sx={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        bgcolor: "background.default",
         minHeight: "100vh",
         pb: 4,
       }}

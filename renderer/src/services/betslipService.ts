@@ -113,7 +113,7 @@ export class BetSlipService {
                   console.log('Attempting to extract user ID from JWT token...');
                   const tokenParts = authToken.split('.');
                   if (tokenParts.length === 3) {
-                        const payload = JSON.parse(atob(tokenParts[1]));
+                        const payload = JSON.parse(atob(tokenParts[1] || ''));
                         console.log('JWT payload:', payload);
 
                         // Try different possible user ID fields
@@ -201,7 +201,7 @@ export class BetSlipService {
                         if (selection === 'home') return bet.homeTeam;
                         if (selection === 'away') return bet.awayTeam;
 
-                        return bet.selection;
+                        return bet.selection || '';
 
                   case 'double_chance':
                   case 'double_chance_h1':  // First half double chance
@@ -216,17 +216,26 @@ export class BetSlipService {
                         if (selection === '1 or 2' || selection === '12' || (selection.includes('home') && selection.includes('away'))) {
                               return `${bet.homeTeam} or ${bet.awayTeam}`;
                         }
-                        return bet.selection;
+                        return bet.selection || '';
 
                   case 'totals':
                   case 'totals_h1':  // First half totals
                   case 'totals_h2':  // Second half totals
                   case 'team_totals_h1':  // First half team totals
                   case 'team_totals_h2':  // Second half team totals
-                        // Handle Over/Under selections
-                        if (selection === 'over') return 'Over';
-                        if (selection === 'under') return 'Under';
-                        return bet.selection;
+                        // Handle Over/Under selections - preserve point value
+                        // Selection format: "Over 2.5", "Under 3", etc.
+                        const selectionStr = bet.selection || '';
+                        const pointMatch = selectionStr.match(/(-?\d+(?:\.\d+)?)/);
+                        const pointValue = pointMatch ? pointMatch[1] : undefined;
+
+                        if (selection.includes('over')) {
+                              return pointValue ? `Over ${pointValue}` : 'Over';
+                        }
+                        if (selection.includes('under')) {
+                              return pointValue ? `Under ${pointValue}` : 'Under';
+                        }
+                        return selectionStr;
 
                   case 'btts':
                   case 'btts_h1':  // First half BTTS

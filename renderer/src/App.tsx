@@ -8,6 +8,7 @@ import { SettingsPage } from "./pages/private/SettingsPage";
 import { GamesPage } from "./pages/public/GamesPage";
 import { AgentPage } from "./pages/private/AgentPage";
 import { HistoryPage } from "./pages/private/HistoryPage";
+import { ManagementPage } from "./pages/private/ManagementPage";
 import AuthService from "./services/authService";
 import { loginSuccess, loginStart, loginFailure } from "./store/authSlice";
 import { convertAuthUserToUser } from "./store/authSlice";
@@ -15,7 +16,7 @@ import { SWRProvider } from "./providers/SWRProvider";
 import { MUIProviderWrapper } from "./providers/MUIProvider";
 import "./styles/index.css";
 
-type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history";
+type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management";
 
 interface NavigationParams {
   tab?: string;
@@ -112,6 +113,12 @@ const AppContent: React.FC = () => {
       case "history":
         return user ? (
           <HistoryPage onNavigate={navigateTo} />
+        ) : (
+          <HomePage onNavigate={navigateTo} />
+        );
+      case "management":
+        return user && (user.role === "super_agent" || user.role === "admin") ? (
+          <ManagementPage onNavigate={navigateTo} />
         ) : (
           <HomePage onNavigate={navigateTo} />
         );

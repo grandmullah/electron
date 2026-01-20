@@ -39,6 +39,37 @@ interface UpdateUserBalanceRequest {
       description: string;
 }
 
+interface MintBalanceRequest {
+      amount: number;
+      notes?: string;
+}
+
+interface CreateAgentRequest {
+      phone_number: string;
+      password: string;
+      country_code: string;
+}
+
+interface PostponedGameResult {
+      success: boolean;
+      message: string;
+      affectedBets: number;
+      affectedBetslips: number;
+      updatedBets: string[];
+      updatedBetslips: string[];
+      errors?: string[];
+}
+
+interface ShopAnalytics {
+      shop_id: string;
+      totalUsers: number;
+      totalAgents: number;
+      activeUsers: number;
+      totalBalance: number;
+      totalBets: number;
+      totalStake: number;
+}
+
 // Removed ShopAgentSummary - using ManagedAgent from agentSlice instead
 
 interface PlaceShopBetRequest {
@@ -165,7 +196,7 @@ class AgentService {
                   } else if (error.response?.status === 404) {
                         throw new Error('Agent endpoint not found. Please check if the backend server is running.');
                   } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
 
                   throw new Error(error.response?.data?.message || error.message || 'Failed to fetch managed users');
@@ -226,22 +257,147 @@ class AgentService {
 
                   const data = response.data;
                   if (data.success && Array.isArray(data.data)) {
-                        return data.data
-                              .filter((u: any) => u.role === 'agent' || u.role === 'super_agent')
-                              .map((u: any) => ({
-                                    id: u.id,
-                                    phone_number: u.phone_number,
-                                    role: u.role,
-                                    balance: Number(u.balance ?? 0),
-                                    is_active: Boolean(u.is_active),
-                                    created_at: u.created_at,
-                              }));
+                        // NOTE: This endpoint returns ALL shop-associated users (agents, users, super_agents).
+                        // The UI decides what actions to show per-role.
+                        return data.data.map((u: any) => ({
+                              id: u.id,
+                              phone_number: u.phone_number,
+                              role: u.role,
+                              balance: Number(u.balance ?? 0),
+                              isActive: Boolean(u.is_active ?? u.isActive),
+                              createdAt: u.created_at || u.createdAt || new Date().toISOString(),
+                        }));
                   }
 
                   throw new Error(data.message || data.error || 'Failed to fetch shop agents');
             } catch (error: any) {
                   console.error('Failed to fetch shop agents:', error);
                   throw new Error(error.response?.data?.message || error.message || 'Failed to fetch shop agents');
+            }
+      }
+
+      /**
+       * Create a new agent for the shop (Super Agent only)
+       * @param request - Agent creation request with phone_number, password, and country_code
+       * @returns Created agent user object
+       */
+      static async createAgent(request: CreateAgentRequest): Promise<ManagedAgent> {
+            try {
+                  console.log('Creating agent:', request);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/shop/agents`,
+                        request,
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Create agent response:', response.data);
+
+                  if (response.data.success && response.data.user) {
+                        const user = response.data.user;
+                        return {
+                              id: user.id,
+                              phone_number: user.phone_number,
+                              role: user.role === 'super_agent' ? 'super_agent' : 'agent',
+                              balance: Number(user.balance ?? 0),
+                              isActive: Boolean(user.is_active ?? user.isActive ?? true),
+                              createdAt: user.created_at || user.createdAt || new Date().toISOString(),
+                        };
+                  }
+
+                  throw new Error(response.data.message || 'Failed to create agent');
+            } catch (error: any) {
+                  console.error('Failed to create agent:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to create agent');
+            }
+      }
+
+      /**
+       * Mint balance to an agent (Super Agent only)
+       * This creates new balance for the agent without deducting from the super agent
+       * @param agentId - The ID of the agent to mint balance to
+       * @param request - Mint request with amount and optional notes
+       * @returns Response with agentId, amount, and newBalance
+       */
+      static async mintBalanceToAgent(agentId: string, request: MintBalanceRequest): Promise<{
+            success: boolean;
+            message: string;
+            data: {
+                  agentId: string;
+                  amount: number;
+                  newBalance: number;
+            };
+      }> {
+            try {
+                  console.log(`Minting balance to agent ${agentId}:`, request);
+
+                  const response = await axios.post(
+                        `${API_BASE_URL}/shop/agents/${agentId}/mint`,
+                        request,
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Mint balance response:', response.data);
+                  return response.data;
+            } catch (error: any) {
+                  console.error('Failed to mint balance to agent:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to mint balance to agent');
+            }
+      }
+
+      /**
+       * Get shop analytics (Super Agent only)
+       * @returns Shop analytics including users, agents, balance, and betting stats
+       */
+      static async getShopAnalytics(): Promise<ShopAnalytics> {
+            try {
+                  console.log('Fetching shop analytics...');
+
+                  const response = await axios.get(`${API_BASE_URL}/shop/analytics`, {
+                        headers: this.getAuthHeaders(),
+                  });
+
+                  console.log('Shop analytics response:', response.data);
+                  console.log('Shop analytics response.data:', response.data?.data);
+
+                  // Handle different response structures
+                  let analyticsData: any = null;
+
+                  if (response.data.success && response.data.data) {
+                        analyticsData = response.data.data;
+                  } else if (response.data && !response.data.success) {
+                        // Response might have data directly
+                        analyticsData = response.data;
+                  } else if (response.data) {
+                        // Try to use response.data directly
+                        analyticsData = response.data;
+                  }
+
+                  if (analyticsData) {
+                        // Normalize field names and ensure numeric values (handle both camelCase and snake_case)
+                        const normalized: ShopAnalytics = {
+                              shop_id: analyticsData.shop_id || analyticsData.shopId || '',
+                              totalUsers: Number(analyticsData.totalUsers || analyticsData.total_users || 0),
+                              totalAgents: Number(analyticsData.totalAgents || analyticsData.total_agents || 0),
+                              activeUsers: Number(analyticsData.activeUsers || analyticsData.active_users || 0),
+                              totalBalance: Number(analyticsData.totalBalance || analyticsData.total_balance || 0),
+                              totalBets: Number(analyticsData.totalBets || analyticsData.total_bets || 0),
+                              totalStake: Number(analyticsData.totalStake || analyticsData.total_stake || 0),
+                        };
+                        console.log('Parsed analytics data:', normalized);
+                        console.log('Raw analytics data keys:', Object.keys(analyticsData));
+                        return normalized;
+                  }
+
+                  throw new Error(response.data?.message || 'Failed to fetch shop analytics');
+            } catch (error: any) {
+                  console.error('Failed to fetch shop analytics:', error);
+                  console.error('Error response:', error.response?.data);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to fetch shop analytics');
             }
       }
 
@@ -383,7 +539,7 @@ class AgentService {
                   } else if (error.response?.status === 404) {
                         throw new Error('User not found or endpoint not available.');
                   } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
 
                   throw new Error(error.response?.data?.message || error.message || 'Failed to place bet for user');
@@ -403,12 +559,12 @@ class AgentService {
                   );
 
                   console.log('Shop bet placement response:', response.data);
-                  
+
                   // Map response to AgentBet format if needed, or return as is
                   // The backend returns: { success: true, bet: { id, ticketNumber, ... }, ticketNumber, message }
                   // We need to return an AgentBet object to be compatible with the store
                   const result = response.data;
-                  
+
                   if (result.success && result.bet) {
                         return {
                               ...result.bet,
@@ -420,7 +576,7 @@ class AgentService {
                               selections: request.selections
                         };
                   }
-                  
+
                   throw new Error(result.message || 'Failed to place shop bet');
             } catch (error: any) {
                   console.error('Failed to place shop bet:', error);
@@ -532,7 +688,7 @@ class AgentService {
                   } else if (error.response?.status === 404) {
                         throw new Error('Agent bets endpoint not found. Please check if the backend server is running.');
                   } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
 
                   throw new Error(error.response?.data?.message || error.message || 'Failed to fetch agent bets');
@@ -571,7 +727,7 @@ class AgentService {
                   } else if (error.response?.status === 404) {
                         throw new Error('Bet not found or endpoint not available.');
                   } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
 
                   throw new Error(error.response?.data?.message || error.message || 'Failed to update bet status');
@@ -650,6 +806,47 @@ class AgentService {
             } catch (error: any) {
                   console.error('Failed to fetch balance history:', error);
                   throw new Error(error.response?.data?.message || error.message || 'Failed to fetch balance history');
+            }
+      }
+
+      /**
+       * Handle postponed game - remove selections from bets and betslips
+       * Only super_agents and admins can perform this action
+       */
+      static async handlePostponedGame(gameId: string): Promise<PostponedGameResult> {
+            try {
+                  console.log(`Processing postponed game: ${gameId}`);
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/postponed-game/${gameId}`,
+                        {},
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Postponed game handling response:', response.data);
+
+                  if (response.data.success) {
+                        return {
+                              success: true,
+                              message: response.data.message,
+                              affectedBets: response.data.data?.affectedBets || 0,
+                              affectedBetslips: response.data.data?.affectedBetslips || 0,
+                              updatedBets: response.data.data?.updatedBets || [],
+                              updatedBetslips: response.data.data?.updatedBetslips || [],
+                              errors: response.data.errors || []
+                        };
+                  }
+
+                  throw new Error(response.data.message || 'Failed to handle postponed game');
+            } catch (error: any) {
+                  console.error('Failed to handle postponed game:', error);
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        'Failed to handle postponed game'
+                  );
             }
       }
 }

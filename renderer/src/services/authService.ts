@@ -200,7 +200,7 @@ class AuthService {
             } catch (error: any) {
                   console.error('Registration fetch error:', error);
                   if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
                   throw new Error(error.message || 'Registration failed');
             }
@@ -256,7 +256,7 @@ class AuthService {
             } catch (error: any) {
                   console.error('Login fetch error:', error);
                   if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-                        throw new Error('Unable to connect to server. Please ensure the backend server is running on http://localhost:8000');
+                        throw new Error(`Unable to connect to server. Please check your internet connection and API settings (API_BASE_URL=${API_BASE_URL}).`);
                   }
                   throw new Error(error.message || 'Login failed');
             }
@@ -264,10 +264,26 @@ class AuthService {
 
       static async getProfile(): Promise<ProfileResponse> {
             try {
+                  const token = localStorage.getItem('authToken');
+                  // Guard against accidental stringified tokens that cause "authenticated" state without a real JWT
+                  if (!token || token === 'undefined' || token === 'null') {
+                        throw new Error('No authentication token');
+                  }
+
                   const response = await fetch(`${API_BASE_URL}/auth/profile`, {
                         method: 'GET',
                         headers: this.getAuthHeaders(),
+                        // Prevent any redirect loops from taking down the app startup flow
+                        redirect: 'manual',
+                        cache: 'no-store',
                   });
+
+                  // In some environments, redirects can surface as opaque redirects rather than a normal Response.
+                  // Treat any redirect as an auth failure to avoid ERR_TOO_MANY_REDIRECTS loops.
+                  if ((response as any).type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+                        this.logout();
+                        throw new Error('Authentication expired');
+                  }
 
                   if (!response.ok) {
                         if (response.status === 401) {
@@ -292,11 +308,15 @@ class AuthService {
       }
 
       static getToken(): string | null {
-            return localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken');
+            if (!token || token === 'undefined' || token === 'null') return null;
+            return token;
       }
 
       static getAgentToken(): string | null {
-            return localStorage.getItem('agentToken');
+            const token = localStorage.getItem('agentToken');
+            if (!token || token === 'undefined' || token === 'null') return null;
+            return token;
       }
 
       static isAuthenticated(): boolean {
