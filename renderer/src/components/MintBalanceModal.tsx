@@ -89,16 +89,17 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          background:
-            "linear-gradient(135deg, rgba(30, 30, 30, 0.98) 0%, rgba(20, 20, 20, 0.98) 100%)",
-          border: "1px solid rgba(76, 175, 80, 0.3)",
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
         },
       }}
     >
       <DialogTitle
         sx={{
-          color: "white",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          color: "text.primary",
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
         <Box display="flex" alignItems="center" gap={1}>
@@ -120,18 +121,19 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
               <Box
                 sx={{
                   p: 2,
-                  background: "rgba(76, 175, 80, 0.1)",
+                  bgcolor: "action.hover",
                   borderRadius: 1,
-                  border: "1px solid rgba(76, 175, 80, 0.3)",
+                  border: 1,
+                  borderColor: "divider",
                 }}
               >
-                <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                <Typography variant="caption" color="text.secondary">
                   Agent:
                 </Typography>
-                <Typography variant="h6" color="white" fontWeight="bold">
+                <Typography variant="h6" color="text.primary" fontWeight="bold">
                   {agent.phone_number}
                 </Typography>
-                <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                <Typography variant="caption" color="text.secondary">
                   Current Balance: {user?.currency} {agent.balance.toFixed(2)}
                 </Typography>
               </Box>
@@ -148,24 +150,24 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <MoneyIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+                    <MoneyIcon sx={{ color: "text.secondary" }} />
                   </InputAdornment>
                 ),
                 sx: {
-                  color: "white",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.5)",
+                    borderColor: "text.primary",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#4caf50",
+                    borderColor: "success.main",
                   },
                 },
               }}
               InputLabelProps={{
-                sx: { color: "rgba(255,255,255,0.7)" },
+                sx: { color: "text.secondary" },
               }}
               inputProps={{
                 min: 0,
@@ -183,20 +185,20 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
               placeholder="Add a note about this transaction..."
               InputProps={{
                 sx: {
-                  color: "white",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.5)",
+                    borderColor: "text.primary",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#4caf50",
+                    borderColor: "success.main",
                   },
                 },
               }}
               InputLabelProps={{
-                sx: { color: "rgba(255,255,255,0.7)" },
+                sx: { color: "text.secondary" },
               }}
             />
           </Stack>
@@ -204,14 +206,15 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
 
         <DialogActions
           sx={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
+            borderTop: 1,
+            borderColor: "divider",
             p: 2,
           }}
         >
           <Button
             onClick={handleClose}
             disabled={isLoading}
-            sx={{ color: "rgba(255,255,255,0.7)" }}
+            sx={{ color: "text.secondary" }}
           >
             Cancel
           </Button>
@@ -222,15 +225,7 @@ export const MintBalanceModal: React.FC<MintBalanceModalProps> = ({
             startIcon={
               isLoading ? <CircularProgress size={20} /> : <WalletIcon />
             }
-            sx={{
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-              },
-              "&:disabled": {
-                background: "rgba(255,255,255,0.1)",
-              },
-            }}
+            color="success"
           >
             {isLoading ? "Minting..." : "Mint Balance"}
           </Button>

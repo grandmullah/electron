@@ -223,6 +223,29 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     }
   };
 
+  const promoteToSuperAgent = async (u: ShopUser) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const desiredShopId = u.shop_id || usersSelectedShopByUserId[u.id];
+      if (!desiredShopId) {
+        throw new Error("Select a shop for this user before promoting to super agent");
+      }
+      const res = await ShopManagementService.updateUserRole({
+        userId: u.id,
+        role: "super_agent",
+        shop_id: desiredShopId,
+      });
+      if (!res?.success) throw new Error(res?.error || "Failed to update role");
+      setUsersResults((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: "super_agent", shop_id: desiredShopId } : x)));
+      setSuccess("User promoted to super agent");
+    } catch (err: any) {
+      setError(err.message || "Failed to update role");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const openAdminMint = (u: ShopUser) => {
     setAdminMintTarget(u);
     setAdminMintAmount("");
@@ -1635,6 +1658,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                     {usersResults.map((u) => {
                       const bal = Number(u.balance ?? 0);
                       const shopId = (u.shop_id || usersSelectedShopByUserId[u.id] || "") as string;
+                      const isAlreadyPrivileged = u.role === "admin" || u.role === "super_agent";
                       return (
                         <TableRow key={u.id} hover>
                           <TableCell sx={{ color: "white" }}>{u.phone_number}</TableCell>
@@ -1686,10 +1710,20 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                                 size="small"
                                 variant="contained"
                                 onClick={() => promoteToAgent(u)}
-                                disabled={u.role === "agent" || u.role === "super_agent" || u.role === "admin"}
+                                disabled={u.role === "agent" || isAlreadyPrivileged}
                                 sx={{ textTransform: "none" }}
                               >
                                 Make Agent
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                onClick={() => promoteToSuperAgent(u)}
+                                disabled={isAlreadyPrivileged}
+                                sx={{ textTransform: "none" }}
+                              >
+                                Make Super Agent
                               </Button>
                             </Stack>
                           </TableCell>

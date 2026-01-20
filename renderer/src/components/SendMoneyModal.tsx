@@ -131,25 +131,17 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          background:
-            "linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(25, 118, 210, 0.2)",
-          borderRadius: "16px",
-          boxShadow:
-            "0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(25, 118, 210, 0.1)",
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
         },
       }}
     >
       <DialogTitle
         sx={{
-          background:
-            "linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(66, 165, 245, 0.15) 100%)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(25, 118, 210, 0.3)",
-          borderBottom: "2px solid rgba(25, 118, 210, 0.4)",
-          color: "white",
-          borderRadius: "16px 16px 0 0",
+          color: "text.primary",
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -171,7 +163,7 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
             <Box>
               <Typography
                 variant="body2"
-                sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
+                sx={{ color: "text.secondary", mb: 1 }}
               >
                 Your Balance: {currency} {user?.balance.toFixed(2) || "0.00"}
               </Typography>
@@ -181,7 +173,7 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "rgba(255,255,255,0.7)",
+                  color: "text.secondary",
                   mb: 1.5,
                   fontSize: "0.875rem",
                   fontWeight: 500,
@@ -197,16 +189,16 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
                     alignItems: "stretch",
                     gap: 0,
                     borderRadius: "8px",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(255,255,255,0.05)",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "action.hover",
                     overflow: "hidden",
                     transition: "all 0.2s",
                     "&:hover": {
-                      borderColor: "rgba(25, 118, 210, 0.5)",
+                      borderColor: "text.primary",
                     },
                     "&:focus-within": {
-                      borderColor: "#42a5f5",
-                      boxShadow: "0 0 0 2px rgba(66, 165, 245, 0.2)",
+                      borderColor: "primary.main",
                     },
                   },
                   "& .PhoneInputCountry": {
@@ -214,15 +206,16 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "0 8px",
-                    backgroundColor: "rgba(255,255,255,0.08)",
-                    borderRight: "1px solid rgba(255,255,255,0.15)",
+                    backgroundColor: "action.selected",
+                    borderRight: "1px solid",
+                    borderRightColor: "divider",
                     cursor: "pointer",
                     transition: "all 0.2s",
                     minWidth: "65px",
                     flexShrink: 0,
                     position: "relative",
                     "&:hover": {
-                      backgroundColor: "rgba(255,255,255,0.12)",
+                      backgroundColor: "action.hover",
                     },
                   },
                   "& .PhoneInputCountryIcon": {

@@ -108,16 +108,17 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          background:
-            "linear-gradient(135deg, rgba(30, 30, 30, 0.98) 0%, rgba(20, 20, 20, 0.98) 100%)",
-          border: "1px solid rgba(66, 165, 245, 0.3)",
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
         },
       }}
     >
       <DialogTitle
         sx={{
-          color: "white",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          color: "text.primary",
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
         <Box display="flex" alignItems="center" gap={1}>
@@ -142,7 +143,7 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
 
             <FormControl fullWidth>
               <InputLabel
-                sx={{ color: "rgba(255,255,255,0.7)" }}
+                sx={{ color: "text.secondary" }}
               >
                 Country Code
               </InputLabel>
@@ -152,19 +153,19 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
                 label="Country Code"
                 startAdornment={
                   <InputAdornment position="start">
-                    <PublicIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+                    <PublicIcon sx={{ color: "text.secondary" }} />
                   </InputAdornment>
                 }
                 sx={{
-                  color: "white",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.5)",
+                    borderColor: "text.primary",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#42a5f5",
+                    borderColor: "primary.main",
                   },
                 }}
               >
@@ -194,27 +195,27 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PhoneIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+                    <PhoneIcon sx={{ color: "text.secondary" }} />
                   </InputAdornment>
                 ),
                 sx: {
-                  color: "white",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.5)",
+                    borderColor: "text.primary",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#42a5f5",
+                    borderColor: "primary.main",
                   },
                 },
               }}
               InputLabelProps={{
-                sx: { color: "rgba(255,255,255,0.7)" },
+                sx: { color: "text.secondary" },
               }}
               FormHelperTextProps={{
-                sx: { color: "rgba(255,255,255,0.5)" },
+                sx: { color: "text.secondary" },
               }}
             />
 
@@ -230,27 +231,27 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+                    <LockIcon sx={{ color: "text.secondary" }} />
                   </InputAdornment>
                 ),
                 sx: {
-                  color: "white",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.3)",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(255,255,255,0.5)",
+                    borderColor: "text.primary",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#42a5f5",
+                    borderColor: "primary.main",
                   },
                 },
               }}
               InputLabelProps={{
-                sx: { color: "rgba(255,255,255,0.7)" },
+                sx: { color: "text.secondary" },
               }}
               FormHelperTextProps={{
-                sx: { color: "rgba(255,255,255,0.5)" },
+                sx: { color: "text.secondary" },
               }}
             />
           </Stack>
@@ -258,14 +259,15 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
 
         <DialogActions
           sx={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
+            borderTop: 1,
+            borderColor: "divider",
             p: 2,
           }}
         >
           <Button
             onClick={handleClose}
             disabled={isLoading}
-            sx={{ color: "rgba(255,255,255,0.7)" }}
+            sx={{ color: "text.secondary" }}
           >
             Cancel
           </Button>
@@ -276,15 +278,7 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
             startIcon={
               isLoading ? <CircularProgress size={20} /> : <PersonAddIcon />
             }
-            sx={{
-              background: "linear-gradient(135deg, #42a5f5 0%, #1976d2 100%)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-              },
-              "&:disabled": {
-                background: "rgba(255,255,255,0.1)",
-              },
-            }}
+            color="primary"
           >
             {isLoading ? "Creating..." : "Create Agent"}
           </Button>

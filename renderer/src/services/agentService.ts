@@ -602,15 +602,46 @@ class AgentService {
                   console.log('Agent bets response:', response.data);
                   const data = response.data;
 
+                  const normalize = (raw: any): AgentBet => {
+                        const selectionsRaw: any[] = Array.isArray(raw?.selections) ? raw.selections : [];
+                        const selections = selectionsRaw.map((s) => ({
+                              gameId: String(s.gameId ?? s.game_id ?? ''),
+                              homeTeam: String(s.homeTeam ?? s.home_team ?? ''),
+                              awayTeam: String(s.awayTeam ?? s.away_team ?? ''),
+                              betType: String(s.betType ?? s.market_type ?? ''),
+                              selection: String(s.selection ?? ''),
+                              odds: Number(s.odds ?? s.odds_data?.decimal ?? 1),
+                              stake: Number(s.stake ?? 0),
+                              potentialWinnings: Number(s.potentialWinnings ?? s.potential_winnings ?? 0),
+                        }));
+
+                        return {
+                              id: String(raw.id),
+                              userId: String(raw.userId ?? raw.user_id ?? ''),
+                              userPhone: String(raw.userPhone ?? raw.user_phone ?? ''),
+                              userCountry: String(raw.userCountry ?? raw.user_country ?? ''),
+                              agentId: String(raw.agentId ?? raw.agent_id ?? ''),
+                              betType: (raw.betType ?? raw.bet_type ?? (selections.length > 1 ? 'multibet' : 'single')) as any,
+                              status: (raw.status ?? 'pending') as any,
+                              totalStake: Number(raw.totalStake ?? raw.total_stake ?? 0),
+                              potentialWinnings: Number(raw.potentialWinnings ?? raw.potential_winnings ?? 0),
+                              createdAt: String(raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
+                              updatedAt: String(raw.updatedAt ?? raw.updated_at ?? raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
+                              settledAt: raw.settledAt ?? raw.settled_at ?? null,
+                              cancelledAt: raw.cancelledAt ?? raw.cancelled_at ?? null,
+                              selections,
+                        };
+                  };
+
                   if (Array.isArray(data)) {
                         console.log(`Found ${data.length} agent bets`);
-                        return data;
+                        return data.map(normalize);
                   } else if (data.success && Array.isArray(data.bets)) {
                         console.log(`Found ${data.bets.length} agent bets:`, data.message);
-                        return data.bets;
+                        return data.bets.map(normalize);
                   } else if (data.success && Array.isArray(data.data)) {
                         console.log(`Found ${data.data.length} agent bets`);
-                        return data.data;
+                        return data.data.map(normalize);
                   } else {
                         console.error('Invalid response format:', data);
                         return []; // Return empty array if no bets found

@@ -22,7 +22,6 @@ import {
   Stack,
   Button,
   Chip,
-  Grid,
   Card,
   CardContent,
   CircularProgress,
@@ -45,6 +44,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import Grid from "@mui/material/GridLegacy";
 import {
   SportsSoccer as BetsIcon,
   AttachMoney as MoneyIcon,
@@ -131,20 +131,20 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
           sx={{
             p: 6,
             borderRadius: 3,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
             textAlign: "center",
             maxWidth: 500,
           }}
         >
           <CancelIcon sx={{ fontSize: 80, color: "error.main", mb: 2 }} />
-          <Typography variant="h4" gutterBottom color="white">
+          <Typography variant="h4" gutterBottom color="text.primary">
             Access Denied
           </Typography>
           <Typography
             variant="body1"
-            color="rgba(255,255,255,0.7)"
+            color="text.secondary"
             sx={{ mb: 3 }}
           >
             You need agent or super agent privileges to access this page.
@@ -152,9 +152,6 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
           <Button
             variant="contained"
             onClick={() => onNavigate("home")}
-            sx={{
-              background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-            }}
           >
             Go to Home
           </Button>
@@ -354,9 +351,9 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
             p: 4,
             mb: 4,
             borderRadius: 3,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
           <Stack
@@ -370,17 +367,11 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
               <Typography
                 variant="h4"
                 gutterBottom
-                sx={{
-                  fontWeight: "bold",
-                  background: "linear-gradient(45deg, #1976d2, #42a5f5)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  color: "transparent",
-                }}
+                sx={{ fontWeight: "bold", color: "text.primary" }}
               >
                 👨‍💼 {isSuperAgent ? "Super Agent" : "Agent"} Dashboard
               </Typography>
-              <Typography variant="body1" color="rgba(255,255,255,0.7)">
+              <Typography variant="body1" color="text.secondary">
                 Manage walk-in clients, shop bets, and money transfers
               </Typography>
             </Box>
@@ -389,14 +380,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                 variant="contained"
                 startIcon={<SendIcon />}
                 onClick={() => setShowSendMoneyModal(true)}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                  },
-                }}
+                color="success"
               >
                 Send Money
               </Button>
@@ -406,11 +390,11 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                 onClick={loadAgentData}
                 disabled={isLoading}
                 sx={{
-                  borderColor: "rgba(255,255,255,0.2)",
-                  color: "white",
+                  borderColor: "divider",
+                  color: "text.primary",
                   "&:hover": {
-                    borderColor: "rgba(255,255,255,0.4)",
-                    backgroundColor: "rgba(255,255,255,0.05)",
+                    borderColor: "text.primary",
+                    bgcolor: "action.hover",
                   },
                 }}
               >
@@ -425,10 +409,9 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
           <Grid item xs={12} sm={6} md={3}>
             <Card
               sx={{
-                background:
-                  "linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(25, 118, 210, 0.05) 100%)",
-                border: "1px solid rgba(25, 118, 210, 0.3)",
-                color: "white",
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
               }}
             >
               <CardContent>
@@ -438,7 +421,7 @@ export const AgentPage: React.FC<AgentPageProps> = ({ onNavigate }) => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                    <Typography variant="body2" color="text.secondary">
                       Balance
                     </Typography>
                     <Typography variant="h5" fontWeight="bold">

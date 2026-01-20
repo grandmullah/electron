@@ -80,28 +80,47 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
   // Build SWR key for bet history pagination
   const buildBetHistoryKey = () => {
-    if (!user?.shop_id) return null;
+    // Use user.id (not shop_id) so history works for all authenticated users.
+    if (!user?.id) return null;
 
     const params = new URLSearchParams();
     params.append("page", currentPage.toString());
     params.append("limit", itemsPerPage.toString());
 
-    if (betStatusFilter !== "all") params.append("status", betStatusFilter);
+    // Only send API-supported status values. Other statuses (e.g. won/lost) are client-side only.
+    const apiSupportedStatuses = new Set([
+      "pending",
+      "accepted",
+      "rejected",
+      "settled",
+      "cancelled",
+    ]);
+    if (betStatusFilter !== "all" && apiSupportedStatuses.has(betStatusFilter)) {
+      params.append("status", betStatusFilter);
+    }
     if (betTypeFilter !== "all") params.append("betType", betTypeFilter);
     if (dateFrom) params.append("dateFrom", dateFrom.toISOString());
     if (dateTo) params.append("dateTo", dateTo.toISOString());
 
-    return `/bet-history/${user.shop_id}?${params.toString()}`;
+    return `/bet-history/${user.id}?${params.toString()}`;
   };
 
   // SWR fetcher for bet history
   const betHistoryFetcher = async (key: string) => {
     console.log("📡 [SWR BET HISTORY] Fetching:", key);
 
+    const apiSupportedStatuses = new Set([
+      "pending",
+      "accepted",
+      "rejected",
+      "settled",
+      "cancelled",
+    ]);
+
     const filters: BetHistoryFilters = {
       page: currentPage,
       limit: itemsPerPage,
-      ...(betStatusFilter !== "all" && {
+      ...(betStatusFilter !== "all" && apiSupportedStatuses.has(betStatusFilter) && {
         status: betStatusFilter as
           | "pending"
           | "accepted"
@@ -492,13 +511,17 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     ? filteredBets.length // Client-side search: use filtered results
     : betHistoryData?.data.total || 0; // Server-side: use API total
 
-  const totalPages = Math.ceil(totalBetsCount / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalBetsCount);
+  const totalPages = Math.max(1, Math.ceil(totalBetsCount / itemsPerPage));
+  const startIndex = totalBetsCount === 0 ? 0 : (currentPage - 1) * itemsPerPage;
 
-  // For server-side pagination: show all filtered bets (already paginated by API)
-  // For client-side filtering (search): show filtered results
-  const currentBets = filteredBets;
+  // For server-side pagination: `filteredBets` is already a single page from the API.
+  // For search (client-side / search endpoints): paginate locally.
+  const currentBets = isSearchActive
+    ? filteredBets.slice(startIndex, startIndex + itemsPerPage)
+    : filteredBets;
+
+  const endIndex =
+    totalBetsCount === 0 ? 0 : Math.min(startIndex + currentBets.length, totalBetsCount);
 
   console.log("📄 [PAGINATION CALC]", {
     isSearchActive,
@@ -544,6 +567,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     setSearchTerm("");
     setCurrentPage(1);
   };
+
+  // If server-side filters change while on a later page, reset to page 1 to avoid empty pages.
+  useEffect(() => {
+    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betStatusFilter, betTypeFilter, dateFrom, dateTo, itemsPerPage]);
 
   const handleApplyFilters = () => {
     setCurrentPage(1);
@@ -685,6 +714,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
         return "error";
       case "pending":
         return "warning";
+      case "accepted":
+        return "info";
       case "cancelled":
         return "gray";
       default:
@@ -700,6 +731,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
         return "❌";
       case "pending":
         return "⏳";
+      case "accepted":
+        return "🟦";
       case "cancelled":
         return "🚫";
       default:

@@ -58,6 +58,8 @@ interface MUIFiltersProps {
 const statusOptions = [
   { value: "all", label: "All Status" },
   { value: "pending", label: "Pending" },
+  { value: "accepted", label: "Accepted" },
+  { value: "settled", label: "Settled" },
   { value: "won", label: "Won" },
   { value: "lost", label: "Lost" },
   { value: "cancelled", label: "Cancelled" },
