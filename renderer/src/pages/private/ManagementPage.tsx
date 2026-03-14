@@ -146,6 +146,10 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const [adminMintAmount, setAdminMintAmount] = useState<string>("");
   const [adminMintNotes, setAdminMintNotes] = useState<string>("");
   const [adminMintLoading, setAdminMintLoading] = useState(false);
+  const [resetUserPasswordOpen, setResetUserPasswordOpen] = useState(false);
+  const [resetUserPasswordTarget, setResetUserPasswordTarget] = useState<ShopUser | null>(null);
+  const [resetUserPasswordValue, setResetUserPasswordValue] = useState("");
+  const [resetUserPasswordLoading, setResetUserPasswordLoading] = useState(false);
 
   // Dialog states
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -279,6 +283,38 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
       setError(err.message || "Failed to mint balance");
     } finally {
       setAdminMintLoading(false);
+    }
+  };
+
+  const openResetUserPassword = (u: ShopUser) => {
+    setResetUserPasswordTarget(u);
+    setResetUserPasswordValue("");
+    setResetUserPasswordOpen(true);
+  };
+
+  const submitResetUserPassword = async () => {
+    if (!resetUserPasswordTarget) return;
+    const pw = resetUserPasswordValue.trim();
+    if (pw.length < 6) {
+      setError("New password must be at least 6 characters");
+      return;
+    }
+    setResetUserPasswordLoading(true);
+    setError(null);
+    try {
+      const res = await ShopManagementService.resetUserPassword({
+        userId: resetUserPasswordTarget.id,
+        newPassword: pw,
+      });
+      if (!res?.success) throw new Error(res?.error || "Failed to reset password");
+      setSuccess("Password reset successfully");
+      setResetUserPasswordOpen(false);
+      setResetUserPasswordTarget(null);
+      setResetUserPasswordValue("");
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password");
+    } finally {
+      setResetUserPasswordLoading(false);
     }
   };
 
@@ -1708,6 +1744,14 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                               </Button>
                               <Button
                                 size="small"
+                                variant="outlined"
+                                onClick={() => openResetUserPassword(u)}
+                                sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+                              >
+                                Reset Password
+                              </Button>
+                              <Button
+                                size="small"
                                 variant="contained"
                                 onClick={() => promoteToAgent(u)}
                                 disabled={u.role === "agent" || isAlreadyPrivileged}
@@ -1946,6 +1990,43 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             </Button>
             <Button variant="contained" onClick={submitAdminMint} disabled={adminMintLoading || !adminMintTarget}>
               {adminMintLoading ? "Minting..." : "Mint"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Admin Reset Password */}
+        <Dialog
+          open={resetUserPasswordOpen}
+          onClose={() => !resetUserPasswordLoading && setResetUserPasswordOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Reset Password</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              Reset password for: <b>{resetUserPasswordTarget?.phone_number}</b>
+            </Typography>
+            <Box mt={2}>
+              <TextField
+                label="New Password"
+                type="password"
+                value={resetUserPasswordValue}
+                onChange={(e) => setResetUserPasswordValue(e.target.value)}
+                fullWidth
+                helperText="Minimum 6 characters"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setResetUserPasswordOpen(false)} disabled={resetUserPasswordLoading}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={submitResetUserPassword}
+              disabled={resetUserPasswordLoading || !resetUserPasswordTarget}
+            >
+              {resetUserPasswordLoading ? "Resetting..." : "Reset"}
             </Button>
           </DialogActions>
         </Dialog>

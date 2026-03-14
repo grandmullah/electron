@@ -100,35 +100,17 @@ class AgentService {
       // User Management
       static async getManagedUsers(): Promise<ManagedUser[]> {
             try {
-                  console.log('Fetching managed users from:', `${API_BASE_URL}/agent/users`);
-                  console.log('Auth headers:', this.getAuthHeaders());
-
                   const response = await axios.get(`${API_BASE_URL}/agent/users`, {
                         headers: this.getAuthHeaders(),
                   });
-
-                  console.log('Managed users response:', response.data);
                   const data = response.data;
 
                   if (data.success && data.users) {
-                        console.log(`Found ${data.count || data.users.length} managed users:`, data.message);
                         return data.users;
-                  } else {
-                        console.error('Invalid response format:', data);
-                        throw new Error('Invalid response format');
                   }
+                  throw new Error('Invalid response format');
             } catch (error: any) {
-                  console.error('Failed to fetch managed users:', error);
-                  console.error('Error details:', {
-                        status: error.response?.status,
-                        statusText: error.response?.statusText,
-                        data: error.response?.data,
-                        message: error.message
-                  });
-
-                  // Development fallback for testing without backend
                   if (ENABLE_DEV_FALLBACK && isDevelopmentMode && (error.code === 'ECONNREFUSED' || error.message.includes('Network Error'))) {
-                        console.log('Using development fallback data for managed users');
                         return [
                               {
                                     id: '1',
@@ -586,20 +568,13 @@ class AgentService {
 
       static async getAgentBets(status?: 'pending' | 'accepted' | 'rejected' | 'settled'): Promise<AgentBet[]> {
             try {
-                  console.log('Fetching agent bets from:', `${API_BASE_URL}/agent/bets`);
-                  console.log('Auth headers:', this.getAuthHeaders());
-
                   const url = status
                         ? `${API_BASE_URL}/agent/bets?status=${status}`
                         : `${API_BASE_URL}/agent/bets`;
 
-                  console.log('Fetching from URL:', url);
-
                   const response = await axios.get(url, {
                         headers: this.getAuthHeaders(),
                   });
-
-                  console.log('Agent bets response:', response.data);
                   const data = response.data;
 
                   const normalize = (raw: any): AgentBet => {
@@ -634,30 +609,17 @@ class AgentService {
                   };
 
                   if (Array.isArray(data)) {
-                        console.log(`Found ${data.length} agent bets`);
                         return data.map(normalize);
-                  } else if (data.success && Array.isArray(data.bets)) {
-                        console.log(`Found ${data.bets.length} agent bets:`, data.message);
-                        return data.bets.map(normalize);
-                  } else if (data.success && Array.isArray(data.data)) {
-                        console.log(`Found ${data.data.length} agent bets`);
-                        return data.data.map(normalize);
-                  } else {
-                        console.error('Invalid response format:', data);
-                        return []; // Return empty array if no bets found
                   }
+                  if (data.success && Array.isArray(data.bets)) {
+                        return data.bets.map(normalize);
+                  }
+                  if (data.success && Array.isArray(data.data)) {
+                        return data.data.map(normalize);
+                  }
+                  return [];
             } catch (error: any) {
-                  console.error('Failed to fetch agent bets:', error);
-                  console.error('Error details:', {
-                        status: error.response?.status,
-                        statusText: error.response?.statusText,
-                        data: error.response?.data,
-                        message: error.message
-                  });
-
-                  // Development fallback for testing without backend
                   if (ENABLE_DEV_FALLBACK && isDevelopmentMode && (error.code === 'ECONNREFUSED' || error.message.includes('Network Error'))) {
-                        console.log('Using development fallback data for agent bets');
                         return [
                               {
                                     id: 'e6605640-aa14-4974-b153-061a4e0de478',

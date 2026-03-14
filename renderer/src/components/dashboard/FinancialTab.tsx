@@ -102,6 +102,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   }, [selectedRange]);
 
   const rangeOptions = [
+    { label: "Last 1 day", value: 1 },
+    { label: "Last 5 days", value: 5 },
+    { label: "Last 7 days", value: 7 },
     { label: "Last 30 days", value: 30 },
     { label: "Last 90 days", value: 90 },
     { label: "Last 180 days", value: 180 },
@@ -922,6 +925,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 },
               }}
             >
+              <MenuItem value={1}>Last 1 day</MenuItem>
+              <MenuItem value={5}>Last 5 days</MenuItem>
               <MenuItem value={7}>Last 7 days</MenuItem>
               <MenuItem value={14}>Last 14 days</MenuItem>
               <MenuItem value={30}>Last 30 days</MenuItem>

@@ -3,63 +3,92 @@ import { Game } from '../services/gamesService';
 import GamesService from '../services/gamesService';
 import { API_BASE_URL } from '../services/apiConfig';
 
-// Fetcher function for SWR
-const oddsFetcher = async (url: string): Promise<Game[]> => {
-      // Extract league key from URL - the URL format is /api/leagues/{leagueKey}/odds
-      const urlParts = url.split('/');
-      const leagueKey = urlParts[urlParts.length - 2]; // Get the league key from the URL
+type PaginationInfo = {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+};
 
-      // Use the existing GamesService to get properly processed data
-      if (!leagueKey) {
-            throw new Error('Invalid league key extracted from URL');
-      }
+type UpcomingResult = { games: Game[]; pagination: PaginationInfo };
+
+const oddsFetcher = async (url: string): Promise<Game[]> => {
+      const urlParts = url.split('/');
+      const leagueKey = urlParts[urlParts.length - 2];
+      if (!leagueKey) throw new Error('Invalid league key');
       return await GamesService.fetchOdds(leagueKey);
 };
 
-// Custom hook for fetching odds with SWR
-export const useOdds = (leagueKey: string) => {
-      // Use the correct API endpoint format: /api/leagues/{league_key}/odds
-      // Don't fetch if leagueKey is empty
-      const endpoint = leagueKey ? `${API_BASE_URL}/leagues/${leagueKey}/odds` : null;
+const upcomingFetcher = async (url: string): Promise<UpcomingResult> => {
+      const parsed = new URL(url, 'http://localhost');
+      const page = Number(parsed.searchParams.get('page') || '1');
+      const limit = Number(parsed.searchParams.get('limit') || '50');
+      return await GamesService.fetchUpcomingGames({ page, limit });
+};
 
-      const { data, error, isLoading, mutate } = useSWR<Game[]>(
-            endpoint,
+export const useOdds = (leagueKey: string, page: number = 1, limit: number = 50) => {
+      const hasLeague = !!leagueKey?.trim();
+
+      const leagueEndpoint = hasLeague ? `${API_BASE_URL}/leagues/${leagueKey}/odds` : null;
+      const upcomingEndpoint = !hasLeague ? `${API_BASE_URL}/games/upcoming?page=${page}&limit=${limit}` : null;
+
+      const leagueSwr = useSWR<Game[]>(
+            leagueEndpoint,
             oddsFetcher,
             {
-                  // Revalidate every 30 seconds for live odds
                   refreshInterval: 30000,
-                  // Revalidate when window regains focus
                   revalidateOnFocus: true,
-                  // Revalidate when network reconnects
                   revalidateOnReconnect: true,
-                  // Don't retry on 404 errors (endpoint not implemented)
-                  shouldRetryOnError: (error) => {
-                        return error?.status !== 404;
-                  },
-                  // Retry configuration
+                  shouldRetryOnError: (err) => err?.status !== 404,
                   errorRetryCount: 3,
                   errorRetryInterval: 5000,
-                  // Keep previous data while revalidating
                   keepPreviousData: true,
-                  // Dedupe requests within 2 seconds
                   dedupingInterval: 2000,
             }
       );
 
+      const upcomingSwr = useSWR<UpcomingResult>(
+            upcomingEndpoint,
+            upcomingFetcher,
+            {
+                  refreshInterval: 30000,
+                  revalidateOnFocus: true,
+                  revalidateOnReconnect: true,
+                  shouldRetryOnError: (err) => err?.status !== 404,
+                  errorRetryCount: 3,
+                  errorRetryInterval: 5000,
+                  keepPreviousData: true,
+                  dedupingInterval: 2000,
+            }
+      );
+
+      if (hasLeague) {
+            return {
+                  games: leagueSwr.data || [],
+                  isLoading: leagueSwr.isLoading,
+                  error: leagueSwr.error,
+                  mutate: leagueSwr.mutate as any,
+                  isError: !!leagueSwr.error,
+                  isEmpty: !leagueSwr.isLoading && (!leagueSwr.data || leagueSwr.data.length === 0),
+                  pagination: null as PaginationInfo | null,
+            };
+      }
+
+      const result = upcomingSwr.data;
       return {
-            games: data || [],
-            isLoading,
-            error,
-            mutate, // Function to manually trigger revalidation
-            isError: !!error,
-            isEmpty: !isLoading && (!data || data.length === 0),
+            games: result?.games || [],
+            isLoading: upcomingSwr.isLoading,
+            error: upcomingSwr.error,
+            mutate: upcomingSwr.mutate as any,
+            isError: !!upcomingSwr.error,
+            isEmpty: !upcomingSwr.isLoading && (!result?.games || result.games.length === 0),
+            pagination: result?.pagination || null as PaginationInfo | null,
       };
 };
 
 // Hook for manual refresh
 export const useRefreshOdds = () => {
       const refresh = () => {
-            // Trigger revalidation for all SWR keys
             if (typeof window !== 'undefined' && (window as any).swrCache) {
                   (window as any).swrCache.clear();
             }

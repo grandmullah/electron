@@ -45,7 +45,20 @@ import {
   Logout as LogoutIcon,
   Send as SendIcon,
   AccountBalanceWallet as WalletIcon,
+  Home as HomeIcon,
+  Print as PrintIcon,
+  FileDownload as FileDownloadIcon,
+  Science as TestIcon,
 } from "@mui/icons-material";
+
+export interface GamesPageActions {
+  onBackToHome: () => void;
+  onPrintGames: () => void;
+  onExportToExcel: () => void;
+  onTestPrinter: () => void;
+  isExporting: boolean;
+  hasGames: boolean;
+}
 
 interface HeaderProps {
   onNavigate: (
@@ -53,12 +66,14 @@ interface HeaderProps {
   ) => void;
   currentPage: string;
   isAgentMode?: boolean;
+  gamesPageActions?: GamesPageActions;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   currentPage,
   isAgentMode = false,
+  gamesPageActions,
 }) => {
   const dispatch = useAppDispatch();
   const { user, isLoading } = useAppSelector((state) => state.auth);
@@ -245,6 +260,81 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 Games
               </Button>
+              {currentPage === "games" && gamesPageActions && (
+                <>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<HomeIcon />}
+                    onClick={gamesPageActions.onBackToHome}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.85)",
+                      borderColor: "rgba(255,255,255,0.3)",
+                      "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" },
+                      borderRadius: "8px",
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: "0.85rem",
+                      textTransform: "none",
+                    }}
+                  >
+                    Back to Home
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<PrintIcon />}
+                    onClick={gamesPageActions.onPrintGames}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.85)",
+                      bgcolor: "rgba(255,255,255,0.12)",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+                      borderRadius: "8px",
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: "0.85rem",
+                      textTransform: "none",
+                    }}
+                  >
+                    Print Games
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={gamesPageActions.onExportToExcel}
+                    disabled={gamesPageActions.isExporting || !gamesPageActions.hasGames}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.85)",
+                      bgcolor: "rgba(255,255,255,0.12)",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+                      borderRadius: "8px",
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: "0.85rem",
+                      textTransform: "none",
+                      "&.Mui-disabled": { opacity: 0.6 },
+                    }}
+                  >
+                    {gamesPageActions.isExporting ? "Exporting..." : "Export to Excel"}
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<TestIcon />}
+                    onClick={gamesPageActions.onTestPrinter}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.85)",
+                      bgcolor: "rgba(255,255,255,0.12)",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+                      borderRadius: "8px",
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: "0.85rem",
+                      textTransform: "none",
+                    }}
+                  >
+                    Test Printer
+                  </Button>
+                </>
+              )}
               {["dashboard", "settings", "history"].map((page) => (
                 <Button
                   key={page}

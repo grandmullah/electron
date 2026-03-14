@@ -214,12 +214,9 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
 
     setIsValidating(true);
     try {
-      console.log("Validating selections with API:", bets);
       const result = await BetSlipService.validateSelections(bets);
-      console.log("API validation result:", result);
       setValidationData(result);
     } catch (error) {
-      console.error("API validation failed:", error);
       setValidationData({
         success: false,
         data: {
@@ -244,7 +241,6 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         successBetData.combinedOdds
       );
     } catch (error) {
-      console.error("Print error:", error);
     } finally {
       setIsPrinting(false);
     }
@@ -275,11 +271,12 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
       let error = "";
 
       if (isAgentMode) {
-        // Prepare selections for Agent Service
+        // Prepare selections for Agent Service (use API market keys for backend)
         const selections = betSlipItems.map((item) => {
           const marketType = BetSlipService.deriveMarketTypeFromBetType(
             item.betType
           );
+          const apiMarketKey = BetSlipService.getApiMarketKeyForBet(item);
           const outcome = BetSlipService.deriveOutcomeForMarket(
             item,
             marketType
@@ -288,7 +285,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
             gameId: item.gameId,
             homeTeam: item.homeTeam,
             awayTeam: item.awayTeam,
-            marketType,
+            marketType: apiMarketKey,
             outcome, // Human-readable outcome (team names / draw)
             betType: item.betType, // Keep original betType for reference
             selection: outcome, // Send descriptive selection instead of "1"/"X"
@@ -465,7 +462,6 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
         alert(`Failed to place bets: ${error}`);
       }
     } catch (error) {
-      console.error("Error placing bets:", error);
       alert("An error occurred while placing bets");
     } finally {
       setIsPlacingBets(false);

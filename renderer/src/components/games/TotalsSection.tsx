@@ -10,6 +10,8 @@ interface TotalsSectionProps {
     over: number | string | null;
     under: number | string | null;
   }>;
+  /** When set, show only this line (e.g. 2.5 for collapsed O/U 2.5 only) */
+  onlyPoint?: number;
   period?: "full-time" | "first-half" | "second-half";
   onAddToBetSlip: (
     game: Game,
@@ -28,6 +30,7 @@ interface TotalsSectionProps {
 export const TotalsSection: React.FC<TotalsSectionProps> = ({
   game,
   totals,
+  onlyPoint,
   period = "full-time",
   onAddToBetSlip,
   isSelectionInBetSlip,
@@ -35,16 +38,22 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
 }) => {
   if (!totals || totals.length === 0) return null;
 
+  let workingTotals = totals;
+  if (onlyPoint != null) {
+    workingTotals = totals.filter((t) => Math.abs(t.point - onlyPoint) < 0.01);
+    if (workingTotals.length === 0) return null;
+  }
+
   // Filter out .25 and .75 points if corresponding .5 exists
   // Also filter out .0 if corresponding .5 exists
-  const allPoints = totals.map((t) => t.point);
+  const allPoints = workingTotals.map((t) => t.point);
 
   // Helper to check if a value exists in array (with floating point tolerance)
   const hasValue = (value: number) => {
     return allPoints.some((p) => Math.abs(p - value) < 0.001);
   };
 
-  const filteredTotals = totals.filter((total) => {
+  const filteredTotals = workingTotals.filter((total) => {
     const point = total.point;
     const decimal = point % 1; // Get decimal part
     const isWholeNumber =
@@ -83,6 +92,7 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
   };
 
   const getTitle = () => {
+    if (onlyPoint != null) return `Over/Under ${onlyPoint}`;
     switch (period) {
       case "full-time":
         return "TOTALS";

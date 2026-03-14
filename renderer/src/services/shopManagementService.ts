@@ -84,6 +84,15 @@ class ShopManagementService {
     return res.data;
   }
 
+  static async resetUserPassword(params: { userId: string; newPassword: string }): Promise<any> {
+    const res = await axios.post(
+      `${API_BASE_URL}/admin/users/${encodeURIComponent(params.userId)}/password/reset`,
+      { newPassword: params.newPassword },
+      { headers: this.getAuthHeaders() }
+    );
+    return res.data;
+  }
+
   static async listShopUsers(shopId: string): Promise<ShopUser[]> {
     // Backend: GET /api/admin/users?shop_id=<id>
     const res = await axios.get<{ success: boolean; data: ShopUser[]; count?: number; error?: string }>(

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { financialSummaryService, FinancialSummary } from '../services/financialSummaryService';
 
-export const DEFAULT_FINANCIAL_SUMMARY_DAYS = 365;
+export const DEFAULT_FINANCIAL_SUMMARY_DAYS = 7;
 
 export const useFinancialSummary = () => {
       const { user } = useAppSelector((state) => state.auth);

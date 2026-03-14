@@ -168,6 +168,10 @@ export interface Game {
       externalId: string;
       homeTeam: string;
       awayTeam: string;
+      homeTeamLogo?: string | null;
+      awayTeamLogo?: string | null;
+      leagueLogo?: string | null;
+      countryFlag?: string | null;
       homeOdds: number | string | null;
       drawOdds: number | string | null;
       awayOdds: number | string | null;
@@ -244,6 +248,15 @@ export interface Game {
             point: number;
             over: number | string | null;
             under: number | string | null;
+      }>;
+      rawMarkets?: Array<{
+            key: string;
+            outcomes: Array<{
+                  name: string;
+                  price: number;
+                  point?: number;
+                  description?: string;
+            }>;
       }>;
       hasValidOdds: boolean;
       currentScore?: {

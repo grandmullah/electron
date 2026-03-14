@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL, API_KEY } from './apiConfig';
+import { API_BASE_URL, getApiHeaders } from './apiConfig';
 import {
       Game,
       GameDetails,
@@ -8,7 +8,7 @@ import {
       GameSearchResult,
       SearchResponse,
       AutocompleteResponse,
-      GameSuggestion
+      GameSuggestion,
 } from '../types/games';
 import {
       parseOddsFromGameOddsArray,
@@ -20,11 +20,130 @@ class GamesService {
        * Get headers with API key for all requests
        */
       private static getHeaders(): Record<string, string> {
+            // Centralized header builder (includes X-API-Key + optional auth)
+            return getApiHeaders(false);
+      }
+      /**
+       * Fetch today's scheduled games (no league filter)
+       * Endpoint: GET /api/games/scheduled?date=YYYY-MM-DD&days=1
+       * @returns Promise<Game[]> - Array of today's games with odds
+       */
+      static async fetchScheduledGames(opts?: { date?: string; days?: number; timezone?: string }): Promise<Game[]> {
+            try {
+                  const startDate = opts?.date || new Date().toISOString().slice(0, 10);
+                  const days = opts?.days ?? 7;
+                  const timezone = opts?.timezone || 'UTC';
+                  const params = new URLSearchParams({ date: startDate, days: String(days), timezone });
+                  const response = await axios.get(`${API_BASE_URL}/games/scheduled?${params}`, {
+                        headers: this.getHeaders(),
+                  });
+
+                  if (!response.data?.success) {
+                        return [];
+                  }
+
+                  const rawData = response.data.data;
+                  if (!rawData) return [];
+
+                  const dayGroups = Array.isArray(rawData) ? rawData : [];
+                  const allGames: Game[] = [];
+                  for (const day of dayGroups) {
+                        const games = (day && typeof day === 'object' && Array.isArray((day as any).games))
+                              ? (day as any).games
+                              : [];
+                        for (const g of games) {
+                              const transformed = this.transformScheduledGame(g);
+                              if (transformed) allGames.push(transformed);
+                        }
+                  }
+                  return allGames;
+            } catch (error: any) {
+                  const message = error?.response?.data?.error || error.message || 'Failed to load scheduled games';
+                  throw new Error(message);
+            }
+      }
+
+      /**
+       * Transform scheduled API game format to frontend Game
+       */
+      private static transformScheduledGame(g: any): Game | null {
+            const homeTeamName = typeof g.homeTeam === 'object' ? g.homeTeam?.name : g.home_team_name || g.homeTeam;
+            const awayTeamName = typeof g.awayTeam === 'object' ? g.awayTeam?.name : g.away_team_name || g.awayTeam;
+            if (!homeTeamName || !awayTeamName) return null;
+
+            const bookmakers = Array.isArray(g.bookmakers) ? g.bookmakers : [];
+            const parsedOdds = parseOddsFromBookmakersArray(bookmakers, homeTeamName, awayTeamName);
+
+            const leagueObj = g.league;
+            const leagueTitle = typeof leagueObj === 'object' ? leagueObj?.title : g.league_title || g.league;
+            const leagueKey = typeof leagueObj === 'object' ? leagueObj?.key : g.league_key || g.sportKey;
+
+            const homeTeamLogo = typeof g.homeTeam === 'object' ? g.homeTeam?.logo : g.home_team_logo;
+            const awayTeamLogo = typeof g.awayTeam === 'object' ? g.awayTeam?.logo : g.away_team_logo;
+            const leagueLogo = typeof leagueObj === 'object' ? leagueObj?.logo : null;
+            const countryFlag = typeof leagueObj === 'object' ? leagueObj?.countryFlag : null;
+
             return {
-                  'Content-Type': 'application/json',
-                  'X-API-Key': API_KEY,
+                  id: g.id,
+                  externalId: g.externalId || g.external_id || g.id,
+                  homeTeam: homeTeamName,
+                  awayTeam: awayTeamName,
+                  homeTeamLogo: homeTeamLogo ?? undefined,
+                  awayTeamLogo: awayTeamLogo ?? undefined,
+                  leagueLogo: leagueLogo ?? undefined,
+                  countryFlag: countryFlag ?? undefined,
+                  ...parsedOdds,
+                  matchTime: g.commenceTime || g.commence_time || g.matchTime,
+                  league: leagueTitle || 'Unknown',
+                  sportKey: leagueKey || g.sportKey || 'soccer',
+                  status: (g.status === 'scheduled' ? 'upcoming' : g.status) || 'upcoming',
+                  currentPeriod: 0,
+                  currentTime: null,
+                  currentScore: {
+                        home: Number(g.homeScore ?? g.home_score ?? 0),
+                        away: Number(g.awayScore ?? g.away_score ?? 0),
+                  },
+                  team_index: g.team_index,
             };
       }
+
+      /**
+       * Fetch upcoming games (paginated, all leagues)
+       * Endpoint: GET /api/games/upcoming
+       */
+      static async fetchUpcomingGames(opts?: { page?: number; limit?: number; league?: string; sport?: string }): Promise<{ games: Game[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+            try {
+                  const params = new URLSearchParams();
+                  params.set('page', String(opts?.page ?? 1));
+                  params.set('limit', String(opts?.limit ?? 100));
+                  if (opts?.league) params.set('league', opts.league);
+                  if (opts?.sport) params.set('sport', opts.sport);
+
+                  const response = await axios.get(`${API_BASE_URL}/games/upcoming?${params}`, {
+                        headers: this.getHeaders(),
+                  });
+
+                  if (!response.data?.success) {
+                        return { games: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } };
+                  }
+
+                  const rawGames = Array.isArray(response.data.data) ? response.data.data : [];
+                  const games: Game[] = [];
+                  for (const g of rawGames) {
+                        const transformed = this.transformScheduledGame(g);
+                        if (transformed) games.push(transformed);
+                  }
+
+                  return {
+                        games,
+                        pagination: response.data.pagination || { page: 1, limit: 100, total: games.length, totalPages: 1 },
+                  };
+            } catch (error: any) {
+                  const message = error?.response?.data?.error || error.message || 'Failed to load upcoming games';
+                  throw new Error(message);
+            }
+      }
+
       /**
        * Fetch odds for a specific league
        * @param leagueKey - The league identifier (e.g., 'soccer_epl')
@@ -42,7 +161,7 @@ class GamesService {
 
                   const games: Game[] = (response.data?.data || [])
                         .map((game: any) => {
-                              return this.transformLegacyGameData(game);
+                              return this.transformLegacyGameData(game, leagueKey);
                         })
                         .filter((game: Game | null) => game !== null && game !== undefined);
 
@@ -50,6 +169,28 @@ class GamesService {
             } catch (error: any) {
                   // Basic error normalization
                   const message = error?.response?.data?.message || error.message || 'Failed to load games';
+                  throw new Error(message);
+            }
+      }
+
+      /**
+       * Fetch raw game details by ID (for View details panel)
+       * Endpoint: GET /api/games/:gameId
+       * @param gameId - The unique identifier (UUID or external_id)
+       * @returns Promise<GameDetails> - Raw API response
+       */
+      static async fetchGameDetails(gameId: string): Promise<GameDetails> {
+            try {
+                  const response = await axios.get<GameDetailsResponse>(`${API_BASE_URL}/games/${gameId}`, {
+                        headers: this.getHeaders(),
+                  });
+
+                  if (response.data?.success && response.data?.data) {
+                        return response.data.data;
+                  }
+                  throw new Error('Game not found');
+            } catch (error: any) {
+                  const message = error?.response?.data?.error || error.message || 'Failed to fetch game';
                   throw new Error(message);
             }
       }
@@ -330,7 +471,7 @@ class GamesService {
        * @param game - Raw game data from legacy endpoint
        * @returns Game - Transformed game object
        */
-      private static transformLegacyGameData(game: any): Game {
+      private static transformLegacyGameData(game: any, leagueKey?: string): Game {
             const bookmakers = Array.isArray(game.bookmakers) ? game.bookmakers : [];
             const homeTeamName = game.home_team || game.homeTeam;
             const awayTeamName = game.away_team || game.awayTeam;
@@ -346,6 +487,10 @@ class GamesService {
                   externalId: externalId,
                   homeTeam: homeTeamName,
                   awayTeam: awayTeamName,
+                  homeTeamLogo: game.home_team_logo ?? undefined,
+                  awayTeamLogo: game.away_team_logo ?? undefined,
+                  leagueLogo: game.league_logo ?? undefined,
+                  countryFlag: game.country_flag ?? undefined,
                   ...parsedOdds,
                   matchTime: game.commence_time || game.matchTime,
                   league: game.sport_title || game.league,

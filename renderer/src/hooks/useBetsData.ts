@@ -9,18 +9,28 @@ export const useBetsData = () => {
       const [isLoadingBets, setIsLoadingBets] = useState(false);
       const [betsError, setBetsError] = useState<string | null>(null);
 
-      const loadRecentBets = useCallback(async () => {
+      const loadRecentBets = useCallback(async (options?: { days?: number | null }) => {
             if (!user?.id) return;
 
             setIsLoadingBets(true);
             setBetsError(null);
 
-            try {
-                  console.log("🔄 Loading recent bets...");
+            const days = options?.days ?? null;
 
-                  const filters = {
+            try {
+                  console.log("🔄 Loading recent bets...", days != null ? `last ${days} days` : "all");
+
+                  const filters: Parameters<typeof BetHistoryService.getUserBets>[0] = {
                         includeShopBets: true,
+                        limit: 200,
                   };
+                  if (days != null && days > 0) {
+                        const dateTo = new Date();
+                        const dateFrom = new Date();
+                        dateFrom.setDate(dateFrom.getDate() - days);
+                        filters.dateFrom = dateFrom.toISOString().split("T")[0];
+                        filters.dateTo = dateTo.toISOString().split("T")[0];
+                  }
 
                   const response = await BetHistoryService.getUserBets(filters);
 
@@ -29,18 +39,16 @@ export const useBetsData = () => {
                               ...(response.data.singleBets || []),
                               ...(response.data.multibets || []),
                         ];
-                        // Sort by creation date and take the most recent 10
-                        const sortedBets = allBets
-                              .sort((a, b) => {
-                                    const dateA = new Date(
-                                          a.timestamp || (a as any).createdAt || ""
-                                    ).getTime();
-                                    const dateB = new Date(
-                                          b.timestamp || (b as any).createdAt || ""
-                                    ).getTime();
-                                    return dateB - dateA;
-                              })
-                              .slice(0, 10);
+                        // Sort by creation date (most recent first)
+                        const sortedBets = allBets.sort((a, b) => {
+                              const dateA = new Date(
+                                    a.timestamp || (a as any).createdAt || ""
+                              ).getTime();
+                              const dateB = new Date(
+                                    b.timestamp || (b as any).createdAt || ""
+                              ).getTime();
+                              return dateB - dateA;
+                        });
                         setRecentBets(sortedBets);
                         console.log("✅ Recent bets loaded:", sortedBets.length);
                   } else {

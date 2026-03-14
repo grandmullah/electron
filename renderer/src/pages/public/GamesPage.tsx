@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "../../components/Header";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -9,7 +9,7 @@ import {
 import GamesService, { Game } from "../../services/gamesService";
 // Dynamic import for printService to enable code splitting
 import settingsService from "../../services/settingsService";
-import { API_BASE_URL } from "../../services/apiConfig";
+import { API_BASE_URL, getApiHeaders } from "../../services/apiConfig";
 import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
 import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
@@ -43,30 +43,53 @@ import {
   Divider,
   Badge,
   Collapse,
+  InputBase,
+  InputAdornment,
 } from "@mui/material";
 import {
   SportsSoccer as SoccerIcon,
   Refresh as RefreshIcon,
-  Print as PrintIcon,
-  Science as TestIcon,
   Person as PersonIcon,
   AttachMoney as MoneyIcon,
   ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
   CheckCircle as CheckIcon,
   Close as CloseIcon,
-  Home as HomeIcon,
   EmojiEvents as TrophyIcon,
   TrendingUp as TrendingUpIcon,
   Search as SearchIcon,
-  FileDownload as FileDownloadIcon,
   Receipt as ReceiptIcon,
 } from "@mui/icons-material";
 
 interface GamesPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
   ) => void;
 }
+
+// Country name to flag emoji (common countries)
+const COUNTRY_FLAGS: Record<string, string> = {
+  England: "🇬🇧",
+  Spain: "🇪🇸",
+  Germany: "🇩🇪",
+  Italy: "🇮🇹",
+  France: "🇫🇷",
+  Portugal: "🇵🇹",
+  Netherlands: "🇳🇱",
+  Brazil: "🇧🇷",
+  Argentina: "🇦🇷",
+  Chile: "🇨🇱",
+  China: "🇨🇳",
+  Croatia: "🇭🇷",
+  Estonia: "🇪🇪",
+  Scotland: "🏴",
+  Wales: "🏴",
+  Belgium: "🇧🇪",
+  Turkey: "🇹🇷",
+  Mexico: "🇲🇽",
+  USA: "🇺🇸",
+  Other: "🌐",
+};
 
 // Types now come from GamesService
 
@@ -82,10 +105,11 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [loggedInUser, setLoggedInUser] = useState<string>("John Doe");
   const [leagueKey, setLeagueKey] = useState<string>("");
+  const [upcomingPage, setUpcomingPage] = useState<number>(1);
 
   // Use SWR for odds fetching
-  const { games, isLoading, error, mutate, isError, isEmpty } =
-    useOdds(leagueKey);
+  const { games, isLoading, error, mutate, isError, isEmpty, pagination } =
+    useOdds(leagueKey, upcomingPage, 50);
   const { refresh } = useRefreshOdds();
 
   // League interface
@@ -98,85 +122,203 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     source?: string;
     category?: string;
     country?: string;
+    logo?: string;
+    countryFlag?: string;
   }
 
+  type SupportedLeagueApiItem = {
+    key?: unknown;
+    name?: unknown;
+    country?: unknown;
+    countryCode?: unknown;
+    countryFlag?: unknown;
+    logo?: unknown;
+    sport?: unknown; // can be string (new) or { key, name } (old)
+    sportKey?: unknown;
+    sportName?: unknown;
+    source?: unknown;
+    category?: unknown;
+  };
+
+  type SupportedLeaguesResponse = {
+    success: boolean;
+    message?: string;
+    data?:
+      | {
+          byCountry?: Array<{ country: string; countryFlag?: string; leagues: SupportedLeagueApiItem[] }>;
+          all?: SupportedLeagueApiItem[];
+          leagues?: SupportedLeagueApiItem[];
+        }
+      | SupportedLeagueApiItem[];
+    count?: number;
+    meta?: { daysAhead?: number };
+  };
+
+  type SupportedLeaguesClientModel = {
+    all: League[];
+    byCountry: Array<{ country: string; countryFlag?: string; leagues: League[] }>;
+    count?: number;
+    meta?: { daysAhead?: number };
+  };
+
+  const normalizeLeague = (
+    league: SupportedLeagueApiItem,
+    opts: { fallbackCountry?: string; includeCountryInDisplayName: boolean }
+  ): League => {
+    const sportKeyFromField =
+      typeof (league as any)?.sport === "string"
+        ? ((league as any).sport as string)
+        : typeof (league as any)?.sportKey === "string"
+          ? ((league as any).sportKey as string)
+          : typeof (league as any)?.sport?.key === "string"
+            ? ((league as any).sport.key as string)
+            : undefined;
+    const sportName =
+      typeof (league as any)?.sportName === "string"
+        ? ((league as any).sportName as string)
+        : typeof (league as any)?.sport?.name === "string"
+          ? ((league as any).sport.name as string)
+          : undefined;
+    const key = typeof (league as any)?.key === "string" ? ((league as any).key as string) : undefined;
+    const sportKeyFromKey = key ? key.split("_")[0] : undefined;
+    const sportKey = sportKeyFromField || sportKeyFromKey || "unknown";
+    const name = typeof (league as any)?.name === "string" ? ((league as any).name as string) : "Unknown";
+    const countryRaw = typeof (league as any)?.country === "string" ? ((league as any).country as string) : undefined;
+    const country = countryRaw || opts.fallbackCountry;
+    const displayName =
+      opts.includeCountryInDisplayName && country ? `${name} (${country})` : name;
+
+    const out: League = {
+      key: key ?? sportKey,
+      sportKey,
+      name,
+      displayName,
+    };
+
+    if (sportName) out.sportName = sportName;
+    const source = typeof (league as any)?.source === "string" ? ((league as any).source as string) : undefined;
+    if (source) out.source = source;
+    const category = typeof (league as any)?.category === "string" ? ((league as any).category as string) : undefined;
+    if (category) out.category = category;
+    if (country) out.country = country;
+    const logo = typeof (league as any)?.logo === "string" ? ((league as any).logo as string) : undefined;
+    if (logo) out.logo = logo;
+    const countryFlag = typeof (league as any)?.countryFlag === "string" ? ((league as any).countryFlag as string) : undefined;
+    if (countryFlag) out.countryFlag = countryFlag;
+
+    return out;
+  };
+
   // SWR fetcher function for leagues
-  const leaguesFetcher = async (url: string): Promise<League[]> => {
-    const { API_KEY } = await import("../../services/apiConfig");
+  const leaguesFetcher = async (url: string): Promise<SupportedLeaguesClientModel> => {
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': API_KEY,
-      },
+      headers: getApiHeaders(false),
     });
-    const data = await response.json();
+    const data = (await response.json()) as SupportedLeaguesResponse;
 
     if (!data.success) {
       throw new Error(data.message || "Failed to fetch leagues");
     }
 
-    const leagues = Array.isArray(data.data?.leagues)
-      ? data.data.leagues
-      : Array.isArray(data.data)
-        ? data.data
-        : [];
+    // Supported leagues response shape (new):
+    // { success: true, data: { byCountry: [...], all: [...] }, count, meta }
+    // Backward compatibility: older API shapes returned { data: leagues[] } or { data: { leagues: leagues[] } }
+    const payload = data?.data;
+    const allItems: SupportedLeagueApiItem[] = Array.isArray((payload as any)?.all)
+      ? ((payload as any).all as SupportedLeagueApiItem[])
+      : Array.isArray((payload as any)?.leagues)
+        ? ((payload as any).leagues as SupportedLeagueApiItem[])
+        : Array.isArray(payload)
+          ? (payload as SupportedLeagueApiItem[])
+          : [];
 
-    return leagues.map((league: any) => {
-      const sportKey =
-        typeof league?.sport?.key === "string" ? league.sport.key : "unknown";
-      const sportName =
-        typeof league?.sport?.name === "string" ? league.sport.name : undefined;
-      const name = typeof league?.name === "string" ? league.name : "Unknown";
-      const country =
-        typeof league?.country === "string" ? league.country : undefined;
+    const all = allItems.map((l) =>
+      normalizeLeague(l, { includeCountryInDisplayName: true })
+    );
 
-      return {
-        key: league?.key ?? sportKey,
-        sportKey,
-        sportName,
-        name,
-        displayName: country ? `${name} (${country})` : name,
-        source:
-          typeof league?.source === "string" ? league.source : undefined,
-        category:
-          typeof league?.category === "string" ? league.category : undefined,
-        country,
-      } as League;
-    });
+    const byCountryFromApi =
+      Array.isArray((payload as any)?.byCountry) ? ((payload as any).byCountry as Array<{ country: string; countryFlag?: string; leagues: SupportedLeagueApiItem[] }>) : undefined;
+
+    const byCountry =
+      byCountryFromApi?.map((group) => ({
+        country: group.country,
+        ...(group.countryFlag ? { countryFlag: group.countryFlag } : {}),
+        leagues: Array.isArray(group.leagues)
+          ? group.leagues.map((l) =>
+              normalizeLeague(l, {
+                includeCountryInDisplayName: false,
+                ...(group.country && group.country !== "Other"
+                  ? { fallbackCountry: group.country }
+                  : {}),
+              })
+            )
+          : [],
+      })) ??
+      (() => {
+        const groups = new Map<string, League[]>();
+        for (const league of all) {
+          const country = league.country?.trim() ? league.country.trim() : "Other";
+          const list = groups.get(country) ?? [];
+          list.push({
+            ...league,
+            displayName: league.name, // country is the section heading
+          });
+          groups.set(country, list);
+        }
+
+        const countries = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+        const otherIdx = countries.indexOf("Other");
+        if (otherIdx >= 0) {
+          countries.splice(otherIdx, 1);
+          countries.push("Other");
+        }
+
+        return countries.map((country) => ({
+          country,
+          leagues: groups.get(country) ?? [],
+        }));
+      })();
+
+    const result: SupportedLeaguesClientModel = { all, byCountry };
+    if (typeof data.count === "number") result.count = data.count;
+    if (data.meta) result.meta = data.meta;
+    return result;
   };
 
   // SWR hook for leagues - NO fallback data to force using API response
   const {
-    data: supportedLeagues,
+    data: supportedLeaguesData,
     error: leaguesError,
     isLoading: leaguesLoading,
     mutate: mutateLeagues,
-  } = useSWR<League[]>(`${API_BASE_URL}/leagues/supported`, leaguesFetcher, {
+  } = useSWR<SupportedLeaguesClientModel>(
+    `${API_BASE_URL}/leagues/supported`,
+    leaguesFetcher,
+    {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     dedupingInterval: 60000, // Dedupe requests for 1 minute
     errorRetryCount: 2,
     onError: (error) => {
-      console.error("Error fetching leagues:", error);
     },
-  });
-
-  // Set default league key from supported leagues
-  useEffect(() => {
-    // Wait for leagues to load, then set default
-    if (!leaguesLoading && !leagueKey) {
-      if (supportedLeagues && supportedLeagues.length > 0) {
-        // Use API data - first league from supported leagues
-        const defaultLeague = supportedLeagues[0]?.key;
-        if (defaultLeague) {
-          setLeagueKey(defaultLeague);
-        }
-      } else if (leaguesError) {
-        // Fallback if API fails - use first league from API response structure
-        setLeagueKey("soccer_germany_bundesliga");
-      }
     }
-  }, [supportedLeagues, leagueKey, leaguesLoading, leaguesError]);
+  );
+
+  const supportedLeagues = supportedLeaguesData?.all;
+  const supportedLeaguesByCountry = supportedLeaguesData?.byCountry;
+
+  // No default league: start with today's scheduled games. User can select a league to filter.
+
+  // Auto-expand the country that contains the selected league
+  useEffect(() => {
+    if (!leagueKey || !supportedLeaguesByCountry) return;
+    const group = supportedLeaguesByCountry.find((g) =>
+      g.leagues.some((l) => l.key === leagueKey)
+    );
+    if (group) {
+      setExpandedCountries((prev) => new Set(prev).add(group.country));
+    }
+  }, [leagueKey, supportedLeaguesByCountry]);
 
   // Agent-specific state
   const [isAgentMode, setIsAgentMode] = useState(false);
@@ -185,6 +327,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [leaguesSearchQuery, setLeaguesSearchQuery] = useState("");
+  const [leaguesSectionExpanded, setLeaguesSectionExpanded] = useState(true);
+  const [expandedCountries, setExpandedCountries] = useState<Set<string>>(new Set());
 
   // Game indexes now come from the API via team_index field
   // No local index creation needed
@@ -208,9 +353,21 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
   // Manual refresh function for users
   const handleManualRefresh = () => {
-    console.log("🔄 Manual odds refresh requested");
     mutate(); // Trigger SWR revalidation
   };
+
+  // Test printer (used by Header when on Games page)
+  const handleTestPrinter = useCallback(async () => {
+    try {
+      const { testBixolonPrinter, testPrint } = await import(
+        "../../services/printService"
+      );
+      testBixolonPrinter();
+      testPrint(settingsService.getPrinterLogicalName());
+    } catch {
+      alert("Error: Unable to load print service. Please try again.");
+    }
+  }, []);
 
   // Print games function
   const handlePrintGames = () => {
@@ -1262,7 +1419,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           buffer
         );
         if (result.success) {
-          console.log(`✅ Excel file exported: ${filePath}`);
           alert(`Games data exported successfully to ${filePath}`);
         } else {
           throw new Error(result.error || "Failed to write file");
@@ -1270,11 +1426,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       } else {
         // Fallback to browser download
         XLSX.writeFile(workbook, defaultFilename);
-        console.log(`✅ Excel file exported: ${defaultFilename}`);
         alert(`Games data exported successfully to ${defaultFilename}`);
       }
     } catch (error: any) {
-      console.error("Error exporting to Excel:", error);
       alert(`Failed to export games: ${error.message || "Unknown error"}`);
     } finally {
       setIsExporting(false);
@@ -1343,18 +1497,20 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const getLeagueIcon = (leagueKey: string) => {
-    if (
-      leagueKey.includes("uefa") ||
-      leagueKey.includes("champions") ||
-      leagueKey.includes("world_cup")
-    ) {
-      return <TrophyIcon />;
-    }
-    return <SoccerIcon />;
+  const getCountryFlag = (country: string) =>
+    COUNTRY_FLAGS[country] ?? "🌐";
+
+  const toggleCountryExpanded = (country: string) => {
+    setExpandedCountries((prev) => {
+      const next = new Set(prev);
+      if (next.has(country)) next.delete(country);
+      else next.add(country);
+      return next;
+    });
   };
 
   const getLeagueDisplayName = (leagueKey: string) => {
+    if (!leagueKey || leagueKey.trim() === "") return "Today's games";
     const league = supportedLeagues?.find((l) => l.key === leagueKey);
     return league
       ? league.name
@@ -1428,6 +1584,15 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const gamesPageActions = {
+    onBackToHome: () => onNavigate("home"),
+    onPrintGames: handlePrintGames,
+    onExportToExcel: handleExportToExcel,
+    onTestPrinter: handleTestPrinter,
+    isExporting,
+    hasGames: !!(games && games.length > 0),
+  };
+
   if (isLoading) {
     return (
       <Box
@@ -1439,121 +1604,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         <Header
           onNavigate={onNavigate}
           currentPage="games"
-          // selectedUser={selectedUser} // Disabled
           isAgentMode={isAgentMode}
+          gamesPageActions={gamesPageActions}
         />
         <Container maxWidth="xl" sx={{ py: 4, px: 3 }}>
-          <Paper
-            sx={{
-              p: 4,
-              mb: 4,
-              bgcolor: "background.paper",
-              color: "text.primary",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <Box position="relative" zIndex={1}>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                mb={3}
-              >
-                <Box display="flex" alignItems="center" gap={2}>
-                  <SoccerIcon sx={{ fontSize: 40 }} />
-                  <Box>
-                    <Typography variant="h3" fontWeight="bold">
-                      ⚽ Games & Odds
-                    </Typography>
-                    {/* <Typography
-                      variant="h6"
-                      sx={{ opacity: 0.9, fontWeight: 300 }}
-                    >
-                      Live betting odds and game information
-                    </Typography> */}
-                  </Box>
-                </Box>
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<HomeIcon />}
-                    onClick={() => onNavigate("home")}
-                    sx={{
-                      color: "white",
-                      borderColor: "rgba(255,255,255,0.3)",
-                      "&:hover": {
-                        borderColor: "white",
-                        bgcolor: "rgba(255,255,255,0.1)",
-                      },
-                    }}
-                  >
-                    Back to Home
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<PrintIcon />}
-                    onClick={handlePrintGames}
-                    sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": {
-                        bgcolor: "rgba(255,255,255,0.3)",
-                      },
-                    }}
-                  >
-                    Print Games
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<FileDownloadIcon />}
-                    onClick={handleExportToExcel}
-                    disabled={isExporting || !games || games.length === 0}
-                    sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": {
-                        bgcolor: "rgba(255,255,255,0.3)",
-                      },
-                      "&.Mui-disabled": {
-                        opacity: 0.6,
-                      },
-                    }}
-                  >
-                    {isExporting ? "Exporting..." : "Export to Excel"}
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<TestIcon />}
-                    onClick={async () => {
-                      try {
-                        const { testBixolonPrinter, testPrint } = await import(
-                          "../../services/printService"
-                        );
-                        testBixolonPrinter();
-                        testPrint(settingsService.getPrinterLogicalName());
-                      } catch (error) {
-                        console.error("Error importing print service:", error);
-                        alert(
-                          "Error: Unable to load print service. Please try again."
-                        );
-                      }
-                    }}
-                    sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": {
-                        bgcolor: "rgba(255,255,255,0.3)",
-                      },
-                    }}
-                  >
-                    Test Printer
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-          </Paper>
-
           <Paper sx={{ p: 6, textAlign: "center" }}>
             <Stack alignItems="center" spacing={3}>
               <CircularProgress size={60} sx={{ color: "primary.main" }} />
@@ -1577,136 +1631,29 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       <Header
         onNavigate={onNavigate}
         currentPage="games"
-        // selectedUser={selectedUser} // Disabled
         isAgentMode={isAgentMode}
+        gamesPageActions={gamesPageActions}
       />
 
       <Container maxWidth="xl" sx={{ py: 4, px: 3 }}>
-        {/* Header Section */}
-        <Paper
+        {/* Main Content with Left Panel and Games - parent minHeight so both panels fill viewport */}
+        <Box
           sx={{
-            p: 4,
-            mb: 4,
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            color: "white",
-            position: "relative",
-            overflow: "hidden",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "16px",
-            boxShadow:
-              "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+            display: "flex",
+            gap: 3,
+            minHeight: "calc(100vh - 120px)",
+            alignItems: "stretch",
           }}
         >
-          <Box position="relative" zIndex={1}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              mb={3}
-            >
-              <Box display="flex" alignItems="center" gap={2}>
-                <SoccerIcon sx={{ fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h3" fontWeight="bold">
-                    ⚽ Games & Odds
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    sx={{ opacity: 0.9, fontWeight: 300 }}
-                  >
-                    Live betting odds and game information
-                  </Typography>
-                </Box>
-              </Box>
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="outlined"
-                  startIcon={<HomeIcon />}
-                  onClick={() => onNavigate("home")}
-                  sx={{
-                    color: "white",
-                    borderColor: "rgba(255,255,255,0.3)",
-                    "&:hover": {
-                      borderColor: "white",
-                      bgcolor: "rgba(255,255,255,0.1)",
-                    },
-                  }}
-                >
-                  Back to Home
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<PrintIcon />}
-                  onClick={handlePrintGames}
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.3)",
-                    },
-                  }}
-                >
-                  Print Games
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<FileDownloadIcon />}
-                  onClick={handleExportToExcel}
-                  disabled={isExporting || !games || games.length === 0}
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.3)",
-                    },
-                    "&.Mui-disabled": {
-                      opacity: 0.6,
-                    },
-                  }}
-                >
-                  {isExporting ? "Exporting..." : "Export to Excel"}
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<TestIcon />}
-                  onClick={async () => {
-                    try {
-                      const { testBixolonPrinter, testPrint } = await import(
-                        "../../services/printService"
-                      );
-                      testBixolonPrinter();
-                      testPrint(settingsService.getPrinterLogicalName());
-                    } catch (error) {
-                      console.error("Error importing print service:", error);
-                      alert(
-                        "Error: Unable to load print service. Please try again."
-                      );
-                    }
-                  }}
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.3)",
-                    },
-                  }}
-                >
-                  Test Printer
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Paper>
-
-        {/* Main Content with Left Panel and Games */}
-        <Box sx={{ display: "flex", gap: 3 }}>
           {/* Left Panel - League Selector and Controls - Hidden on small/medium screens */}
           <Paper
             sx={{
               p: 3,
-              width: 300,
-              height: "fit-content",
+              width: "clamp(280px, 22vw, 420px)",
+              minWidth: 280,
+              maxWidth: 420,
+              flexShrink: 0,
+              height: "calc(150vh - 300px)",
               position: "sticky",
               top: 20,
               background:
@@ -1715,9 +1662,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
               borderRadius: "16px",
               boxShadow:
                 "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-              maxHeight: "calc(100vh - 100px)",
               overflowY: "auto",
-              display: { xs: "none", lg: "block" },
+              display: { xs: "none", lg: "flex" },
+              flexDirection: "column",
               "&::-webkit-scrollbar": {
                 width: "8px",
               },
@@ -1787,16 +1734,56 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
             <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.1)" }} />
 
-            <Typography
-              variant="h6"
-              fontWeight="bold"
-              mb={2}
-              sx={{ color: "rgba(255,255,255,0.9)" }}
+            {/* Leagues section - collapsible with search */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 2,
+                cursor: "pointer",
+                "&:hover": { opacity: 0.9 },
+              }}
+              onClick={() => setLeaguesSectionExpanded(!leaguesSectionExpanded)}
             >
-              League Selection
-            </Typography>
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{ color: "rgba(255,255,255,0.9)" }}
+              >
+                Leagues
+              </Typography>
+              {leaguesSectionExpanded ? (
+                <ExpandLessIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+              ) : (
+                <ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />
+              )}
+            </Box>
 
-            <Stack spacing={2} mb={3}>
+            <Collapse in={leaguesSectionExpanded}>
+              <InputBase
+                placeholder="Search teams, leagues"
+                value={leaguesSearchQuery}
+                onChange={(e) => setLeaguesSearchQuery(e.target.value)}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }} />
+                  </InputAdornment>
+                }
+                sx={{
+                  width: "100%",
+                  mb: 2,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: 1,
+                  bgcolor: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.9)",
+                  "& input": { fontSize: 14 },
+                  "& input::placeholder": { color: "rgba(255,255,255,0.5)", opacity: 1 },
+                }}
+              />
+
               {leaguesLoading ? (
                 <Box sx={{ textAlign: "center", py: 2 }}>
                   <CircularProgress
@@ -1821,39 +1808,184 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   </Typography>
                 </Box>
               ) : (
-                supportedLeagues?.map((league) => (
-                  <Chip
-                    key={league.key}
-                    icon={getLeagueIcon(league.key)}
-                    label={league.displayName}
-                    onClick={() => setLeagueKey(league.key)}
-                    color={leagueKey === league.key ? "primary" : "default"}
-                    variant={leagueKey === league.key ? "filled" : "outlined"}
-                    sx={{
-                      fontWeight: 600,
-                      width: "100%",
-                      justifyContent: "flex-start",
-                      backgroundColor:
-                        leagueKey === league.key
-                          ? "#667eea"
-                          : "rgba(255,255,255,0.1)",
-                      color:
-                        leagueKey === league.key
-                          ? "white"
-                          : "rgba(255,255,255,0.8)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        backgroundColor:
-                          leagueKey === league.key
-                            ? "#5a6fd8"
-                            : "rgba(255,255,255,0.2)",
-                      },
-                    }}
-                  />
-                ))
+                <Stack spacing={0} sx={{ maxHeight: 360, overflowY: "auto" }}>
+                  {/* Today's games - default view (no league filter) */}
+                  <Box sx={{ mb: 1.5 }}>
+                    <Chip
+                      icon={<SoccerIcon />}
+                      label="Today's games"
+                      onClick={() => { setLeagueKey(""); setUpcomingPage(1); }}
+                      color={!leagueKey ? "primary" : "default"}
+                      variant={!leagueKey ? "filled" : "outlined"}
+                      sx={{
+                        fontWeight: 600,
+                        width: "100%",
+                        justifyContent: "flex-start",
+                        backgroundColor: !leagueKey ? "#667eea" : "rgba(255,255,255,0.08)",
+                        color: !leagueKey ? "white" : "rgba(255,255,255,0.8)",
+                        borderColor: "rgba(255,255,255,0.15)",
+                        "&:hover": {
+                          backgroundColor: !leagueKey ? "#5a6fd8" : "rgba(255,255,255,0.15)",
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  {supportedLeaguesByCountry
+                    ?.filter((group) => {
+                      if (!leaguesSearchQuery.trim()) return true;
+                      const q = leaguesSearchQuery.toLowerCase().trim();
+                      const countryMatch = group.country.toLowerCase().includes(q);
+                      const leagueMatch = group.leagues.some(
+                        (l) =>
+                          l.name.toLowerCase().includes(q) ||
+                          l.displayName.toLowerCase().includes(q) ||
+                          l.key.toLowerCase().includes(q)
+                      );
+                      return countryMatch || leagueMatch;
+                    })
+                    .map((group) => {
+                      const filteredLeagues = leaguesSearchQuery.trim()
+                        ? group.leagues.filter((l) => {
+                            const q = leaguesSearchQuery.toLowerCase().trim();
+                            return (
+                              l.name.toLowerCase().includes(q) ||
+                              l.displayName.toLowerCase().includes(q) ||
+                              l.key.toLowerCase().includes(q)
+                            );
+                          })
+                        : group.leagues;
+                      const count = filteredLeagues.length;
+                      if (count === 0) return null;
+
+                      const isCountryExpanded =
+                        expandedCountries.has(group.country) ||
+                        leaguesSearchQuery.trim().length > 0;
+
+                      return (
+                        <Box key={group.country}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              py: 1,
+                              px: 0.5,
+                              cursor: "pointer",
+                              borderRadius: 1,
+                              "&:hover": {
+                                bgcolor: "rgba(255,255,255,0.06)",
+                              },
+                            }}
+                            onClick={() => toggleCountryExpanded(group.country)}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              {group.countryFlag ? (
+                                <Box
+                                  component="img"
+                                  src={group.countryFlag}
+                                  alt=""
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                  sx={{ width: 20, height: 15, objectFit: "cover", borderRadius: "2px", flexShrink: 0 }}
+                                />
+                              ) : (
+                                <Typography
+                                  component="span"
+                                  sx={{ fontSize: "1.1em", lineHeight: 1 }}
+                                >
+                                  {getCountryFlag(group.country)}
+                                </Typography>
+                              )}
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: "rgba(255,255,255,0.9)",
+                                  fontWeight: 500,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {group.country} ({count})
+                              </Typography>
+                            </Box>
+                            {!leaguesSearchQuery.trim() && (
+                              isCountryExpanded ? (
+                                <ExpandLessIcon
+                                  sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}
+                                />
+                              ) : (
+                                <ExpandMoreIcon
+                                  sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}
+                                />
+                              )
+                            )}
+                          </Box>
+                          <Collapse in={isCountryExpanded}>
+                            <Stack spacing={0.75} sx={{ pl: 2, pb: 1 }}>
+                              {filteredLeagues.map((league) => (
+                                <Chip
+                                  key={`${group.country}-${league.key}`}
+                                  icon={
+                                    league.logo ? (
+                                      <Box
+                                        component="img"
+                                        src={league.logo}
+                                        alt=""
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                        sx={{ width: 18, height: 18, objectFit: "contain", ml: 0.5 }}
+                                      />
+                                    ) : (
+                                      <SoccerIcon sx={{ fontSize: 16 }} />
+                                    )
+                                  }
+                                  label={league.displayName}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLeagueKey(league.key);
+                                    setUpcomingPage(1);
+                                  }}
+                                  color={leagueKey === league.key ? "primary" : "default"}
+                                  variant={leagueKey === league.key ? "filled" : "outlined"}
+                                  size="small"
+                                  sx={{
+                                    fontWeight: 600,
+                                    width: "100%",
+                                    justifyContent: "flex-start",
+                                    backgroundColor:
+                                      leagueKey === league.key
+                                        ? "#667eea"
+                                        : "rgba(255,255,255,0.08)",
+                                    color:
+                                      leagueKey === league.key
+                                        ? "white"
+                                        : "rgba(255,255,255,0.8)",
+                                    borderColor: "rgba(255,255,255,0.15)",
+                                    "&:hover": {
+                                      backgroundColor:
+                                        leagueKey === league.key
+                                          ? "#5a6fd8"
+                                          : "rgba(255,255,255,0.15)",
+                                    },
+                                  }}
+                                />
+                              ))}
+                            </Stack>
+                          </Collapse>
+                        </Box>
+                      );
+                    })}
+                </Stack>
               )}
-            </Stack>
+            </Collapse>
 
             {/* Agent Mode Indicator */}
             {isAgentMode && (
@@ -1902,7 +2034,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           </Paper>
 
           {/* Right Panel - Games */}
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, minHeight: 0 }}>
             {/* Search Panel */}
             <Collapse in={showSearchPanel}>
               <Box sx={{ mb: 3 }}>
@@ -2018,30 +2150,80 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     </Typography>
                   </Paper>
                 ) : (
-                  <Stack spacing={2}>
-                    {games
-                      .filter(
-                        (game) =>
-                          game && game.id && game.homeTeam && game.awayTeam
-                      )
-                      .map((game) => {
-                        const gameNumber = game.team_index?.fullIndex || 0;
+                  <>
+                    <Stack spacing={2}>
+                      {games
+                        .filter(
+                          (game) =>
+                            game && game.id && game.homeTeam && game.awayTeam
+                        )
+                        .map((game) => {
+                          const gameNumber = game.team_index?.fullIndex || 0;
 
-                        return (
-                          <GameCard
-                            key={game.id}
-                            game={game}
-                            isSelected={selectedGame?.id === game.id}
-                            onSelect={setSelectedGame}
-                            onAddToBetSlip={handleAddToBetSlip}
-                            isSelectionInBetSlip={isSelectionInBetSlip}
-                            expandedGames={expandedGames}
-                            onToggleExpanded={toggleExpanded}
-                            gameNumber={gameNumber}
-                          />
-                        );
-                      })}
-                  </Stack>
+                          return (
+                            <GameCard
+                              key={game.id}
+                              game={game}
+                              isSelected={selectedGame?.id === game.id}
+                              onSelect={setSelectedGame}
+                              onAddToBetSlip={handleAddToBetSlip}
+                              isSelectionInBetSlip={isSelectionInBetSlip}
+                              expandedGames={expandedGames}
+                              onToggleExpanded={toggleExpanded}
+                              gameNumber={gameNumber}
+                            />
+                          );
+                        })}
+                    </Stack>
+
+                    {pagination && pagination.totalPages > 1 && (
+                      <Stack
+                        direction="row"
+                        justifyContent="center"
+                        alignItems="center"
+                        spacing={2}
+                        sx={{ mt: 3, mb: 2 }}
+                      >
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          disabled={upcomingPage <= 1}
+                          onClick={() => { setUpcomingPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          sx={{
+                            color: "rgba(255,255,255,0.8)",
+                            borderColor: "rgba(255,255,255,0.2)",
+                            "&:hover": { borderColor: "primary.main", bgcolor: "rgba(25,118,210,0.1)" },
+                            "&.Mui-disabled": { color: "rgba(255,255,255,0.3)", borderColor: "rgba(255,255,255,0.1)" },
+                          }}
+                        >
+                          Previous
+                        </Button>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 500 }}
+                        >
+                          Page {pagination.page} of {pagination.totalPages}
+                          <Typography component="span" sx={{ color: "rgba(255,255,255,0.4)", ml: 1, fontSize: "0.75rem" }}>
+                            {`(${pagination.total} games)`}
+                          </Typography>
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          disabled={upcomingPage >= pagination.totalPages}
+                          onClick={() => { setUpcomingPage((p) => Math.min(pagination.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          sx={{
+                            color: "rgba(255,255,255,0.8)",
+                            borderColor: "rgba(255,255,255,0.2)",
+                            "&:hover": { borderColor: "primary.main", bgcolor: "rgba(25,118,210,0.1)" },
+                            "&.Mui-disabled": { color: "rgba(255,255,255,0.3)", borderColor: "rgba(255,255,255,0.1)" },
+                          }}
+                        >
+                          Next
+                        </Button>
+                      </Stack>
+                    )}
+                  </>
                 )}
               </Box>
             )}

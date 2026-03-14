@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
@@ -14,22 +14,28 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Card,
-  CardContent,
-  Grid,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   SportsEsports as BetsIcon,
   EmojiEvents as TrophyIcon,
   Schedule as PendingIcon,
   Cancel as CancelIcon,
+  FilterList as FilterIcon,
 } from "@mui/icons-material";
+
+export type BetStatusFilter = "all" | "won" | "lost" | "pending";
+export type BetPeriodFilter = number | null; // null = all time, number = last N days
 
 interface BetsTabProps {
   recentBets: DisplayBet[];
   isLoadingBets: boolean;
   betsError: string | null;
-  onLoadRecentBets: () => void;
+  onLoadRecentBets: (options?: { days?: number | null }) => void;
 }
 
 export const BetsTab: React.FC<BetsTabProps> = ({
@@ -38,6 +44,35 @@ export const BetsTab: React.FC<BetsTabProps> = ({
   betsError,
   onLoadRecentBets,
 }) => {
+  const [statusFilter, setStatusFilter] = useState<BetStatusFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<BetPeriodFilter>(null);
+
+  const filteredBets = useMemo(() => {
+    let list = recentBets;
+
+    if (statusFilter !== "all") {
+      list = list.filter((bet) => (bet.status || (bet as any).result || "").toLowerCase() === statusFilter);
+    }
+
+    if (periodFilter != null && periodFilter > 0) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - periodFilter);
+      list = list.filter((bet) => {
+        const ts = bet.timestamp || (bet as any).createdAt;
+        if (!ts) return false;
+        return new Date(ts).getTime() >= cutoff.getTime();
+      });
+    }
+
+    return list;
+  }, [recentBets, statusFilter, periodFilter]);
+
+  const handlePeriodChange = (days: number | "") => {
+    const value = days === "" ? null : (days as number);
+    setPeriodFilter(value);
+    onLoadRecentBets({ days: value ?? undefined });
+  };
+
   if (isLoadingBets) {
     return <LoadingState message="Loading recent bets..." />;
   }
@@ -61,6 +96,8 @@ export const BetsTab: React.FC<BetsTabProps> = ({
       />
     );
   }
+
+  const showFilteredEmpty = filteredBets.length === 0 && recentBets.length > 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,7 +137,7 @@ export const BetsTab: React.FC<BetsTabProps> = ({
 
   return (
     <Box>
-      {/* Section Header */}
+      {/* Section Header with filters */}
       <Paper
         sx={{
           p: 3,
@@ -113,22 +150,73 @@ export const BetsTab: React.FC<BetsTabProps> = ({
           backdropFilter: "blur(10px)",
         }}
       >
-        <Box display="flex" alignItems="center" gap={2}>
-          <BetsIcon sx={{ fontSize: 32, color: "#667eea" }} />
-          <Box>
-            <Typography
-              variant="h4"
-              gutterBottom
-              sx={{ color: "rgba(255,255,255,0.9)" }}
-            >
-              Recent Bets
-            </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
-              Your latest betting activity
-            </Typography>
+        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <BetsIcon sx={{ fontSize: 32, color: "#667eea" }} />
+            <Box>
+              <Typography
+                variant="h4"
+                gutterBottom
+                sx={{ color: "rgba(255,255,255,0.9)" }}
+              >
+                Recent Bets
+              </Typography>
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
+                Your latest betting activity
+              </Typography>
+            </Box>
           </Box>
+
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <FilterIcon sx={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }} />
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+                Status:
+              </Typography>
+              {(["all", "won", "lost", "pending"] as const).map((status) => (
+                <Chip
+                  key={status}
+                  label={status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+                  onClick={() => setStatusFilter(status)}
+                  size="small"
+                  sx={{
+                    backgroundColor: statusFilter === status ? "#667eea" : "rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontWeight: 600,
+                    "&:hover": { backgroundColor: statusFilter === status ? "#5a6fd6" : "rgba(255,255,255,0.2)" },
+                  }}
+                />
+              ))}
+            </Stack>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel sx={{ color: "rgba(255,255,255,0.8)" }}>Period</InputLabel>
+              <Select
+                value={periodFilter ?? ""}
+                label="Period"
+                onChange={(e) => handlePeriodChange(e.target.value === "" ? "" : Number(e.target.value))}
+                sx={{
+                  color: "white",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.5)" },
+                }}
+              >
+                <MenuItem value="">All time</MenuItem>
+                <MenuItem value={1}>Last 1 day</MenuItem>
+                <MenuItem value={5}>Last 5 days</MenuItem>
+                <MenuItem value={7}>Last 7 days</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
         </Box>
       </Paper>
+
+      {showFilteredEmpty && (
+        <Paper sx={{ p: 3, mb: 3, textAlign: "center", backgroundColor: "rgba(255,255,255,0.05)" }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.8)" }}>
+            No bets match the current filters. Try changing status or period.
+          </Typography>
+        </Paper>
+      )}
 
       {/* Bets Table */}
       <Paper
@@ -189,7 +277,7 @@ export const BetsTab: React.FC<BetsTabProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {recentBets.map((bet, index) => (
+              {filteredBets.map((bet, index) => (
                 <TableRow
                   key={bet.betId || bet.id}
                   hover

@@ -6,6 +6,131 @@
 import { GameOdds } from '../types/games';
 
 /**
+ * Map API/source market keys to internal market keys.
+ * Ensures all supported market types are recognized when parsing odds.
+ */
+export const MARKET_KEY_TO_INTERNAL: Record<string, string> = {
+      match_winner: 'h2h',
+      first_half_winner: 'h2h_h1',
+      second_half_winner: 'h2h_h2',
+      '1x2_15_minutes': 'h2h_15_minutes',
+      '1x2_30_minutes': 'h2h_30_minutes',
+      '1x2_60_minutes': 'h2h_60_minutes',
+      '1x2_75_minutes': 'h2h_75_minutes',
+      first_10_min_winner: 'h2h_10_minutes',
+      first_team_to_score_3_way_1st_half: 'h2h_first_team_to_score_h1',
+      goals_over_under: 'totals',
+      goals_over_under_first_half: 'totals_h1',
+      goals_over_under_second_half: 'totals_h2',
+      goal_line: 'totals',
+      goal_line_1st_half: 'totals_h1',
+      result_total_goals: 'result_totals',
+      goal_in_1_15_minutes: 'totals_1_15_minutes',
+      goal_in_16_30_minutes: 'totals_16_30_minutes',
+      goal_in_31_45_minutes: 'totals_31_45_minutes',
+      goal_in_46_60_minutes: 'totals_46_60_minutes',
+      goal_in_61_75_minutes: 'totals_61_75_minutes',
+      goal_in_76_90_minutes: 'totals_76_90_minutes',
+      over_under_15m_30m: 'totals_15_30_minutes',
+      over_under_30m_45m: 'totals_30_45_minutes',
+      corners_over_under: 'totals_corners',
+      total_corners_1st_half: 'totals_corners_h1',
+      total_corners_2nd_half: 'totals_corners_h2',
+      home_corners_over_under: 'totals_corners_home',
+      away_corners_over_under: 'totals_corners_away',
+      cards_over_under: 'totals_cards',
+      cards_over_under_between_0_and_10_m: 'totals_cards_0_10_m',
+      yellow_over_under: 'totals_yellow_cards',
+      yellow_over_under_1st_half: 'totals_yellow_cards_h1',
+      yellow_over_under_2nd_half: 'totals_yellow_cards_h2',
+      fouls_total: 'totals_fouls',
+      fouls_home_total: 'totals_fouls_home',
+      fouls_away_total: 'totals_fouls_away',
+      total_tackles: 'totals_tackles',
+      total_shots: 'totals_shots',
+      total_shotongoal: 'totals_shotongoal',
+      offsides_total: 'totals_offsides',
+      offsides_home_total: 'totals_offsides_home',
+      offsides_away_total: 'totals_offsides_away',
+      exact_score: 'correct_score',
+      correct_score_first_half: 'correct_score_h1',
+      correct_score_second_half: 'correct_score_h2',
+      asian_handicap: 'spreads',
+      both_teams_score: 'btts',
+      double_chance: 'double_chance',
+      total_home: 'team_totals',
+      total_away: 'team_totals',
+};
+
+/** Normalize API market_key to internal key (e.g. match_winner → h2h). */
+export function normalizeMarketKey(raw: string | undefined): string {
+      if (raw == null || raw === '') return raw || '';
+      return MARKET_KEY_TO_INTERNAL[raw] ?? raw;
+}
+
+/**
+ * Preferred API market keys for each internal key (for placing bets).
+ * Backend expects the same keys as in the odds feed (e.g. match_winner, goals_over_under).
+ */
+export const INTERNAL_TO_API_MARKET_KEY: Record<string, string> = {
+      h2h: 'match_winner',
+      h2h_h1: 'first_half_winner',
+      h2h_h2: 'second_half_winner',
+      h2h_15_minutes: '1x2_15_minutes',
+      h2h_30_minutes: '1x2_30_minutes',
+      h2h_60_minutes: '1x2_60_minutes',
+      h2h_75_minutes: '1x2_75_minutes',
+      h2h_10_minutes: 'first_10_min_winner',
+      h2h_first_team_to_score_h1: 'first_team_to_score_3_way_1st_half',
+      totals: 'goals_over_under',
+      totals_h1: 'goals_over_under_first_half',
+      totals_h2: 'goals_over_under_second_half',
+      result_totals: 'result_total_goals',
+      totals_1_15_minutes: 'goal_in_1_15_minutes',
+      totals_16_30_minutes: 'goal_in_16_30_minutes',
+      totals_31_45_minutes: 'goal_in_31_45_minutes',
+      totals_46_60_minutes: 'goal_in_46_60_minutes',
+      totals_61_75_minutes: 'goal_in_61_75_minutes',
+      totals_76_90_minutes: 'goal_in_76_90_minutes',
+      totals_15_30_minutes: 'over_under_15m_30m',
+      totals_30_45_minutes: 'over_under_30m_45m',
+      totals_corners: 'corners_over_under',
+      totals_corners_h1: 'total_corners_1st_half',
+      totals_corners_h2: 'total_corners_2nd_half',
+      totals_corners_home: 'home_corners_over_under',
+      totals_corners_away: 'away_corners_over_under',
+      totals_cards: 'cards_over_under',
+      totals_cards_0_10_m: 'cards_over_under_between_0_and_10_m',
+      totals_yellow_cards: 'yellow_over_under',
+      totals_yellow_cards_h1: 'yellow_over_under_1st_half',
+      totals_yellow_cards_h2: 'yellow_over_under_2nd_half',
+      totals_fouls: 'fouls_total',
+      totals_fouls_home: 'fouls_home_total',
+      totals_fouls_away: 'fouls_away_total',
+      totals_tackles: 'total_tackles',
+      totals_shots: 'total_shots',
+      totals_shotongoal: 'total_shotongoal',
+      totals_offsides: 'offsides_total',
+      totals_offsides_home: 'offsides_home_total',
+      totals_offsides_away: 'offsides_away_total',
+      correct_score: 'exact_score',
+      correct_score_h1: 'correct_score_first_half',
+      correct_score_h2: 'correct_score_second_half',
+      spreads: 'asian_handicap',
+      btts: 'both_teams_score',
+      double_chance: 'double_chance',
+      team_totals: 'total_home', // backend may use total_home / total_away by outcome
+      team_totals_h1: 'team_totals_h1',
+      team_totals_h2: 'team_totals_h2',
+};
+
+/** Convert internal market key to API key for bet placement (e.g. h2h → match_winner). */
+export function toApiMarketKey(internalKey: string | undefined): string {
+      if (internalKey == null || internalKey === '') return internalKey || '';
+      return INTERNAL_TO_API_MARKET_KEY[internalKey] ?? internalKey;
+}
+
+/**
  * Generic outcome structure that works with both API formats
  */
 interface GenericOutcome {
@@ -28,11 +153,15 @@ export function normalizeOutcome(outcome: any): GenericOutcome {
 }
 
 /**
- * Find market from bookmakers array (legacy format)
+ * Find market from bookmakers array (legacy format).
+ * Matches by internal key or any API alias (e.g. match_winner → h2h).
  */
-export function findMarketFromBookmakers(bookmakers: any[], marketKey: string): any {
+export function findMarketFromBookmakers(bookmakers: any[], internalMarketKey: string): any {
       for (const bm of bookmakers) {
-            const market = bm?.markets?.find((m: any) => m.key === marketKey);
+            const market = bm?.markets?.find((m: any) => {
+                  const raw = m?.key;
+                  return raw === internalMarketKey || normalizeMarketKey(raw) === internalMarketKey;
+            });
             if (market) return market;
       }
       return null;
@@ -383,21 +512,21 @@ export function parseOddsFromGameOddsArray(
       homeTeam: string,
       awayTeam: string
 ) {
-      // Group odds by market (including half-time markets)
-      const h2hOdds = odds.filter(o => o.market_key === 'h2h');
-      const dcOdds = odds.filter(o => o.market_key === 'double_chance');
-      const totalsOdds = odds.filter(o => o.market_key === 'totals');
-      const bttsOdds = odds.filter(o => o.market_key === 'btts');
-      const spreadsOdds = odds.filter(o => o.market_key === 'spreads');
-      const teamTotalsOdds = odds.filter(o => o.market_key === 'team_totals'); // Full-time team totals
+      // Group odds by market (internal key; API aliases normalized via normalizeMarketKey)
+      const h2hOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h');
+      const dcOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'double_chance');
+      const totalsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals');
+      const bttsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'btts');
+      const spreadsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'spreads');
+      const teamTotalsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals'); // full-time (total_home/total_away → team_totals)
 
       // Half-time markets
-      const h2h_h1_Odds = odds.filter(o => o.market_key === 'h2h_h1');
-      const h2h_h2_Odds = odds.filter(o => o.market_key === 'h2h_h2');
-      const totals_h1_Odds = odds.filter(o => o.market_key === 'totals_h1');
-      const totals_h2_Odds = odds.filter(o => o.market_key === 'totals_h2');
-      const team_totals_h1_Odds = odds.filter(o => o.market_key === 'team_totals_h1');
-      const team_totals_h2_Odds = odds.filter(o => o.market_key === 'team_totals_h2');
+      const h2h_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h_h1');
+      const h2h_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h_h2');
+      const totals_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals_h1');
+      const totals_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals_h2');
+      const team_totals_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals_h1');
+      const team_totals_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals_h2');
 
       const h2h = extractH2HOdds(h2hOdds, homeTeam, awayTeam);
       const doubleChance = extractDoubleChanceOdds(dcOdds, homeTeam, awayTeam);
@@ -493,6 +622,27 @@ export function parseOddsFromBookmakersArray(
             };
       }
 
+      // Collect ALL markets into rawMarkets for the expanded panel
+      const rawMarkets: Array<{ key: string; outcomes: Array<{ name: string; price: number; point?: number; description?: string }> }> = [];
+      for (const bm of bookmakers) {
+            if (!Array.isArray(bm.markets)) continue;
+            for (const m of bm.markets) {
+                  if (!m.key || !Array.isArray(m.outcomes) || m.outcomes.length === 0) continue;
+                  const existing = rawMarkets.find(r => r.key === m.key);
+                  const mapped = m.outcomes.map((o: any) => ({
+                        name: o.name as string,
+                        price: Number(o.price) || 0,
+                        ...(o.point != null ? { point: Number(o.point) } : {}),
+                        ...(o.description ? { description: o.description as string } : {}),
+                  }));
+                  if (existing) {
+                        existing.outcomes.push(...mapped);
+                  } else {
+                        rawMarkets.push({ key: m.key, outcomes: mapped });
+                  }
+            }
+      }
+
       const h2hMarket = findMarketFromBookmakers(bookmakers, 'h2h');
       const dcMarket = findMarketFromBookmakers(bookmakers, 'double_chance');
       const totalsMarket = findMarketFromBookmakers(bookmakers, 'totals');
@@ -515,18 +665,6 @@ export function parseOddsFromBookmakersArray(
       const spreads = extractSpreadOdds(spreadsMarket?.outcomes || [], homeTeam, awayTeam);
       const teamTotals = extractTeamTotalsOdds(teamTotalsMarket?.outcomes || [], homeTeam, awayTeam); // Full-time team totals
       
-      // Debug logging for team totals
-      if (teamTotalsMarket && teamTotalsMarket.outcomes) {
-            console.log('🔍 Team Totals Parser Debug:', {
-                  marketFound: !!teamTotalsMarket,
-                  outcomesCount: teamTotalsMarket.outcomes.length,
-                  homeTeam,
-                  awayTeam,
-                  parsedCount: teamTotals.length,
-                  parsed: teamTotals
-            });
-      }
-
       // Parse half-time markets
       const h2h_h1 = extractH2HOdds(h2h_h1_Market?.outcomes || [], homeTeam, awayTeam);
       const h2h_h2 = extractH2HOdds(h2h_h2_Market?.outcomes || [], homeTeam, awayTeam);
@@ -547,6 +685,7 @@ export function parseOddsFromBookmakersArray(
 
       return {
             ...oddsData,
+            ...(rawMarkets.length > 0 ? { rawMarkets } : {}),
             overUnder: {
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,
