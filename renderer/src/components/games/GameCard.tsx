@@ -26,12 +26,12 @@ interface GameCardProps {
     game: Game,
     betType: string,
     selection: string,
-    odds: number
+    odds: number,
   ) => void;
   isSelectionInBetSlip: (
     gameId: string,
     betType: string,
-    selection: string
+    selection: string,
   ) => boolean;
   expandedGames: Set<string>;
   onToggleExpanded: (gameId: string, event: React.MouseEvent) => void;
@@ -52,7 +52,12 @@ export const GameCard: React.FC<GameCardProps> = ({
 }) => {
   const getMarketCount = () => {
     let count = 1;
-    if (game.doubleChance?.homeOrDraw || game.doubleChance?.drawOrAway || game.doubleChance?.homeOrAway) count++;
+    if (
+      game.doubleChance?.homeOrDraw ||
+      game.doubleChance?.drawOrAway ||
+      game.doubleChance?.homeOrAway
+    )
+      count++;
     if (game.totals && game.totals.length > 0) count++;
     if (game.bothTeamsToScore?.yes || game.bothTeamsToScore?.no) count++;
     if (game.teamTotals && game.teamTotals.length > 0) count++;
@@ -75,16 +80,24 @@ export const GameCard: React.FC<GameCardProps> = ({
         mb: 2,
         mx: { xs: 1, sm: 2, md: "25%" },
         cursor: "pointer",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-        background:
-          "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
+        border: isHighlighted
+          ? "2px solid #42a5f5"
+          : "1px solid rgba(255, 255, 255, 0.1)",
+        background: isHighlighted
+          ? "linear-gradient(135deg, rgba(21, 101, 192, 0.15) 0%, rgba(25, 118, 210, 0.08) 100%)"
+          : "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
         backdropFilter: "blur(20px)",
         color: "white",
+        boxShadow: isHighlighted
+          ? "0 0 20px rgba(66, 165, 245, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3)"
+          : "none",
         transition: "all 0.3s ease",
         "&:hover": {
           transform: "translateY(-4px)",
-          borderColor: "rgba(255, 255, 255, 0.2)",
-          boxShadow: "0 20px 40px rgba(0, 212, 255, 0.15)",
+          borderColor: isHighlighted ? "#64b5f6" : "rgba(255, 255, 255, 0.2)",
+          boxShadow: isHighlighted
+            ? "0 0 24px rgba(66, 165, 245, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3)"
+            : "0 20px 40px rgba(0, 212, 255, 0.15)",
         },
       }}
       onClick={() => onSelect(game)}
@@ -117,9 +130,17 @@ export const GameCard: React.FC<GameCardProps> = ({
               overflowY: "hidden",
               mb: 2,
               "&::-webkit-scrollbar": { height: "4px" },
-              "&::-webkit-scrollbar-track": { background: "rgba(255,255,255,0.1)", borderRadius: "2px" },
-              "&::-webkit-scrollbar-thumb": { background: "rgba(255,255,255,0.3)", borderRadius: "2px" },
-              "&::-webkit-scrollbar-thumb:hover": { background: "rgba(255,255,255,0.5)" },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: "2px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(255,255,255,0.3)",
+                borderRadius: "2px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "rgba(255,255,255,0.5)",
+              },
             }}
           >
             <Stack
@@ -145,8 +166,15 @@ export const GameCard: React.FC<GameCardProps> = ({
                     component="img"
                     src={game.homeTeamLogo}
                     alt=""
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    sx={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
                   />
                 )}
                 <Box sx={{ minWidth: 0 }}>
@@ -154,17 +182,38 @@ export const GameCard: React.FC<GameCardProps> = ({
                     variant="body2"
                     fontWeight="bold"
                     color="white"
-                    sx={{ fontSize: "0.85rem", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    sx={{
+                      fontSize: "0.85rem",
+                      lineHeight: 1.2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {gameNumber && (
-                      <Box component="span" sx={{ color: "#FFD700", fontWeight: "bold", textShadow: "0 0 2px rgba(255, 215, 0, 0.5)" }}>
+                      <Box
+                        component="span"
+                        sx={{
+                          color: "#FFD700",
+                          fontWeight: "bold",
+                          textShadow: "0 0 2px rgba(255, 215, 0, 0.5)",
+                        }}
+                      >
                         [{gameNumber}]{" "}
                       </Box>
                     )}
                     {game.homeTeam}
                   </Typography>
-                  <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ fontSize: "0.7rem" }}>
-                    {new Date(game.matchTime).toLocaleDateString()} &middot; {new Date(game.matchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  <Typography
+                    variant="caption"
+                    color="rgba(255,255,255,0.5)"
+                    sx={{ fontSize: "0.7rem" }}
+                  >
+                    {new Date(game.matchTime).toLocaleDateString()} &middot;{" "}
+                    {new Date(game.matchTime).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </Typography>
                 </Box>
               </Box>
@@ -180,7 +229,12 @@ export const GameCard: React.FC<GameCardProps> = ({
                   border: "1px solid rgba(255,255,255,0.15)",
                 }}
               >
-                <Typography variant="body2" fontWeight="bold" color="rgba(255,255,255,0.6)" sx={{ fontSize: "0.75rem" }}>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="rgba(255,255,255,0.6)"
+                  sx={{ fontSize: "0.75rem" }}
+                >
                   VS
                 </Typography>
               </Box>
@@ -202,49 +256,131 @@ export const GameCard: React.FC<GameCardProps> = ({
                     component="img"
                     src={game.awayTeamLogo}
                     alt=""
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    sx={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
                   />
                 )}
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight="bold" color="white" sx={{ fontSize: "0.85rem", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    color="white"
+                    sx={{
+                      fontSize: "0.85rem",
+                      lineHeight: 1.2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {game.awayTeam}
                   </Typography>
                 </Box>
               </Box>
 
               {/* Score (live/finished) */}
-              {game.currentScore && (game.currentScore.home > 0 || game.currentScore.away > 0) && (
+              {game.currentScore &&
+                (game.currentScore.home > 0 || game.currentScore.away > 0) && (
+                  <Box
+                    sx={{
+                      textAlign: "center",
+                      py: 1,
+                      mb: 2,
+                      bgcolor:
+                        game.status === "live"
+                          ? "rgba(76, 175, 80, 0.1)"
+                          : game.status === "finished"
+                            ? "rgba(33, 150, 243, 0.1)"
+                            : "rgba(255,193,7,0.1)",
+                      border: `1px solid ${game.status === "live" ? "rgba(76, 175, 80, 0.3)" : game.status === "finished" ? "rgba(33, 150, 243, 0.3)" : "rgba(255,193,7,0.3)"}`,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color={
+                        game.status === "live"
+                          ? "success.main"
+                          : game.status === "finished"
+                            ? "info.main"
+                            : "warning.main"
+                      }
+                    >
+                      {game.status === "live" && "LIVE: "}
+                      {game.status === "finished" && "FINAL: "}
+                      {game.currentScore.home} - {game.currentScore.away}
+                    </Typography>
+                    {game.currentTime && (
+                      <Typography
+                        variant="caption"
+                        color="rgba(255,255,255,0.7)"
+                      >
+                        {game.currentTime}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+
+              {!game.hasValidOdds && game.status === "scheduled" && (
                 <Box
                   sx={{
-                    textAlign: "center", py: 1, mb: 2,
-                    bgcolor: game.status === "live" ? "rgba(76, 175, 80, 0.1)" : game.status === "finished" ? "rgba(33, 150, 243, 0.1)" : "rgba(255,193,7,0.1)",
-                    border: `1px solid ${game.status === "live" ? "rgba(76, 175, 80, 0.3)" : game.status === "finished" ? "rgba(33, 150, 243, 0.3)" : "rgba(255,193,7,0.3)"}`,
+                    textAlign: "center",
+                    py: 1.5,
+                    mb: 2,
+                    bgcolor: "rgba(255,193,7,0.1)",
+                    border: "1px solid rgba(255,193,7,0.3)",
                     borderRadius: 2,
                   }}
                 >
-                  <Typography variant="h6" fontWeight="bold" color={game.status === "live" ? "success.main" : game.status === "finished" ? "info.main" : "warning.main"}>
-                    {game.status === "live" && "LIVE: "}
-                    {game.status === "finished" && "FINAL: "}
-                    {game.currentScore.home} - {game.currentScore.away}
+                  <Typography
+                    variant="body2"
+                    color="warning.main"
+                    fontWeight="bold"
+                  >
+                    Odds Not Available
                   </Typography>
-                  {game.currentTime && <Typography variant="caption" color="rgba(255,255,255,0.7)">{game.currentTime}</Typography>}
+                  <Typography variant="caption" color="rgba(255,193,7,0.8)">
+                    Betting odds not yet available
+                  </Typography>
                 </Box>
               )}
 
-              {!game.hasValidOdds && game.status === "scheduled" && (
-                <Box sx={{ textAlign: "center", py: 1.5, mb: 2, bgcolor: "rgba(255,193,7,0.1)", border: "1px solid rgba(255,193,7,0.3)", borderRadius: 2 }}>
-                  <Typography variant="body2" color="warning.main" fontWeight="bold">Odds Not Available</Typography>
-                  <Typography variant="caption" color="rgba(255,193,7,0.8)">Betting odds not yet available</Typography>
-                </Box>
-              )}
-
-              {!game.hasValidOdds && (game.status === "finished" || game.status === "live") && (
-                <Box sx={{ textAlign: "center", py: 1.5, mb: 2, bgcolor: "rgba(33, 150, 243, 0.1)", border: "1px solid rgba(33, 150, 243, 0.3)", borderRadius: 2 }}>
-                  <Typography variant="body2" color="info.main" fontWeight="bold">Game {game.status === "finished" ? "Finished" : "In Progress"}</Typography>
-                  <Typography variant="caption" color="rgba(33, 150, 243, 0.8)">ID: ...{game.externalId?.slice(-8) || game.id.slice(-8)}</Typography>
-                </Box>
-              )}
+              {!game.hasValidOdds &&
+                (game.status === "finished" || game.status === "live") && (
+                  <Box
+                    sx={{
+                      textAlign: "center",
+                      py: 1.5,
+                      mb: 2,
+                      bgcolor: "rgba(33, 150, 243, 0.1)",
+                      border: "1px solid rgba(33, 150, 243, 0.3)",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="info.main"
+                      fontWeight="bold"
+                    >
+                      Game{" "}
+                      {game.status === "finished" ? "Finished" : "In Progress"}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="rgba(33, 150, 243, 0.8)"
+                    >
+                      ID: ...{game.externalId?.slice(-8) || game.id.slice(-8)}
+                    </Typography>
+                  </Box>
+                )}
 
               {/* 3 Way Odds */}
               <H2HSection
@@ -295,7 +431,9 @@ export const GameCard: React.FC<GameCardProps> = ({
                 <IconButton
                   onClick={(e) => onToggleExpanded(game.id, e)}
                   sx={{
-                    transform: expandedGames.has(game.id) ? "rotate(180deg)" : "rotate(0deg)",
+                    transform: expandedGames.has(game.id)
+                      ? "rotate(180deg)"
+                      : "rotate(0deg)",
                     transition: "transform 0.3s ease",
                   }}
                 >
@@ -306,7 +444,11 @@ export const GameCard: React.FC<GameCardProps> = ({
           </Box>
 
           {/* Expanded: Full Markets Panel */}
-          <Collapse in={expandedGames.has(game.id)} timeout="auto" unmountOnExit>
+          <Collapse
+            in={expandedGames.has(game.id)}
+            timeout="auto"
+            unmountOnExit
+          >
             <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.1)" }} />
             <GameDetailsPanel
               game={game}

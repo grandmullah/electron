@@ -12,12 +12,12 @@ interface BettingOptionProps {
     game: Game,
     betType: string,
     selection: string,
-    odds: number
+    odds: number,
   ) => void;
   isSelectionInBetSlip: (
     gameId: string,
     betType: string,
-    selection: string
+    selection: string,
   ) => boolean;
 }
 
@@ -49,28 +49,37 @@ export const BettingOption: React.FC<BettingOptionProps> = ({
         width: "100%",
         height: "auto",
         fontSize: { xs: "0.75rem", sm: "0.8rem", md: "0.65rem" },
-        fontWeight: 600,
-        color: isSelected ? "white" : "white",
+        fontWeight: 700,
+        color: "white",
+        borderWidth: isSelected ? 2 : 1,
         borderColor: isClickable
           ? isSelected
-            ? "primary.main"
+            ? "#42a5f5"
             : "rgba(25, 118, 210, 0.5)"
           : "rgba(255,255,255,0.3)",
         bgcolor: isSelected
-          ? "primary.main"
+          ? "#1565c0"
           : isClickable
             ? "rgba(255,255,255,0.05)"
             : "rgba(255,255,255,0.02)",
+        boxShadow: isSelected ? "0 0 14px rgba(66, 165, 245, 0.6)" : "none",
         padding: { xs: "6px 8px", sm: "8px 10px", md: "8px 10px" },
+        transition: "all 0.2s ease",
         "&:hover": {
           transform: "scale(1.05)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          boxShadow: isSelected
+            ? "0 0 18px rgba(66, 165, 245, 0.7)"
+            : "0 4px 12px rgba(0,0,0,0.3)",
           bgcolor: isClickable
             ? isSelected
-              ? "primary.main"
+              ? "#1976d2"
               : "rgba(25, 118, 210, 0.2)"
             : "rgba(255,255,255,0.1)",
-          borderColor: isClickable ? "primary.main" : "rgba(255,255,255,0.3)",
+          borderColor: isClickable
+            ? isSelected
+              ? "#64b5f6"
+              : "primary.main"
+            : "rgba(255,255,255,0.3)",
         },
         "&.Mui-disabled": {
           color: "rgba(255,255,255,0.3)",
@@ -83,5 +92,3 @@ export const BettingOption: React.FC<BettingOptionProps> = ({
     </Button>
   );
 };
-
-

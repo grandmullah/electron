@@ -4,6 +4,82 @@ import { BetSlip, BetSlipResponse } from '../types/bets';
 import { API_BASE_URL } from './apiConfig';
 import { toApiMarketKey } from '../utils/oddsParser';
 
+// Backend-supported internal market types (must stay in sync with backend contract)
+const ALLOWED_INTERNAL_MARKET_TYPES: Set<string> = new Set([
+      // H2H (1X2 / match winner, including time-based)
+      'h2h',
+      'h2h_h1',
+      'h2h_h2',
+      'h2h_10_minutes',
+      'h2h_15_minutes',
+      'h2h_30_minutes',
+      'h2h_60_minutes',
+      'h2h_75_minutes',
+      'h2h_first_team_to_score_h1',
+      // Totals – goals (and result+totals, time bands)
+      'totals',
+      'totals_h1',
+      'totals_h2',
+      'result_totals',
+      'totals_1_15_minutes',
+      'totals_16_30_minutes',
+      'totals_31_45_minutes',
+      'totals_46_60_minutes',
+      'totals_61_75_minutes',
+      'totals_76_90_minutes',
+      'totals_15_30_minutes',
+      'totals_30_45_minutes',
+      // Totals – corners
+      'totals_corners',
+      'totals_corners_h1',
+      'totals_corners_h2',
+      'totals_corners_home',
+      'totals_corners_away',
+      // Totals – cards
+      'totals_cards',
+      'totals_cards_0_10_m',
+      'totals_cards_10_25_m',
+      'totals_cards_25_40_m',
+      'totals_cards_40_55_m',
+      'totals_cards_55_70_m',
+      'totals_cards_70_90_m',
+      'totals_yellow_cards',
+      'totals_yellow_cards_h1',
+      'totals_yellow_cards_h2',
+      // Totals – fouls / shots / offsides / tackles
+      'totals_fouls',
+      'totals_fouls_home',
+      'totals_fouls_away',
+      'totals_tackles',
+      'totals_shots',
+      'totals_shotongoal',
+      'totals_offsides',
+      'totals_offsides_home',
+      'totals_offsides_away',
+      // Spreads / handicaps
+      'spreads',
+      // Both teams to score / double chance
+      'btts',
+      'double_chance',
+      // Team totals (goals)
+      'team_totals',
+      'team_totals_h1',
+      'team_totals_h2',
+      // Correct score
+      'correct_score',
+      'correct_score_h1',
+      'correct_score_h2',
+      // Legacy (kept for backward compat in backend; not actively used here)
+      'first_scorer',
+]);
+
+const ensureAllowedMarketType = (internalKey: string, betType: string): string => {
+      if (!ALLOWED_INTERNAL_MARKET_TYPES.has(internalKey)) {
+            throw new Error(`Unsupported market type "${internalKey}" derived from bet type "${betType}". Please refresh odds or contact support.`);
+      }
+      return internalKey;
+};
+
 // API base URL is centralized in apiConfig.ts
 
 // Types for API requests and responses
@@ -99,68 +175,100 @@ export class BetSlipService {
 
       public static deriveMarketTypeFromBetType(betType: string): string {
             const key = (betType || '').toLowerCase();
+            const normalized = key.replace(/\s+/g, ' ').trim();
 
-            // Handle Half-Time Markets FIRST (before general markets)
-            // First Half markets
-            if (key.includes('1st half') || key.includes('first half')) {
-                  if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
-                        return 'h2h_h1';
-                  }
-                  // Check for team totals FIRST (before general over/under)
-                  if (key.includes('team total')) {
-                        return 'team_totals_h1';
-                  }
-                  if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
-                        return 'totals_h1';
-                  }
-                  if (key.includes('double')) return 'double_chance_h1';
-                  if (key.includes('both') || key.includes('btts')) return 'btts_h1';
+            const isFirstHalf =
+                  normalized.includes('1st half') ||
+                  normalized.includes('first half') ||
+                  normalized.includes('1h ');
+            const isSecondHalf =
+                  normalized.includes('2nd half') ||
+                  normalized.includes('second half') ||
+                  normalized.includes('2h ');
+
+            const base = normalized
+                  .replace(/1st half/g, '')
+                  .replace(/first half/g, '')
+                  .replace(/2nd half/g, '')
+                  .replace(/second half/g, '')
+                  .trim();
+
+            const containsTotals =
+                  base.includes('over/under') ||
+                  base.includes('o/u') ||
+                  base.includes('total goals') ||
+                  base.startsWith('totals') ||
+                  base.includes(' totals');
+
+            const containsTeamTotals =
+                  base.includes('team total') ||
+                  base.includes('team totals');
+
+            const containsDoubleChance =
+                  base.includes('double chance') ||
+                  base === 'double chance' ||
+                  base === 'dc';
+
+            const containsBTTS =
+                  base.includes('both teams to score') ||
+                  base.includes('btts');
+
+            const containsH2H =
+                  base.includes('3 way') ||
+                  base.includes('3-way') ||
+                  base.includes('1x2') ||
+                  base.includes('match') ||
+                  base.includes('h2h') ||
+                  base === '3 way';
+
+            const containsSpread =
+                  base.includes('spread') ||
+                  base.includes('handicap');
+
+            // Half-time specific markets
+            if (isFirstHalf) {
+                  if (containsTeamTotals) return 'team_totals_h1';
+                  if (containsTotals) return 'totals_h1';
+                  if (containsDoubleChance) return 'double_chance_h1';
+                  if (containsBTTS) return 'btts_h1';
+                  if (containsH2H || containsSpread) return 'h2h_h1';
             }
 
-            // Second Half markets
-            if (key.includes('2nd half') || key.includes('second half')) {
-                  if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('h2h')) {
-                        return 'h2h_h2';
-                  }
-                  // Check for team totals FIRST (before general over/under)
-                  if (key.includes('team total')) {
-                        return 'team_totals_h2';
-                  }
-                  if (key.includes('over/under') || key.includes('over') || key.includes('under')) {
-                        return 'totals_h2';
-                  }
-                  if (key.includes('double')) return 'double_chance_h2';
-                  if (key.includes('both') || key.includes('btts')) return 'btts_h2';
+            if (isSecondHalf) {
+                  if (containsTeamTotals) return 'team_totals_h2';
+                  if (containsTotals) return 'totals_h2';
+                  if (containsDoubleChance) return 'double_chance_h2';
+                  if (containsBTTS) return 'btts_h2';
+                  if (containsH2H || containsSpread) return 'h2h_h2';
             }
 
-            // Handle Full Match Markets (default)
-            // Handle Double Chance markets
-            if (key.includes('double')) return 'double_chance';
+            // Full Match / generic markets (no explicit half)
+            if (containsTeamTotals) return 'team_totals';
+            if (containsTotals) return 'totals';
+            if (containsDoubleChance) return 'double_chance';
+            if (containsBTTS) return 'btts';
+            if (containsSpread) return 'spreads';
+            if (containsH2H) return 'h2h';
 
-            // Handle Over/Under markets
-            if (key.includes('over/under') || key.includes('over') || key.includes('under')) return 'totals';
-
-            // Handle Both Teams To Score markets
-            if (key.includes('both') || key.includes('btts')) return 'btts';
-
-            // Handle Head-to-Head markets (3 Way, H2H, etc.)
-            if (key.includes('3 way') || key.includes('3-way') || key.includes('1x2') || key.includes('match') || key.includes('h2h') || key.includes('spread')) return 'h2h';
+            // Fallback: derive from common English labels used in UI
+            if (normalized === 'over/under' || normalized.startsWith('over/under ')) return 'totals';
+            if (normalized === '3 way') return 'h2h';
 
             // Default to H2H for any unrecognized bet types
             return 'h2h';
       }
 
       /** Internal market key → API market key for bet placement (e.g. h2h → match_winner). Handles team_totals → total_home/total_away from selection. */
-      public static getApiMarketKeyForBet(bet: BetSlipItem): string {
-            const marketType = this.deriveMarketTypeFromBetType(bet.betType);
-            let apiKey = toApiMarketKey(marketType);
-            if (marketType === 'team_totals') {
-                  const sel = (bet.selection || '').toLowerCase();
-                  const home = (bet.homeTeam || '').toLowerCase();
-                  apiKey = home && sel.includes(home) ? 'total_home' : 'total_away';
-            }
-            return apiKey;
-      }
+      // public static getApiMarketKeyForBet(bet: BetSlipItem): string {
+      //       const marketType = this.deriveMarketTypeFromBetType(bet.betType);
+      //       let apiKey = toApiMarketKey(marketType);
+      //       if (marketType === 'team_totals') {
+      //             const sel = (bet.selection || '').toLowerCase();
+      //             const home = (bet.homeTeam || '').toLowerCase();
+      //             apiKey = home && sel.includes(home) ? 'total_home' : 'total_away';
+      //       }
+      //       return apiKey;
+      // }
 
       public static deriveOutcomeForMarket(bet: BetSlipItem, marketType: string): string {
             const selection = (bet.selection || '').toLowerCase();
@@ -282,15 +390,18 @@ export class BetSlipService {
                   const betSlipData = {
                         userId: finalUserId,
                         selections: bets.map(bet => {
-                              const marketType = this.deriveMarketTypeFromBetType(bet.betType);
-                              const apiMarketKey = this.getApiMarketKeyForBet(bet);
+                              const marketType = ensureAllowedMarketType(
+                                    this.deriveMarketTypeFromBetType(bet.betType),
+                                    bet.betType
+                              );
+                              // const apiMarketKey = this.getApiMarketKeyForBet(bet);
                               const outcome = this.deriveOutcomeForMarket(bet, marketType);
 
                               const selectionData = {
                                     gameId: bet.gameId,
                                     homeTeam: bet.homeTeam,
                                     awayTeam: bet.awayTeam,
-                                    marketType: apiMarketKey,
+                                    marketType: toApiMarketKey(marketType),
                                     outcome: outcome,
                                     odds: {
                                           decimal: parseFloat(bet.odds.toFixed(2)),
@@ -622,12 +733,15 @@ export class BetSlipService {
             try {
                   const validationData = {
                         selections: bets.map(bet => {
-                              const marketType = this.deriveMarketTypeFromBetType(bet.betType);
-                              const apiMarketKey = this.getApiMarketKeyForBet(bet);
+                              const marketType = ensureAllowedMarketType(
+                                    this.deriveMarketTypeFromBetType(bet.betType),
+                                    bet.betType
+                              );
+                              // const apiMarketKey = this.getApiMarketKeyForBet(bet);
                               const outcome = this.deriveOutcomeForMarket(bet, marketType);
                               return {
                                     gameId: bet.gameId,
-                                    marketType: apiMarketKey,
+                                    marketType: toApiMarketKey(marketType),
                                     outcome,
                                     odds: { decimal: bet.odds, american: this.decimalToAmerican(bet.odds), multiplier: bet.odds }
                               };

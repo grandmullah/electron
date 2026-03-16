@@ -49,6 +49,7 @@ import {
   Casino as CasinoIcon,
   Print as PrintIcon,
 } from "@mui/icons-material";
+import { toApiMarketKey } from "../utils/oddsParser";
 
 interface MUIBetSlipProps {
   isVisible: boolean;
@@ -276,7 +277,7 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
           const marketType = BetSlipService.deriveMarketTypeFromBetType(
             item.betType
           );
-          const apiMarketKey = BetSlipService.getApiMarketKeyForBet(item);
+          const apiMarketKey = toApiMarketKey(marketType);
           const outcome = BetSlipService.deriveOutcomeForMarket(
             item,
             marketType

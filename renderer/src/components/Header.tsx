@@ -37,6 +37,7 @@ import {
   Stack,
   Chip,
   ListItemText,
+  ListItemIcon,
 } from "@mui/material";
 import {
   Receipt as ReceiptIcon,
@@ -49,6 +50,7 @@ import {
   Print as PrintIcon,
   FileDownload as FileDownloadIcon,
   Science as TestIcon,
+  MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 
 export interface GamesPageActions {
@@ -59,6 +61,79 @@ export interface GamesPageActions {
   isExporting: boolean;
   hasGames: boolean;
 }
+
+const GamesActionsDropdown: React.FC<{ gamesPageActions: GamesPageActions }> = ({ gamesPageActions }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  return (
+    <>
+      <Button
+        size="small"
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        endIcon={<MoreVertIcon sx={{ fontSize: 18 }} />}
+        sx={{
+          color: "rgba(255, 255, 255, 0.85)",
+          bgcolor: "rgba(255,255,255,0.12)",
+          "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+          borderRadius: "8px",
+          px: 1.5,
+          py: 0.5,
+          fontSize: "0.85rem",
+          textTransform: "none",
+          fontWeight: 600,
+        }}
+      >
+        Actions
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "rgba(30, 30, 50, 0.98)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "10px",
+              mt: 0.5,
+              minWidth: 180,
+              "& .MuiMenuItem-root": {
+                fontSize: "0.85rem",
+                color: "rgba(255,255,255,0.85)",
+                py: 1,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.08)" },
+              },
+            },
+          },
+        }}
+      >
+        <MenuItem onClick={() => { gamesPageActions.onBackToHome(); setAnchorEl(null); }}>
+          <ListItemIcon><HomeIcon sx={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }} /></ListItemIcon>
+          <ListItemText>Back to Home</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { gamesPageActions.onPrintGames(); setAnchorEl(null); }}>
+          <ListItemIcon><PrintIcon sx={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }} /></ListItemIcon>
+          <ListItemText>Print Games</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => { gamesPageActions.onExportToExcel(); setAnchorEl(null); }}
+          disabled={gamesPageActions.isExporting || !gamesPageActions.hasGames}
+        >
+          <ListItemIcon><FileDownloadIcon sx={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }} /></ListItemIcon>
+          <ListItemText>{gamesPageActions.isExporting ? "Exporting..." : "Export to Excel"}</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { gamesPageActions.onTestPrinter(); setAnchorEl(null); }}>
+          <ListItemIcon><TestIcon sx={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }} /></ListItemIcon>
+          <ListItemText>Test Printer</ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
+  );
+};
 
 interface HeaderProps {
   onNavigate: (
@@ -261,79 +336,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Games
               </Button>
               {currentPage === "games" && gamesPageActions && (
-                <>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<HomeIcon />}
-                    onClick={gamesPageActions.onBackToHome}
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.85)",
-                      borderColor: "rgba(255,255,255,0.3)",
-                      "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" },
-                      borderRadius: "8px",
-                      px: 1.5,
-                      py: 0.5,
-                      fontSize: "0.85rem",
-                      textTransform: "none",
-                    }}
-                  >
-                    Back to Home
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<PrintIcon />}
-                    onClick={gamesPageActions.onPrintGames}
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.85)",
-                      bgcolor: "rgba(255,255,255,0.12)",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
-                      borderRadius: "8px",
-                      px: 1.5,
-                      py: 0.5,
-                      fontSize: "0.85rem",
-                      textTransform: "none",
-                    }}
-                  >
-                    Print Games
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<FileDownloadIcon />}
-                    onClick={gamesPageActions.onExportToExcel}
-                    disabled={gamesPageActions.isExporting || !gamesPageActions.hasGames}
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.85)",
-                      bgcolor: "rgba(255,255,255,0.12)",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
-                      borderRadius: "8px",
-                      px: 1.5,
-                      py: 0.5,
-                      fontSize: "0.85rem",
-                      textTransform: "none",
-                      "&.Mui-disabled": { opacity: 0.6 },
-                    }}
-                  >
-                    {gamesPageActions.isExporting ? "Exporting..." : "Export to Excel"}
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<TestIcon />}
-                    onClick={gamesPageActions.onTestPrinter}
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.85)",
-                      bgcolor: "rgba(255,255,255,0.12)",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
-                      borderRadius: "8px",
-                      px: 1.5,
-                      py: 0.5,
-                      fontSize: "0.85rem",
-                      textTransform: "none",
-                    }}
-                  >
-                    Test Printer
-                  </Button>
-                </>
+                <GamesActionsDropdown gamesPageActions={gamesPageActions} />
               )}
               {["dashboard", "settings", "history"].map((page) => (
                 <Button

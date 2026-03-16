@@ -215,11 +215,19 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
           flex: "0 0 auto",
           width: { xs: "calc(33.33% - 8px)", sm: "calc(16.66% - 8px)", md: "calc(14.28% - 8px)" },
           minWidth: 55,
+          py: 0.25,
+          px: 0.25,
+          borderRadius: 0.5,
+          bgcolor: isSelected ? "rgba(25, 118, 210, 0.15)" : "transparent",
+          border: isSelected ? "2px solid rgba(25, 118, 210, 0.6)" : "1px solid transparent",
+          boxShadow: isSelected ? "0 0 10px rgba(25, 118, 210, 0.3)" : "none",
+          transition: "all 0.2s ease",
         }}
       >
         <Typography
           variant="caption"
-          color="rgba(255,255,255,0.6)"
+          color={isSelected ? "#64b5f6" : "rgba(255,255,255,0.6)"}
+          fontWeight={isSelected ? 700 : 400}
           display="block"
           mb={0.25}
           sx={{ fontSize: "0.58rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
@@ -239,22 +247,31 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
             width: "100%",
             height: "auto",
             fontSize: { xs: "0.65rem", sm: "0.7rem", md: "0.65rem" },
-            fontWeight: 600,
+            fontWeight: 700,
             color: "white",
+            borderWidth: isSelected ? 2 : 1,
             borderColor: isClickable
-              ? isSelected ? "primary.main" : "rgba(25, 118, 210, 0.5)"
+              ? isSelected ? "#42a5f5" : "rgba(25, 118, 210, 0.5)"
               : "rgba(255,255,255,0.3)",
             bgcolor: isSelected
-              ? "primary.main"
+              ? "#1565c0"
               : isClickable ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+            boxShadow: isSelected
+              ? "0 0 12px rgba(66, 165, 245, 0.6)"
+              : "none",
             padding: "4px 4px",
+            transition: "all 0.2s ease",
             "&:hover": {
               transform: "scale(1.05)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              boxShadow: isSelected
+                ? "0 0 16px rgba(66, 165, 245, 0.7)"
+                : "0 4px 12px rgba(0,0,0,0.3)",
               bgcolor: isClickable
-                ? isSelected ? "primary.main" : "rgba(25, 118, 210, 0.2)"
+                ? isSelected ? "#1976d2" : "rgba(25, 118, 210, 0.2)"
                 : "rgba(255,255,255,0.1)",
-              borderColor: isClickable ? "primary.main" : "rgba(255,255,255,0.3)",
+              borderColor: isClickable
+                ? isSelected ? "#64b5f6" : "primary.main"
+                : "rgba(255,255,255,0.3)",
             },
             "&.Mui-disabled": {
               color: "rgba(255,255,255,0.3)",

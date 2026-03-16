@@ -2171,6 +2171,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                               expandedGames={expandedGames}
                               onToggleExpanded={toggleExpanded}
                               gameNumber={gameNumber}
+                              isHighlighted={betSlipItems.some((item) => item.gameId === game.id)}
                             />
                           );
                         })}
