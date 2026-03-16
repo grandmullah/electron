@@ -12,7 +12,8 @@ interface DoubleChanceSectionProps {
     game: Game,
     betType: string,
     selection: string,
-    odds: number
+    odds: number,
+    marketKey?: string
   ) => void;
   isSelectionInBetSlip: (
     gameId: string,

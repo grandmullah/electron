@@ -193,6 +193,11 @@ export class BetSlipService {
                   .replace(/second half/g, '')
                   .trim();
 
+            const containsResultTotals =
+                  base.includes('result + total') ||
+                  base.includes('result & total') ||
+                  base.includes('result and total');
+
             const containsTotals =
                   base.includes('over/under') ||
                   base.includes('o/u') ||
@@ -225,8 +230,22 @@ export class BetSlipService {
                   base.includes('spread') ||
                   base.includes('handicap');
 
+            const containsCorners = base.includes('corner');
+            const containsCards = base.includes('card');
+            const containsFouls = base.includes('foul');
+            const containsShots = base.includes('shot');
+            const containsOffsides = base.includes('offside');
+            const containsTackles = base.includes('tackle');
+
             // Half-time specific markets
             if (isFirstHalf) {
+                  if (containsResultTotals) return 'result_totals';
+                  if (containsCorners) return 'totals_corners_h1';
+                  if (containsCards) return 'totals_yellow_cards_h1';
+                  if (containsFouls) return 'totals_fouls';
+                  if (containsShots) return 'totals_shots';
+                  if (containsOffsides) return 'totals_offsides';
+                  if (containsTackles) return 'totals_tackles';
                   if (containsTeamTotals) return 'team_totals_h1';
                   if (containsTotals) return 'totals_h1';
                   if (containsDoubleChance) return 'double_chance_h1';
@@ -235,6 +254,13 @@ export class BetSlipService {
             }
 
             if (isSecondHalf) {
+                  if (containsResultTotals) return 'result_totals';
+                  if (containsCorners) return 'totals_corners_h2';
+                  if (containsCards) return 'totals_yellow_cards_h2';
+                  if (containsFouls) return 'totals_fouls';
+                  if (containsShots) return 'totals_shots';
+                  if (containsOffsides) return 'totals_offsides';
+                  if (containsTackles) return 'totals_tackles';
                   if (containsTeamTotals) return 'team_totals_h2';
                   if (containsTotals) return 'totals_h2';
                   if (containsDoubleChance) return 'double_chance_h2';
@@ -243,6 +269,13 @@ export class BetSlipService {
             }
 
             // Full Match / generic markets (no explicit half)
+            if (containsResultTotals) return 'result_totals';
+            if (containsCorners) return 'totals_corners';
+            if (containsCards) return 'totals_cards';
+            if (containsFouls) return 'totals_fouls';
+            if (containsShots) return 'totals_shots';
+            if (containsOffsides) return 'totals_offsides';
+            if (containsTackles) return 'totals_tackles';
             if (containsTeamTotals) return 'team_totals';
             if (containsTotals) return 'totals';
             if (containsDoubleChance) return 'double_chance';
@@ -390,8 +423,9 @@ export class BetSlipService {
                   const betSlipData = {
                         userId: finalUserId,
                         selections: bets.map(bet => {
+                              const internalMarket = bet.marketKey || this.deriveMarketTypeFromBetType(bet.betType);
                               const marketType = ensureAllowedMarketType(
-                                    this.deriveMarketTypeFromBetType(bet.betType),
+                                    internalMarket,
                                     bet.betType
                               );
                               // const apiMarketKey = this.getApiMarketKeyForBet(bet);
@@ -733,8 +767,9 @@ export class BetSlipService {
             try {
                   const validationData = {
                         selections: bets.map(bet => {
+                              const internalMarket = bet.marketKey || this.deriveMarketTypeFromBetType(bet.betType);
                               const marketType = ensureAllowedMarketType(
-                                    this.deriveMarketTypeFromBetType(bet.betType),
+                                    internalMarket,
                                     bet.betType
                               );
                               // const apiMarketKey = this.getApiMarketKeyForBet(bet);

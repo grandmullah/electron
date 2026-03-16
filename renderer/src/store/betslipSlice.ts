@@ -7,6 +7,8 @@ export interface BetSlipItem {
       awayTeam: string;
       betType: string;
       selection: string;
+      /** Internal market type key (e.g. h2h, totals, result_totals). Prefer this over deriving from betType when present. */
+      marketKey?: string;
       odds: number;
       stake: number;
       potentialWinnings: number;

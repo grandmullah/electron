@@ -14,6 +14,7 @@ interface H2HSectionProps {
     betType: string,
     selection: string,
     odds: number,
+    marketKey?: string
   ) => void;
   isSelectionInBetSlip: (
     gameId: string,

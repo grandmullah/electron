@@ -512,7 +512,29 @@ export function parseOddsFromGameOddsArray(
       homeTeam: string,
       awayTeam: string
 ) {
-      // Group odds by market (internal key; API aliases normalized via normalizeMarketKey)
+      // Build rawMarkets using the EXACT market_key from the odds feed (no renaming)
+      const rawMarkets: Array<{
+            key: string;
+            outcomes: Array<{ name: string; price: number; point?: number; description?: string }>;
+      }> = [];
+
+      for (const o of odds || []) {
+            if (!o?.market_key) continue;
+            const key = o.market_key;
+            let existing = rawMarkets.find(r => r.key === key);
+            if (!existing) {
+                  existing = { key, outcomes: [] };
+                  rawMarkets.push(existing);
+            }
+            existing.outcomes.push({
+                  name: o.outcome_name,
+                  price: Number(o.outcome_price) || 0,
+                  ...(o.outcome_point != null ? { point: Number(o.outcome_point) } : {}),
+                  // GameOdds format doesn't currently include a separate description field; keep shape consistent
+            });
+      }
+
+      // Group odds by internal market type for the high‑level fields
       const h2hOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h');
       const dcOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'double_chance');
       const totalsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals');
@@ -555,6 +577,7 @@ export function parseOddsFromGameOddsArray(
 
       return {
             ...oddsData,
+            ...(rawMarkets.length > 0 ? { rawMarkets } : {}),
             overUnder: {
                   over25: totals.find(t => t.point === 2.5)?.over ?? null,
                   under25: totals.find(t => t.point === 2.5)?.under ?? null,

@@ -78,7 +78,7 @@ const DISPLAY_ORDER = [
 
 interface GameDetailsPanelProps {
   game: Game;
-  onAddToBetSlip: (game: Game, betType: string, selection: string, odds: number) => void;
+  onAddToBetSlip: (game: Game, betType: string, selection: string, odds: number, marketKey?: string) => void;
   isSelectionInBetSlip: (gameId: string, betType: string, selection: string) => boolean;
 }
 
@@ -142,8 +142,22 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
     }
     if (!map.has("spreads") && (game.spreads?.homeSpreadOdds ?? game.spreads?.awaySpreadOdds)) {
       const arr: Outcome[] = [];
-      if (game.spreads?.homeSpreadOdds != null) arr.push({ name: game.homeTeam, price: Number(game.spreads.homeSpreadOdds), point: Number(game.spreads.homeSpread) || undefined });
-      if (game.spreads?.awaySpreadOdds != null) arr.push({ name: game.awayTeam, price: Number(game.spreads.awaySpreadOdds), point: Number(game.spreads.awaySpread) || undefined });
+      if (game.spreads?.homeSpreadOdds != null) {
+        const p = Number(game.spreads.homeSpread);
+        arr.push({
+          name: game.homeTeam,
+          price: Number(game.spreads.homeSpreadOdds),
+          ...(!Number.isNaN(p) ? { point: p } : {}),
+        });
+      }
+      if (game.spreads?.awaySpreadOdds != null) {
+        const p = Number(game.spreads.awaySpread);
+        arr.push({
+          name: game.awayTeam,
+          price: Number(game.spreads.awaySpreadOdds),
+          ...(!Number.isNaN(p) ? { point: p } : {}),
+        });
+      }
       if (arr.length) map.set("spreads", arr);
     }
 
@@ -191,10 +205,44 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
     return title;
   };
 
-  const selectionLabel = (_mk: string, outcome: Outcome): string => {
+  const selectionLabel = (mk: string, outcome: Outcome): string => {
+    // For RESULT + TOTAL markets, backend expects: "<TeamName>/Over 2.5" (or "Home/Over 2.5").
+    // Some feeds may represent it as "<TeamName>/Over" + point, or "<TeamName>/ 2.5 Over".
+    // Normalize it into the backend-accepted shape.
+    if (mk === "result_totals") {
+      const name = (outcome.name || "").trim();
+      const point = outcome.point;
+
+      // Case A: "Team/ 1.5 Over" (or Under) (+ maybe no point field)
+      const swapped = name.match(/^(.+?)\/\s*(\d+(?:\.\d+)?)\s*(Over|Under)\s*$/i);
+      if (swapped) {
+        const teamRaw = swapped[1];
+        const pointRaw = swapped[2];
+        const dirRaw = swapped[3];
+        if (teamRaw && pointRaw && dirRaw) {
+          const team = teamRaw.trim();
+          const p = Number(pointRaw);
+          const dir = dirRaw.length > 0 ? dirRaw.charAt(0).toUpperCase() + dirRaw.slice(1).toLowerCase() : dirRaw;
+          return `${team}/${dir} ${p}`;
+        }
+      }
+
+      // Case B: "Team/Over" (+ point provided separately)
+      if (point != null && /\/\s*(Over|Under)\s*$/i.test(name) && !/\s+\d/.test(name)) {
+        return `${name.replace(/\s+/g, " ").trim()} ${point}`;
+      }
+
+      // Case C: already "Team/Over 2.5"
+      return name;
+    }
+
     if (outcome.point != null) {
       const base = outcome.name.replace(/over|under/i, "").trim();
-      const dir = outcome.name.toLowerCase().includes("over") ? "Over" : outcome.name.toLowerCase().includes("under") ? "Under" : outcome.name;
+      const dir = outcome.name.toLowerCase().includes("over")
+        ? "Over"
+        : outcome.name.toLowerCase().includes("under")
+          ? "Under"
+          : outcome.name;
       if (!base) return `${dir} ${outcome.point}`;
       return `${base} ${dir} ${outcome.point}`;
     }
@@ -240,7 +288,7 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
           disabled={!isClickable}
           onClick={(e) => {
             e.stopPropagation();
-            if (isClickable) onAddToBetSlip(game, betType, selection, numericOdds);
+            if (isClickable) onAddToBetSlip(game, betType, selection, numericOdds, marketKey);
           }}
           sx={{
             minWidth: "fit-content",

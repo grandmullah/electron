@@ -1545,20 +1545,22 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     game: Game,
     betType: string,
     selection: string,
-    odds: number
+    odds: number,
+    marketKey?: string
   ) => {
     // Use original odds without reduction
     const reducedOdds = odds;
     // Agent mode now only handles walk-in clients (shop bets), so no user selection needed
 
     // Regular user flow - add to bet slip
-    const betSlipItem = {
+    const betSlipItem: BetSlipItem = {
       id: `${game.id}-${betType}-${selection}`,
       gameId: game.externalId || game.id, // Use externalId for validation API
       homeTeam: game.homeTeam,
       awayTeam: game.awayTeam,
       betType,
       selection,
+      ...(marketKey ? { marketKey } : {}),
       odds: reducedOdds,
       stake: 0, // No default stake - user must input
       potentialWinnings: 0,
