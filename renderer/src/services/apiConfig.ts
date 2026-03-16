@@ -6,7 +6,7 @@
 // ============================================
 
 // Choose your environment: 'local' | 'remote'
-const ENVIRONMENT = 'staging'; // ← Using 'remote' (working backend with all API keys)
+const ENVIRONMENT = 'remote'; // ← Using 'remote' (working backend with all API keys)
 
 // API Keys (these work on the REMOTE server at 64.227.130.74:8007)
 const API_KEYS = {

@@ -252,7 +252,8 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
   const OddsBtn: React.FC<{ outcome: Outcome; marketKey: string; label: string }> = ({ outcome, marketKey, label }) => {
     const betType = betTypeForMarket(marketKey, outcome);
     const selection = selectionLabel(marketKey, outcome);
-    const isSelected = isSelectionInBetSlip(game.id, betType, selection);
+    const gameKey = game.externalId || game.id;
+    const isSelected = isSelectionInBetSlip(gameKey, betType, selection);
     const numericOdds = outcome.price;
     const isClickable = !!numericOdds && !isNaN(numericOdds);
 
@@ -266,15 +267,15 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
           py: 0.25,
           px: 0.25,
           borderRadius: 0.5,
-          bgcolor: isSelected ? "rgba(25, 118, 210, 0.15)" : "transparent",
-          border: isSelected ? "2px solid rgba(25, 118, 210, 0.6)" : "1px solid transparent",
-          boxShadow: isSelected ? "0 0 10px rgba(25, 118, 210, 0.3)" : "none",
+          bgcolor: isSelected ? "rgba(255, 193, 7, 0.22)" : "transparent",
+          border: isSelected ? "2px solid rgba(255, 193, 7, 0.9)" : "1px solid transparent",
+          boxShadow: isSelected ? "0 0 10px rgba(255, 193, 7, 0.6)" : "none",
           transition: "all 0.2s ease",
         }}
       >
         <Typography
           variant="caption"
-          color={isSelected ? "#64b5f6" : "rgba(255,255,255,0.6)"}
+          color={isSelected ? "#FFE082" : "rgba(255,255,255,0.6)"}
           fontWeight={isSelected ? 700 : 400}
           display="block"
           mb={0.25}
@@ -299,26 +300,26 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
             color: "white",
             borderWidth: isSelected ? 2 : 1,
             borderColor: isClickable
-              ? isSelected ? "#42a5f5" : "rgba(25, 118, 210, 0.5)"
+              ? isSelected ? "#FFC107" : "rgba(25, 118, 210, 0.5)"
               : "rgba(255,255,255,0.3)",
             bgcolor: isSelected
-              ? "#1565c0"
+              ? "#FFB300"
               : isClickable ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
             boxShadow: isSelected
-              ? "0 0 12px rgba(66, 165, 245, 0.6)"
+              ? "0 0 12px rgba(255, 193, 7, 0.7)"
               : "none",
             padding: "4px 4px",
             transition: "all 0.2s ease",
             "&:hover": {
               transform: "scale(1.05)",
               boxShadow: isSelected
-                ? "0 0 16px rgba(66, 165, 245, 0.7)"
+                ? "0 0 16px rgba(255, 193, 7, 0.8)"
                 : "0 4px 12px rgba(0,0,0,0.3)",
               bgcolor: isClickable
-                ? isSelected ? "#1976d2" : "rgba(25, 118, 210, 0.2)"
+                ? isSelected ? "#FFA000" : "rgba(25, 118, 210, 0.2)"
                 : "rgba(255,255,255,0.1)",
               borderColor: isClickable
-                ? isSelected ? "#64b5f6" : "primary.main"
+                ? isSelected ? "#FFD54F" : "primary.main"
                 : "rgba(255,255,255,0.3)",
             },
             "&.Mui-disabled": {

@@ -39,7 +39,7 @@ import {
 
 interface HistoryPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history",
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management",
     params?: { tab?: string; [key: string]: any }
   ) => void;
 }
@@ -70,6 +70,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   const [betStatusFilter, setBetStatusFilter] = useState("all");
   const [betTypeFilter, setBetTypeFilter] = useState("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [dateSort, setDateSort] = useState<"newest" | "oldest">("newest");
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -133,6 +134,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       }),
       ...(dateFrom && { dateFrom: dateFrom.toISOString() }),
       ...(dateTo && { dateTo: dateTo.toISOString() }),
+      ...(user?.role === "agent" || user?.role === "super_agent"
+        ? { includeShopBets: true }
+        : {}),
     };
 
     const response = await BetHistoryService.getUserBets(filters);
@@ -445,7 +449,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
 
     // Apply status filter
     if (betStatusFilter !== "all") {
-      filtered = filtered.filter((bet) => bet.status === betStatusFilter);
+      const target = betStatusFilter.toLowerCase();
+      if (target === "won" || target === "lost") {
+        filtered = filtered.filter((bet) => {
+          const status = (bet.status || "").toLowerCase();
+          const result = (bet.result || (bet as any).selectionOutcome || "").toString().toLowerCase();
+          return status === target || result === target;
+        });
+      } else {
+        filtered = filtered.filter((bet) => (bet.status || "").toLowerCase() === target);
+      }
     }
 
     // Apply bet type filter
@@ -475,6 +488,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
       );
     }
 
+    // Sort by date
+    filtered.sort((a, b) => {
+      const aDate = new Date(a.createdAt || a.timestamp || 0).getTime();
+      const bDate = new Date(b.createdAt || b.timestamp || 0).getTime();
+      return dateSort === "oldest" ? aDate - bDate : bDate - aDate;
+    });
+
     setFilteredBets(filtered);
   }, [
     bets,
@@ -482,6 +502,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     betStatusFilter,
     betTypeFilter,
     paymentStatusFilter,
+    dateSort,
     dateFrom,
     dateTo,
     shouldSearchById,
@@ -562,6 +583,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
     setBetStatusFilter("all");
     setBetTypeFilter("all");
     setPaymentStatusFilter("all");
+    setDateSort("newest");
     setDateFrom(null);
     setDateTo(null);
     setSearchTerm("");
@@ -572,7 +594,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betStatusFilter, betTypeFilter, dateFrom, dateTo, itemsPerPage]);
+  }, [betStatusFilter, betTypeFilter, dateFrom, dateTo, itemsPerPage, dateSort]);
 
   const handleApplyFilters = () => {
     setCurrentPage(1);
@@ -765,6 +787,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onNavigate }) => {
           setBetTypeFilter={setBetTypeFilter}
           paymentStatusFilter={paymentStatusFilter}
           setPaymentStatusFilter={setPaymentStatusFilter}
+          dateSort={dateSort}
+          setDateSort={setDateSort}
           dateFrom={dateFrom}
           setDateFrom={setDateFrom}
           dateTo={dateTo}

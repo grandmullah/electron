@@ -43,6 +43,8 @@ interface MUIFiltersProps {
   setBetTypeFilter: (value: string) => void;
   paymentStatusFilter: string;
   setPaymentStatusFilter: (value: string) => void;
+  dateSort: "newest" | "oldest";
+  setDateSort: (value: "newest" | "oldest") => void;
   dateFrom: Date | null;
   setDateFrom: (date: Date | null) => void;
   dateTo: Date | null;
@@ -88,6 +90,8 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
   setBetTypeFilter,
   paymentStatusFilter,
   setPaymentStatusFilter,
+  dateSort,
+  setDateSort,
   dateFrom,
   setDateFrom,
   dateTo,
@@ -107,6 +111,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
     if (betStatusFilter !== "all") count++;
     if (betTypeFilter !== "all") count++;
     if (paymentStatusFilter !== "all") count++;
+    if (dateSort !== "newest") count++;
     if (dateFrom) count++;
     if (dateTo) count++;
     setActiveFiltersCount(count);
@@ -115,6 +120,7 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
     betStatusFilter,
     betTypeFilter,
     paymentStatusFilter,
+    dateSort,
     dateFrom,
     dateTo,
   ]);
@@ -425,6 +431,42 @@ export const MUIFilters: React.FC<MUIFiltersProps> = ({
                     </Box>
                   </MenuItem>
                 ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Date sort */}
+          <Grid item xs={6} md={1.5}>
+            <FormControl
+              fullWidth
+              size="small"
+              sx={{
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)",
+                },
+                "& .MuiOutlinedInput-root": {
+                  color: "rgba(255,255,255,0.8)",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
+                  },
+                },
+              }}
+            >
+              <InputLabel>Date</InputLabel>
+              <Select
+                value={dateSort}
+                onChange={(e) => setDateSort(e.target.value as "newest" | "oldest")}
+                label="Date"
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="newest">Newest first</MenuItem>
+                <MenuItem value="oldest">Oldest first</MenuItem>
               </Select>
             </FormControl>
           </Grid>

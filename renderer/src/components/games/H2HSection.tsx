@@ -83,7 +83,8 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
               ["Away", "2", awayOdds],
             ] as const
           ).map(([sel, lbl, odds]) => {
-            const selected = isSelectionInBetSlip(game.id, betType, sel);
+            const gameKey = game.externalId || game.id;
+            const selected = isSelectionInBetSlip(gameKey, betType, sel);
             return (
               <Grid size={4} key={sel}>
                 <Box
@@ -91,14 +92,14 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
                     textAlign: "center",
                     py: 1,
                     bgcolor: selected
-                      ? "rgba(21, 101, 192, 0.25)"
+                      ? "rgba(255, 193, 7, 0.25)"
                       : "rgba(255, 255, 255, 0.05)",
                     borderRadius: 1,
                     border: selected
-                      ? "2px solid #42a5f5"
+                      ? "2px solid #FFC107"
                       : "1px solid rgba(255, 255, 255, 0.1)",
                     boxShadow: selected
-                      ? "0 0 14px rgba(66, 165, 245, 0.5)"
+                      ? "0 0 14px rgba(255, 193, 7, 0.6)"
                       : "none",
                     transition: "all 0.2s ease",
                   }}
@@ -107,7 +108,7 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
                     variant="caption"
                     sx={{
                       fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                      color: selected ? "#64b5f6" : "rgba(255, 255, 255, 0.7)",
+                      color: selected ? "#FFE082" : "rgba(255, 255, 255, 0.7)",
                       fontWeight: selected ? 700 : 400,
                       display: "block",
                       mb: 0.5,
@@ -163,7 +164,8 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
             ["Away", "2", awayOdds],
           ] as const
         ).map(([sel, lbl, odds]) => {
-          const selected = isSelectionInBetSlip(game.id, betType, sel);
+          const gameKey = game.externalId || game.id;
+          const selected = isSelectionInBetSlip(gameKey, betType, sel);
           return (
             <Box
               key={sel}
@@ -172,19 +174,19 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
                 px: 0.5,
                 py: 0.5,
                 borderRadius: 1,
-                bgcolor: selected ? "rgba(21, 101, 192, 0.25)" : "transparent",
+                bgcolor: selected ? "rgba(255, 193, 7, 0.25)" : "transparent",
                 border: selected
-                  ? "2px solid #42a5f5"
+                  ? "2px solid #FFC107"
                   : "1px solid transparent",
                 boxShadow: selected
-                  ? "0 0 14px rgba(66, 165, 245, 0.5)"
+                  ? "0 0 14px rgba(255, 193, 7, 0.6)"
                   : "none",
                 transition: "all 0.2s ease",
               }}
             >
               <Typography
                 variant="caption"
-                color={selected ? "#64b5f6" : "rgba(255,255,255,0.6)"}
+                color={selected ? "#FFE082" : "rgba(255,255,255,0.6)"}
                 fontWeight={selected ? 700 : 400}
                 display="block"
                 mb={0.5}
