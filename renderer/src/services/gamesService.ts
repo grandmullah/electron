@@ -103,7 +103,10 @@ class GamesService {
                         home: Number(g.homeScore ?? g.home_score ?? 0),
                         away: Number(g.awayScore ?? g.away_score ?? 0),
                   },
-                  team_index: g.team_index,
+                  // Support both backend shapes:
+                  // - legacy: team_index
+                  // - new upcoming payload: teamIndex
+                  team_index: g.team_index || g.teamIndex,
             };
       }
 

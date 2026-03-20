@@ -195,6 +195,19 @@ class GameManagementService {
             }
       }
 
+      // Team index admin operations
+      static async resetTeamIndexes(): Promise<any> {
+            try {
+                  const response = await axios.post(`${API_BASE_URL}/games/team-index/reset`, {}, {
+                        headers: this.getAuthHeaders(),
+                  });
+                  return response.data;
+            } catch (error: any) {
+                  console.error('Failed to reset team indexes:', error);
+                  throw new Error(error.response?.data?.message || error.message || 'Failed to reset team indexes');
+            }
+      }
+
       // Featured Games Management (Admin only)
       static async updateFeaturedGames(items: Array<{
             gameId: string;

@@ -4,7 +4,7 @@ import GameManagementService from "../../services/gameManagementService";
 import LeagueManagementService from "../../services/leagueManagementService";
 import AgentService from "../../services/agentService";
 import GamesService from "../../services/gamesService";
-import ShopManagementService, { type ShopUser } from "../../services/shopManagementService";
+import ShopManagementService, { type ShopUser, type ShopAnalytics } from "../../services/shopManagementService";
 import { Header } from "../../components/Header";
 import { MintBalanceModal } from "../../components/MintBalanceModal";
 import {
@@ -108,6 +108,25 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const [expandedShopId, setExpandedShopId] = useState<string | false>(false);
   const [shopUsersByShopId, setShopUsersByShopId] = useState<Record<string, ShopUser[]>>({});
   const [shopUsersLoadingByShopId, setShopUsersLoadingByShopId] = useState<Record<string, boolean>>({});
+  const [shopAgentsByShopId, setShopAgentsByShopId] = useState<Record<string, ShopUser[]>>({});
+  const [shopAgentsLoadingByShopId, setShopAgentsLoadingByShopId] = useState<Record<string, boolean>>({});
+  const [shopAnalyticsByShopId, setShopAnalyticsByShopId] = useState<Record<string, ShopAnalytics | null>>({});
+  const [shopAnalyticsLoadingByShopId, setShopAnalyticsLoadingByShopId] = useState<Record<string, boolean>>({});
+  const [createAgentOpen, setCreateAgentOpen] = useState(false);
+  const [createAgentShopId, setCreateAgentShopId] = useState<string | null>(null);
+  const [createAgentLoading, setCreateAgentLoading] = useState(false);
+  const [createAgentForm, setCreateAgentForm] = useState({
+    phone_number: "",
+    password: "",
+    country_code: "SS",
+    dial_code: "+211",
+  });
+  const [shopMintOpen, setShopMintOpen] = useState(false);
+  const [shopMintAgent, setShopMintAgent] = useState<ShopUser | null>(null);
+  const [shopMintShopId, setShopMintShopId] = useState<string | null>(null);
+  const [shopMintAmount, setShopMintAmount] = useState<string>("");
+  const [shopMintNotes, setShopMintNotes] = useState<string>("");
+  const [shopMintLoading, setShopMintLoading] = useState(false);
   const [showMintBalanceModal, setShowMintBalanceModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<ManagedAgent | null>(null);
   const [resetBalanceOpen, setResetBalanceOpen] = useState(false);
@@ -615,13 +634,147 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     setShopUsersLoadingByShopId((p) => ({ ...p, [shopId]: true }));
     setError(null);
     try {
-      const users = await ShopManagementService.listShopUsers(shopId);
+      const canUseShopScopedUsers = user?.role === "agent" || user?.role === "super_agent";
+      const users = canUseShopScopedUsers
+        ? await ShopManagementService.getShopUsersViaShopScope()
+        : await ShopManagementService.listShopUsers(shopId);
       setShopUsersByShopId((p) => ({ ...p, [shopId]: users }));
     } catch (err: any) {
       setError(err.message || "Failed to load shop users");
       setShopUsersByShopId((p) => ({ ...p, [shopId]: [] }));
     } finally {
       setShopUsersLoadingByShopId((p) => ({ ...p, [shopId]: false }));
+    }
+  };
+
+  const ensureShopAgentsLoaded = async (shopId: string) => {
+    if (shopAgentsByShopId[shopId]) return;
+    setShopAgentsLoadingByShopId((p) => ({ ...p, [shopId]: true }));
+    setError(null);
+    try {
+      const agents = await ShopManagementService.listAgentsViaShopScope();
+      setShopAgentsByShopId((p) => ({ ...p, [shopId]: agents }));
+    } catch (err: any) {
+      setError(err.message || "Failed to load shop agents");
+      setShopAgentsByShopId((p) => ({ ...p, [shopId]: [] }));
+    } finally {
+      setShopAgentsLoadingByShopId((p) => ({ ...p, [shopId]: false }));
+    }
+  };
+
+  const ensureShopAnalyticsLoaded = async (shopId: string) => {
+    if (shopAnalyticsByShopId[shopId]) return;
+    setShopAnalyticsLoadingByShopId((p) => ({ ...p, [shopId]: true }));
+    setError(null);
+    try {
+      const analytics = await ShopManagementService.getShopAnalytics();
+      setShopAnalyticsByShopId((p) => ({ ...p, [shopId]: analytics }));
+    } catch (err: any) {
+      setError(err.message || "Failed to load shop analytics");
+      setShopAnalyticsByShopId((p) => ({ ...p, [shopId]: null }));
+    } finally {
+      setShopAnalyticsLoadingByShopId((p) => ({ ...p, [shopId]: false }));
+    }
+  };
+
+  const openCreateAgentDialog = (shopId: string) => {
+    setCreateAgentShopId(shopId);
+    setCreateAgentForm({
+      phone_number: "",
+      password: "",
+      country_code: "SS",
+      dial_code: "+211",
+    });
+    setCreateAgentOpen(true);
+  };
+
+  const submitCreateAgent = async () => {
+    if (!createAgentShopId) return;
+    if (!createAgentForm.phone_number.trim() || !createAgentForm.password.trim()) {
+      setError("Phone number and password are required");
+      return;
+    }
+    setCreateAgentLoading(true);
+    setError(null);
+    try {
+      const res = await ShopManagementService.createAgentViaShopScope({
+        phone_number: createAgentForm.phone_number.trim(),
+        password: createAgentForm.password.trim(),
+        ...(createAgentForm.country_code.trim()
+          ? { country_code: createAgentForm.country_code.trim() }
+          : {}),
+        ...(createAgentForm.dial_code.trim()
+          ? { dial_code: createAgentForm.dial_code.trim() }
+          : {}),
+      });
+      if (!res?.success) throw new Error((res as any)?.error || "Failed to create agent");
+
+      const newAgent = (res as any)?.data;
+      if (newAgent) {
+        setShopAgentsByShopId((prev) => ({
+          ...prev,
+          [createAgentShopId]: [newAgent, ...(prev[createAgentShopId] || [])],
+        }));
+        setShopUsersByShopId((prev) => ({
+          ...prev,
+          [createAgentShopId]: [newAgent, ...(prev[createAgentShopId] || [])],
+        }));
+      }
+      setSuccess(res?.message || "Agent created successfully");
+      setCreateAgentOpen(false);
+      setCreateAgentShopId(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to create agent");
+    } finally {
+      setCreateAgentLoading(false);
+    }
+  };
+
+  const openShopMintDialog = (shopId: string, agent: ShopUser) => {
+    setShopMintShopId(shopId);
+    setShopMintAgent(agent);
+    setShopMintAmount("");
+    setShopMintNotes("");
+    setShopMintOpen(true);
+  };
+
+  const submitShopMint = async () => {
+    if (!shopMintAgent?.id || !shopMintShopId) return;
+    const amount = Number(shopMintAmount);
+    if (Number.isNaN(amount) || amount <= 0) {
+      setError("Enter a valid amount greater than 0");
+      return;
+    }
+    setShopMintLoading(true);
+    setError(null);
+    try {
+      const res = await ShopManagementService.mintToAgentViaShopScope({
+        agentId: shopMintAgent.id,
+        amount,
+        ...(shopMintNotes.trim() ? { notes: shopMintNotes.trim() } : {}),
+      });
+      if (!res?.success) throw new Error((res as any)?.error || "Failed to mint balance");
+      const newBalance = Number((res as any)?.data?.newBalance ?? 0);
+      setShopAgentsByShopId((prev) => ({
+        ...prev,
+        [shopMintShopId]: (prev[shopMintShopId] || []).map((u) =>
+          u.id === shopMintAgent.id ? { ...u, balance: newBalance } : u
+        ),
+      }));
+      setShopUsersByShopId((prev) => ({
+        ...prev,
+        [shopMintShopId]: (prev[shopMintShopId] || []).map((u) =>
+          u.id === shopMintAgent.id ? { ...u, balance: newBalance } : u
+        ),
+      }));
+      setSuccess(res?.message || "Balance minted");
+      setShopMintOpen(false);
+      setShopMintAgent(null);
+      setShopMintShopId(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to mint balance");
+    } finally {
+      setShopMintLoading(false);
     }
   };
 
@@ -1477,8 +1630,12 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                     const isExpanded = expandedShopId === shop.id;
                     const users = shopUsersByShopId[shop.id] || [];
                     const loadingUsers = Boolean(shopUsersLoadingByShopId[shop.id]);
-                    const agentsCount = users.filter((u) => u.role === "agent").length;
-                    const superAgentsCount = users.filter((u) => u.role === "super_agent").length;
+                    const agents = shopAgentsByShopId[shop.id] || [];
+                    const loadingAgents = Boolean(shopAgentsLoadingByShopId[shop.id]);
+                    const analytics = shopAnalyticsByShopId[shop.id];
+                    const loadingAnalytics = Boolean(shopAnalyticsLoadingByShopId[shop.id]);
+                    const agentsCount = agents.filter((u) => u.role === "agent").length;
+                    const superAgentsCount = agents.filter((u) => u.role === "super_agent").length;
 
                     return (
                       <Accordion
@@ -1486,7 +1643,13 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                         expanded={isExpanded}
                         onChange={async (_e, expanded) => {
                           setExpandedShopId(expanded ? shop.id : false);
-                          if (expanded) await ensureShopUsersLoaded(shop.id);
+                          if (expanded) {
+                            await Promise.all([
+                              ensureShopUsersLoaded(shop.id),
+                              ensureShopAgentsLoaded(shop.id),
+                              ensureShopAnalyticsLoaded(shop.id),
+                            ]);
+                          }
                         }}
                         sx={{
                           background: "rgba(255,255,255,0.03)",
@@ -1526,12 +1689,42 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                                     <InfoIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
+                                {(isSuperAgent || isAdmin) && (
+                                  <Tooltip title="Create agent in this shop">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      onClick={(e) => { e.stopPropagation(); openCreateAgentDialog(shop.id); }}
+                                      sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.25)", color: "white" }}
+                                    >
+                                      Create Agent
+                                    </Button>
+                                  </Tooltip>
+                                )}
                               </Box>
                             </Box>
 
                             <Box mt={1} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                              <Chip
+                                icon={<GroupIcon />}
+                                label={
+                                  loadingAnalytics
+                                    ? "Users: loading..."
+                                    : analytics
+                                      ? `Users: ${analytics.total_users} (active ${analytics.active_users})`
+                                      : `Users: ${users.length}`
+                                }
+                                size="small"
+                              />
                               <Chip icon={<GroupIcon />} label={`Super Agents: ${superAgentsCount}`} size="small" />
                               <Chip icon={<GroupIcon />} label={`Agents: ${agentsCount}`} size="small" />
+                              {analytics && (
+                                <Chip
+                                  icon={<MoneyIcon />}
+                                  label={`Total Balance: ${Number(analytics.total_balance || 0).toFixed(2)}`}
+                                  size="small"
+                                />
+                              )}
                             </Box>
                           </Box>
                         </AccordionSummary>
@@ -1542,87 +1735,157 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                               <CircularProgress size={22} />
                             </Box>
                           ) : (
-                            <TableContainer>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell>User</TableCell>
-                                    <TableCell>Role</TableCell>
-                                    <TableCell>Balance</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell align="right">Actions</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {users
-                                    .slice()
-                                    .sort((a, b) => {
-                                      const rank = (r: string) =>
-                                        r === "super_agent" ? 0 : r === "agent" ? 1 : r === "user" ? 2 : 3;
-                                      return rank(a.role) - rank(b.role);
-                                    })
-                                    .map((u) => {
-                                      const bal = Number(u.balance ?? 0);
-                                      const canMint = u.role === "agent";
-                                      const canReset = u.role !== "admin";
+                            <Stack spacing={2}>
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.9)", mb: 1 }}>
+                                  Shop Users
+                                </Typography>
+                                <TableContainer>
+                                  <Table size="small">
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell>User</TableCell>
+                                        <TableCell>Role</TableCell>
+                                        <TableCell>Balance</TableCell>
+                                        <TableCell>Status</TableCell>
+                                        <TableCell align="right">Actions</TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {users
+                                        .slice()
+                                        .sort((a, b) => {
+                                          const rank = (r: string) =>
+                                            r === "super_agent" ? 0 : r === "agent" ? 1 : r === "user" ? 2 : 3;
+                                          return rank(a.role) - rank(b.role);
+                                        })
+                                        .map((u) => {
+                                          const bal = Number(u.balance ?? 0);
+                                          const canMint = u.role === "agent";
+                                          const canReset = u.role !== "admin";
 
-                                      return (
-                                        <TableRow key={u.id} hover>
-                                          <TableCell sx={{ color: "white" }}>{u.phone_number}</TableCell>
-                                          <TableCell>
-                                            <Chip
-                                              label={String(u.role).toUpperCase()}
-                                              size="small"
-                                              color={u.role === "super_agent" ? "success" : u.role === "agent" ? "info" : "default"}
-                                            />
-                                          </TableCell>
-                                          <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>{bal.toFixed(2)}</TableCell>
-                                          <TableCell>
-                                            <Chip
-                                              label={u.is_active === false ? "INACTIVE" : "ACTIVE"}
-                                              size="small"
-                                              color={u.is_active === false ? "default" : "success"}
-                                            />
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                              <Tooltip title={canMint ? "Mint balance (agent only)" : "Mint is only for agents"}>
-                                                <span>
-                                                  <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    startIcon={<MoneyIcon />}
-                                                    disabled={!canMint}
-                                                    onClick={() => handleMintFromShop(u)}
-                                                    sx={{ textTransform: "none" }}
-                                                  >
-                                                    Mint
-                                                  </Button>
-                                                </span>
-                                              </Tooltip>
+                                          return (
+                                            <TableRow key={u.id} hover>
+                                              <TableCell sx={{ color: "white" }}>{u.phone_number}</TableCell>
+                                              <TableCell>
+                                                <Chip
+                                                  label={String(u.role).toUpperCase()}
+                                                  size="small"
+                                                  color={u.role === "super_agent" ? "success" : u.role === "agent" ? "info" : "default"}
+                                                />
+                                              </TableCell>
+                                              <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>{bal.toFixed(2)}</TableCell>
+                                              <TableCell>
+                                                <Chip
+                                                  label={u.is_active === false ? "INACTIVE" : "ACTIVE"}
+                                                  size="small"
+                                                  color={u.is_active === false ? "default" : "success"}
+                                                />
+                                              </TableCell>
+                                              <TableCell align="right">
+                                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                  <Tooltip title={canMint ? "Mint balance (agent only)" : "Mint is only for agents"}>
+                                                    <span>
+                                                      <Button
+                                                        size="small"
+                                                        variant="contained"
+                                                        startIcon={<MoneyIcon />}
+                                                        disabled={!canMint}
+                                                        onClick={() => handleMintFromShop(u)}
+                                                        sx={{ textTransform: "none" }}
+                                                      >
+                                                        Mint
+                                                      </Button>
+                                                    </span>
+                                                  </Tooltip>
 
-                                              <Tooltip title="Reset balance to 0">
-                                                <span>
-                                                  <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<RemoveBalanceIcon />}
-                                                    disabled={!canReset || resetBalanceLoading}
-                                                    onClick={() => openResetBalance(shop.id, u)}
-                                                    sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.2)", color: "white" }}
-                                                  >
-                                                    Reset
-                                                  </Button>
-                                                </span>
-                                              </Tooltip>
-                                            </Stack>
-                                          </TableCell>
+                                                  <Tooltip title="Reset balance to 0">
+                                                    <span>
+                                                      <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        startIcon={<RemoveBalanceIcon />}
+                                                        disabled={!canReset || resetBalanceLoading}
+                                                        onClick={() => openResetBalance(shop.id, u)}
+                                                        sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+                                                      >
+                                                        Reset
+                                                      </Button>
+                                                    </span>
+                                                  </Tooltip>
+                                                </Stack>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })}
+                                    </TableBody>
+                                  </Table>
+                                </TableContainer>
+                              </Box>
+
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.9)", mb: 1 }}>
+                                  Shop Agents
+                                </Typography>
+                                {loadingAgents ? (
+                                  <Box display="flex" justifyContent="center" p={2}>
+                                    <CircularProgress size={20} />
+                                  </Box>
+                                ) : (
+                                  <TableContainer>
+                                    <Table size="small">
+                                      <TableHead>
+                                        <TableRow>
+                                          <TableCell>Agent</TableCell>
+                                          <TableCell>Role</TableCell>
+                                          <TableCell>Balance</TableCell>
+                                          <TableCell>Status</TableCell>
+                                          <TableCell align="right">Actions</TableCell>
                                         </TableRow>
-                                      );
-                                    })}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
+                                      </TableHead>
+                                      <TableBody>
+                                        {agents.map((a) => (
+                                          <TableRow key={a.id} hover>
+                                            <TableCell sx={{ color: "white" }}>{a.phone_number}</TableCell>
+                                            <TableCell>
+                                              <Chip
+                                                label={String(a.role).toUpperCase()}
+                                                size="small"
+                                                color={a.role === "super_agent" ? "success" : "info"}
+                                              />
+                                            </TableCell>
+                                            <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                                              {Number(a.balance ?? 0).toFixed(2)}
+                                            </TableCell>
+                                            <TableCell>
+                                              <Chip
+                                                label={a.is_active === false ? "INACTIVE" : "ACTIVE"}
+                                                size="small"
+                                                color={a.is_active === false ? "default" : "success"}
+                                              />
+                                            </TableCell>
+                                            <TableCell align="right">
+                                              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                <Button
+                                                  size="small"
+                                                  variant="contained"
+                                                  startIcon={<MoneyIcon />}
+                                                  disabled={a.role !== "agent"}
+                                                  onClick={() => openShopMintDialog(shop.id, a)}
+                                                  sx={{ textTransform: "none" }}
+                                                >
+                                                  Mint (Shop)
+                                                </Button>
+                                              </Stack>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </TableContainer>
+                                )}
+                              </Box>
+                            </Stack>
                           )}
                         </AccordionDetails>
                       </Accordion>
@@ -2031,6 +2294,96 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
           </DialogActions>
         </Dialog>
 
+        {/* Shop-scoped: Create Agent */}
+        <Dialog
+          open={createAgentOpen}
+          onClose={() => !createAgentLoading && setCreateAgentOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Create Agent</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Phone Number"
+                value={createAgentForm.phone_number}
+                onChange={(e) => setCreateAgentForm((p) => ({ ...p, phone_number: e.target.value }))}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Password"
+                type="password"
+                value={createAgentForm.password}
+                onChange={(e) => setCreateAgentForm((p) => ({ ...p, password: e.target.value }))}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Country Code"
+                value={createAgentForm.country_code}
+                onChange={(e) => setCreateAgentForm((p) => ({ ...p, country_code: e.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label="Dial Code"
+                value={createAgentForm.dial_code}
+                onChange={(e) => setCreateAgentForm((p) => ({ ...p, dial_code: e.target.value }))}
+                fullWidth
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCreateAgentOpen(false)} disabled={createAgentLoading}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={submitCreateAgent} disabled={createAgentLoading}>
+              {createAgentLoading ? "Creating..." : "Create Agent"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Shop-scoped: Mint Agent Balance */}
+        <Dialog
+          open={shopMintOpen}
+          onClose={() => !shopMintLoading && setShopMintOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Mint Agent Balance</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              Agent: <b>{shopMintAgent?.phone_number}</b>
+            </Typography>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              <TextField
+                label="Amount"
+                type="number"
+                value={shopMintAmount}
+                onChange={(e) => setShopMintAmount(e.target.value)}
+                fullWidth
+                inputProps={{ min: 0, step: "0.01" }}
+              />
+              <TextField
+                label="Notes (optional)"
+                value={shopMintNotes}
+                onChange={(e) => setShopMintNotes(e.target.value)}
+                fullWidth
+                multiline
+                rows={3}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShopMintOpen(false)} disabled={shopMintLoading}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={submitShopMint} disabled={shopMintLoading || !shopMintAgent}>
+              {shopMintLoading ? "Minting..." : "Mint"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         {/* Cron Tab */}
         {activeTab === "cron" && (
           <Paper
@@ -2054,6 +2407,27 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                 <Typography variant="body2" color="rgba(255,255,255,0.6)" sx={{ mb: 3 }}>
                   Monitor and manage automated tasks
                 </Typography>
+                <Stack direction="row" spacing={2} mb={3}>
+                  <Button
+                    variant="contained"
+                    startIcon={<SyncIcon />}
+                    onClick={async () => {
+                      try {
+                        const res = await GameManagementService.resetTeamIndexes();
+                        setSuccess(res.message || "Team indexes reset");
+                      } catch (err: any) {
+                        setError(err.message || "Failed to reset team indexes");
+                      }
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      background: "linear-gradient(135deg, #FFC107 0%, #FF9800 100%)",
+                    }}
+                  >
+                    Reset team indexes
+                  </Button>
+                </Stack>
+
                 {cronStatus && Object.keys(cronStatus).length > 0 ? (
                   <Grid container spacing={2}>
                     {Object.entries(cronStatus).map(([jobId, status]: [string, any]) => (

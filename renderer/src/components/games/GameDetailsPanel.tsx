@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { Game } from "../../services/gamesService";
+import { makeCompactOutcomeLabel } from "../../utils/labelUtils";
 
 type MarketCategory =
   | "ALL" | "MAIN" | "GOALS" | "HALVES" | "SPREADS"
@@ -249,6 +250,15 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
     return outcome.name;
   };
 
+  const displayLabelForOutcome = (mk: string, outcome: Outcome): string => {
+    const raw = outcomeLabel(outcome);
+    return makeCompactOutcomeLabel({
+      label: raw,
+      homeTeam: game.homeTeam,
+      awayTeam: game.awayTeam,
+    });
+  };
+
   const OddsBtn: React.FC<{ outcome: Outcome; marketKey: string; label: string }> = ({ outcome, marketKey, label }) => {
     const betType = betTypeForMarket(marketKey, outcome);
     const selection = selectionLabel(marketKey, outcome);
@@ -413,7 +423,7 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
                       key={`${o.name}-${o.point ?? ""}-${i}`}
                       outcome={o}
                       marketKey={marketKey}
-                      label={outcomeLabel(o)}
+                      label={displayLabelForOutcome(marketKey, o)}
                     />
                   ))}
                 </Box>
