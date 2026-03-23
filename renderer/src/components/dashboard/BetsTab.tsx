@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
 import { EmptyState } from "./shared/EmptyState";
@@ -19,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Pagination,
 } from "@mui/material";
 import {
   SportsEsports as BetsIcon,
@@ -35,7 +36,22 @@ interface BetsTabProps {
   recentBets: DisplayBet[];
   isLoadingBets: boolean;
   betsError: string | null;
-  onLoadRecentBets: (options?: { days?: number | null }) => void;
+  onLoadRecentBets: (options?: {
+    days?: number | null;
+    page?: number;
+    limit?: number;
+    status?: BetStatusFilter;
+  }) => void;
+  currentPage: number;
+  pageSize: number;
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+  statusFilter: BetStatusFilter;
 }
 
 export const BetsTab: React.FC<BetsTabProps> = ({
@@ -43,35 +59,28 @@ export const BetsTab: React.FC<BetsTabProps> = ({
   isLoadingBets,
   betsError,
   onLoadRecentBets,
+  currentPage,
+  pageSize,
+  pagination,
+  statusFilter: initialStatusFilter,
 }) => {
-  const [statusFilter, setStatusFilter] = useState<BetStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<BetStatusFilter>(initialStatusFilter);
   const [periodFilter, setPeriodFilter] = useState<BetPeriodFilter>(null);
-
-  const filteredBets = useMemo(() => {
-    let list = recentBets;
-
-    if (statusFilter !== "all") {
-      list = list.filter((bet) => (bet.status || (bet as any).result || "").toLowerCase() === statusFilter);
-    }
-
-    if (periodFilter != null && periodFilter > 0) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - periodFilter);
-      list = list.filter((bet) => {
-        const ts = bet.timestamp || (bet as any).createdAt;
-        if (!ts) return false;
-        return new Date(ts).getTime() >= cutoff.getTime();
-      });
-    }
-
-    return list;
-  }, [recentBets, statusFilter, periodFilter]);
 
   const handlePeriodChange = (days: number | "") => {
     const value = days === "" ? null : (days as number);
     setPeriodFilter(value);
-    onLoadRecentBets({ days: value ?? undefined });
+    onLoadRecentBets({ days: value ?? undefined, page: 1, limit: pageSize, status: statusFilter });
   };
+
+  useEffect(() => {
+    onLoadRecentBets({
+      days: periodFilter ?? undefined,
+      page: 1,
+      limit: pageSize,
+      status: statusFilter,
+    });
+  }, [statusFilter]);
 
   if (isLoadingBets) {
     return <LoadingState message="Loading recent bets..." />;
@@ -97,7 +106,7 @@ export const BetsTab: React.FC<BetsTabProps> = ({
     );
   }
 
-  const showFilteredEmpty = filteredBets.length === 0 && recentBets.length > 0;
+  const showFilteredEmpty = recentBets.length === 0 && pagination.totalCount > 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,6 +187,7 @@ export const BetsTab: React.FC<BetsTabProps> = ({
                   key={status}
                   label={status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
                   onClick={() => setStatusFilter(status)}
+                  onDelete={() => undefined}
                   size="small"
                   sx={{
                     backgroundColor: statusFilter === status ? "#667eea" : "rgba(255,255,255,0.1)",
@@ -277,7 +287,7 @@ export const BetsTab: React.FC<BetsTabProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredBets.map((bet, index) => (
+              {recentBets.map((bet, index) => (
                 <TableRow
                   key={bet.betId || bet.id}
                   hover
@@ -428,6 +438,39 @@ export const BetsTab: React.FC<BetsTabProps> = ({
           </Table>
         </TableContainer>
       </Paper>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
+        <FormControl size="small" sx={{ minWidth: 130 }}>
+          <InputLabel>Page Size</InputLabel>
+          <Select
+            value={pageSize}
+            label="Page Size"
+            onChange={(e) => onLoadRecentBets({
+              days: periodFilter ?? undefined,
+              page: 1,
+              limit: Number(e.target.value),
+              status: statusFilter,
+            })}
+          >
+            <MenuItem value={10}>10</MenuItem>
+            <MenuItem value={20}>20</MenuItem>
+            <MenuItem value={50}>50</MenuItem>
+          </Select>
+        </FormControl>
+        <Pagination
+          count={Math.max(1, pagination.totalPages)}
+          page={currentPage}
+          onChange={(_, page) =>
+            onLoadRecentBets({
+              days: periodFilter ?? undefined,
+              page,
+              limit: pageSize,
+              status: statusFilter,
+            })
+          }
+          color="primary"
+          size="small"
+        />
+      </Stack>
     </Box>
   );
 };

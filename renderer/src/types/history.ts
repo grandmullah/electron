@@ -120,6 +120,13 @@ export interface NewBetHistoryResponse {
             singleBets: DisplayBet[];
             multibets: DisplayBet[];
             total: number;
+            pagination?: {
+                  page: number;
+                  limit: number;
+                  totalCount: number;
+                  totalPages: number;
+                  hasMore: boolean;
+            };
       };
 }
 

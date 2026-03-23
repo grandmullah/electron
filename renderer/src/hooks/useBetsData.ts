@@ -8,22 +8,44 @@ export const useBetsData = () => {
       const [recentBets, setRecentBets] = useState<any[]>([]);
       const [isLoadingBets, setIsLoadingBets] = useState(false);
       const [betsError, setBetsError] = useState<string | null>(null);
+      const [currentPage, setCurrentPage] = useState(1);
+      const [pageSize, setPageSize] = useState(20);
+      const [pagination, setPagination] = useState({
+            page: 1,
+            limit: 20,
+            totalCount: 0,
+            totalPages: 1,
+            hasMore: false,
+      });
+      const [statusFilter, setStatusFilter] = useState<'all' | 'won' | 'lost' | 'pending'>('all');
 
-      const loadRecentBets = useCallback(async (options?: { days?: number | null }) => {
+      const loadRecentBets = useCallback(async (options?: {
+            days?: number | null;
+            page?: number;
+            limit?: number;
+            status?: 'all' | 'won' | 'lost' | 'pending';
+      }) => {
             if (!user?.id) return;
 
             setIsLoadingBets(true);
             setBetsError(null);
 
             const days = options?.days ?? null;
+            const page = options?.page ?? currentPage;
+            const limit = options?.limit ?? pageSize;
+            const status = options?.status ?? statusFilter;
 
             try {
                   console.log("🔄 Loading recent bets...", days != null ? `last ${days} days` : "all");
 
                   const filters: Parameters<typeof BetHistoryService.getUserBets>[0] = {
                         includeShopBets: true,
-                        limit: 200,
+                        page,
+                        limit,
                   };
+                  if (status !== 'all') {
+                        filters.status = status as any;
+                  }
                   if (days != null && days > 0) {
                         const dateTo = new Date();
                         const dateFrom = new Date();
@@ -50,6 +72,21 @@ export const useBetsData = () => {
                               return dateB - dateA;
                         });
                         setRecentBets(sortedBets);
+                        if (response.data.pagination) {
+                              setPagination(response.data.pagination);
+                        } else {
+                              const totalCount = response.data.total || sortedBets.length;
+                              setPagination({
+                                    page,
+                                    limit,
+                                    totalCount,
+                                    totalPages: Math.max(1, Math.ceil(totalCount / limit)),
+                                    hasMore: page * limit < totalCount,
+                              });
+                        }
+                        setCurrentPage(page);
+                        setPageSize(limit);
+                        setStatusFilter(status);
                         console.log("✅ Recent bets loaded:", sortedBets.length);
                   } else {
                         setRecentBets([]);
@@ -61,12 +98,16 @@ export const useBetsData = () => {
             } finally {
                   setIsLoadingBets(false);
             }
-      }, [user?.id]);
+      }, [user?.id, currentPage, pageSize, statusFilter]);
 
       return {
             recentBets,
             isLoadingBets,
             betsError,
             loadRecentBets,
+            currentPage,
+            pageSize,
+            pagination,
+            statusFilter,
       };
 };

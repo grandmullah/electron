@@ -271,6 +271,20 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
   };
 
   const displayLabelForGroupedOutcome = (mk: string, outcome: Outcome): string => {
+    if (mk === "h2h" || mk === "h2h_h1" || mk === "h2h_h2") {
+      // Keep explicit team-name style in result markets.
+      return outcome.name;
+    }
+    if (mk === "result_totals") {
+      const normalized = selectionLabel(mk, outcome);
+      const [teamPart = "", totalPart = ""] = normalized.split("/");
+      const compactTeam = makeCompactOutcomeLabel({
+        label: teamPart,
+        homeTeam: game.homeTeam,
+        awayTeam: game.awayTeam,
+      });
+      return totalPart ? `${compactTeam}/${totalPart.trim()}` : compactTeam;
+    }
     if (mk.startsWith("totals") || mk.startsWith("team_totals")) {
       const name = outcome.name.toLowerCase();
       if (name.includes("over")) return "Over";
@@ -292,12 +306,11 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
       <Box
         textAlign="center"
         sx={{
-          flex: "0 0 auto",
-          width: { xs: "calc(33.33% - 8px)", sm: "calc(16.66% - 8px)", md: "calc(14.28% - 8px)" },
-          minWidth: 55,
-          py: 0.25,
-          px: 0.25,
-          borderRadius: 0.5,
+          width: "100%",
+          minWidth: 0,
+          py: 0.6,
+          px: 0.6,
+          borderRadius: 0.75,
           bgcolor: isSelected ? "rgba(255, 193, 7, 0.22)" : "transparent",
           border: isSelected ? "2px solid rgba(255, 193, 7, 0.9)" : "1px solid transparent",
           boxShadow: isSelected ? "0 0 10px rgba(255, 193, 7, 0.6)" : "none",
@@ -309,8 +322,14 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
           color={isSelected ? "#FFE082" : "rgba(255,255,255,0.6)"}
           fontWeight={isSelected ? 700 : 400}
           display="block"
-          mb={0.25}
-          sx={{ fontSize: "0.58rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          mb={0.4}
+          sx={{
+            fontSize: { xs: "0.62rem", sm: "0.66rem" },
+            whiteSpace: "normal",
+            overflowWrap: "anywhere",
+            lineHeight: 1.15,
+            minHeight: "1.55em",
+          }}
         >
           {label}
         </Typography>
@@ -326,7 +345,7 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
             minWidth: "fit-content",
             width: "100%",
             height: "auto",
-            fontSize: { xs: "0.65rem", sm: "0.7rem", md: "0.65rem" },
+            fontSize: { xs: "0.68rem", sm: "0.72rem", md: "0.7rem" },
             fontWeight: 700,
             color: "white",
             borderWidth: isSelected ? 2 : 1,
@@ -339,7 +358,7 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
             boxShadow: isSelected
               ? "0 0 12px rgba(255, 193, 7, 0.7)"
               : "none",
-            padding: "4px 4px",
+            padding: "7px 6px",
             transition: "all 0.2s ease",
             "&:hover": {
               transform: "scale(1.05)",
@@ -425,19 +444,16 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
         {!collapsed && (
           <Box>
             <Box
-              sx={
-                isTotalsLikeMarket
-                  ? {
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "repeat(2, minmax(0, 1fr))",
-                        sm: "repeat(3, minmax(0, 1fr))",
-                        md: "repeat(4, minmax(0, 1fr))",
-                      },
-                      gap: 1,
-                    }
-                  : {}
-              }
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                  md: isTotalsLikeMarket ? "repeat(2, minmax(0, 1fr))" : "1fr",
+                  lg: isTotalsLikeMarket ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+                },
+                gap: 1,
+              }}
             >
               {grouped.map((group, gi) => (
                 <Box
@@ -465,7 +481,18 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
                       {group.label}
                     </Typography>
                   )}
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "repeat(2, minmax(0, 1fr))",
+                        sm: "repeat(auto-fit, minmax(92px, 1fr))",
+                        md: "repeat(auto-fit, minmax(96px, 1fr))",
+                        lg: "repeat(auto-fit, minmax(102px, 1fr))",
+                      },
+                      gap: 0.9,
+                    }}
+                  >
                     {group.outcomes.map((o, i) => (
                       <OddsBtn
                         key={`${o.name}-${o.point ?? ""}-${i}`}
@@ -516,7 +543,7 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", sm: "1fr", md: "1fr 1fr" },
           gap: 1.5,
           alignItems: "start",
         }}
@@ -524,7 +551,7 @@ const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
         {filteredKeys.map((key) => {
           const outcomes = markets.get(key);
           if (!outcomes?.length) return null;
-          const isWide = outcomes.length > 6;
+          const isWide = outcomes.length > 4 || key === "result_totals";
           return (
             <Box key={key} sx={{ gridColumn: isWide ? "1 / -1" : undefined }}>
               <SectionBlock marketKey={key} outcomes={outcomes} />
@@ -544,6 +571,71 @@ function groupOutcomes(
   homeTeam?: string,
   awayTeam?: string
 ): Array<{ label?: string; outcomes: Outcome[] }> {
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const homeNorm = normalize(homeTeam || "home");
+  const awayNorm = normalize(awayTeam || "away");
+
+  const sortByResultOrder = (arr: Outcome[]) =>
+    [...arr].sort((a, b) => {
+      const score = (name: string): number => {
+        const n = normalize(name);
+        if (n === homeNorm || n.includes(homeNorm)) return 0;
+        if (n === "draw") return 1;
+        if (n === awayNorm || n.includes(awayNorm)) return 2;
+        return 99;
+      };
+      return score(a.name) - score(b.name);
+    });
+
+  if (marketKey === "h2h" || marketKey === "h2h_h1" || marketKey === "h2h_h2") {
+    return [{ outcomes: sortByResultOrder(outcomes) }];
+  }
+
+  if (marketKey === "result_totals") {
+    const byTeamAndPoint = new Map<string, Outcome[]>();
+    for (const o of outcomes) {
+      const normalized = (o.name || "").trim();
+      const [teamPartRaw = "", totalPartRaw = ""] = normalized.split("/");
+      const teamPart = teamPartRaw.trim();
+      const totalPart = totalPartRaw.trim();
+      const pointFromName = totalPart.match(/(\d+(?:\.\d+)?)/)?.[1];
+      const point = o.point ?? (pointFromName ? Number(pointFromName) : undefined);
+      const key = `${teamPart || "Other"}|${point ?? "na"}`;
+      if (!byTeamAndPoint.has(key)) byTeamAndPoint.set(key, []);
+      byTeamAndPoint.get(key)!.push(o);
+    }
+
+    const ordered = Array.from(byTeamAndPoint.entries())
+      .sort((a, b) => {
+        const [aTeam = "Other", aPoint = "na"] = a[0].split("|");
+        const [bTeam = "Other", bPoint = "na"] = b[0].split("|");
+        const teamScore = (team: string) => {
+          const n = normalize(team);
+          if (n === homeNorm || n.includes(homeNorm)) return 0;
+          if (n === "draw") return 1;
+          if (n === awayNorm || n.includes(awayNorm)) return 2;
+          return 99;
+        };
+        const t = teamScore(aTeam) - teamScore(bTeam);
+        if (t !== 0) return t;
+        return Number(aPoint) - Number(bPoint);
+      })
+      .map(([key, outs]) => {
+        const [team = "Other", point = "na"] = key.split("|");
+        const sorted = [...outs].sort((x, y) => {
+          const xo = normalize(x.name).includes("over") ? 0 : 1;
+          const yo = normalize(y.name).includes("over") ? 0 : 1;
+          return xo - yo;
+        });
+        return {
+          label: point !== "na" ? `${team} - O/U ${point}` : team,
+          outcomes: sorted,
+        };
+      });
+
+    if (ordered.length > 0) return ordered;
+  }
+
   const hasPoints = outcomes.some((o) => o.point != null);
   const hasDescriptions = outcomes.some((o) => o.description);
   const isTotalsMarket =
@@ -627,10 +719,37 @@ function groupOutcomes(
       });
   }
 
+  if (hasPoints && hasDescriptions) {
+    const byDescription = new Map<string, Outcome[]>();
+    for (const o of outcomes) {
+      const desc = (o.description || "Other").trim();
+      if (!byDescription.has(desc)) byDescription.set(desc, []);
+      byDescription.get(desc)!.push(o);
+    }
+
+    const grouped: Array<{ label?: string; outcomes: Outcome[] }> = [];
+    for (const [desc, outs] of byDescription.entries()) {
+      const byPoint = new Map<number, Outcome[]>();
+      for (const o of outs) {
+        const p = o.point ?? -1;
+        if (!byPoint.has(p)) byPoint.set(p, []);
+        byPoint.get(p)!.push(o);
+      }
+      const points = Array.from(byPoint.keys()).sort((a, b) => a - b);
+      for (const p of points) {
+        grouped.push({
+          label: p >= 0 ? `${desc} - ${p}` : desc,
+          outcomes: (byPoint.get(p) || []).sort((a, b) => normalize(a.name).localeCompare(normalize(b.name))),
+        });
+      }
+    }
+    return grouped;
+  }
+
   if (hasPoints && !hasDescriptions) {
     const sorted = [...outcomes].sort((a, b) => (a.point ?? 0) - (b.point ?? 0));
     return [{ outcomes: sorted }];
   }
 
-  return [{ outcomes }];
+  return [{ outcomes: [...outcomes].sort((a, b) => normalize(a.name).localeCompare(normalize(b.name))) }];
 }

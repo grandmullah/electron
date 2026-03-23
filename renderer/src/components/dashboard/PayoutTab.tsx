@@ -56,6 +56,14 @@ interface PayoutTabProps {
   onValidatePayoutForBet: (payout: PendingPayout) => void;
   onCompletePayout: (payoutId: string, notes?: string) => Promise<any>;
   onExportPayoutsToExcel: () => void;
+  pagination: { limit: number; offset: number; hasMore: boolean };
+  statusFilter: "all" | "pending" | "completed";
+  onStatusFilterChange: (status: "all" | "pending" | "completed") => void;
+  onLoadPage: (options?: {
+    limit?: number;
+    offset?: number;
+    status?: "all" | "pending" | "completed";
+  }) => void;
   onNavigate: (
     page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
   ) => void;
@@ -77,6 +85,10 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
   onValidatePayoutForBet,
   onCompletePayout,
   onExportPayoutsToExcel,
+  pagination,
+  statusFilter,
+  onStatusFilterChange,
+  onLoadPage,
   onNavigate,
 }) => {
   // Modal state
@@ -84,59 +96,51 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
   const [selectedPayout, setSelectedPayout] =
     React.useState<PendingPayout | null>(null);
 
-  // Filter state
-  const [statusFilter, setStatusFilter] = React.useState<
-    "all" | "pending" | "completed"
-  >("all");
-
-  // Get filtered payouts based on status
-  const getFilteredPayouts = () => {
-    switch (statusFilter) {
-      case "pending":
-        return pendingPayouts;
-      case "completed":
-        return completedPayouts;
-      default:
-        return allPayouts;
-    }
-  };
-
-  const filteredPayouts = getFilteredPayouts();
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(10);
-
-  // Calculate pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPayouts = filteredPayouts.slice(
-    indexOfFirstItem,
-    indexOfLastItem
+  const currentPayouts = allPayouts;
+  const filteredTotal =
+    statusFilter === "pending"
+      ? payoutCounts.pending.count
+      : statusFilter === "completed"
+        ? payoutCounts.completed.count
+        : payoutCounts.total;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      filteredTotal /
+        Math.max(1, pagination.limit || currentPayouts.length || 1)
+    )
   );
-  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
+  const currentPage = Math.floor((pagination.offset || 0) / Math.max(1, pagination.limit)) + 1;
+  const itemsPerPage = pagination.limit;
 
   // Pagination handlers
   const goToNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      onLoadPage({
+        limit: itemsPerPage,
+        offset: currentPage * itemsPerPage,
+        status: statusFilter,
+      });
     }
   };
 
   const goToPrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      onLoadPage({
+        limit: itemsPerPage,
+        offset: (currentPage - 2) * itemsPerPage,
+        status: statusFilter,
+      });
     }
   };
 
   const goToPage = (page: number) => {
-    setCurrentPage(page);
+    onLoadPage({
+      limit: itemsPerPage,
+      offset: (page - 1) * itemsPerPage,
+      status: statusFilter,
+    });
   };
-
-  // Reset to page 1 when payouts or filter changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredPayouts.length, statusFilter]);
 
   // Handle complete payout
   const handleCompletePayout = (payout: PendingPayout) => {
@@ -216,7 +220,10 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
           <Stack direction="row" spacing={1}>
             <Button
               variant={statusFilter === "all" ? "contained" : "outlined"}
-              onClick={() => setStatusFilter("all")}
+              onClick={() => {
+                onStatusFilterChange("all");
+                onLoadPage({ limit: itemsPerPage, offset: 0, status: "all" });
+              }}
               sx={{
                 borderRadius: 0,
                 textTransform: "none",
@@ -243,7 +250,10 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             </Button>
             <Button
               variant={statusFilter === "pending" ? "contained" : "outlined"}
-              onClick={() => setStatusFilter("pending")}
+              onClick={() => {
+                onStatusFilterChange("pending");
+                onLoadPage({ limit: itemsPerPage, offset: 0, status: "pending" });
+              }}
               sx={{
                 borderRadius: 0,
                 textTransform: "none",
@@ -270,7 +280,10 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             </Button>
             <Button
               variant={statusFilter === "completed" ? "contained" : "outlined"}
-              onClick={() => setStatusFilter("completed")}
+              onClick={() => {
+                onStatusFilterChange("completed");
+                onLoadPage({ limit: itemsPerPage, offset: 0, status: "completed" });
+              }}
               sx={{
                 borderRadius: 0,
                 textTransform: "none",
@@ -297,7 +310,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
             </Button>
           </Stack>
           <Chip
-            label={`Showing: ${currentPayouts.length} of ${filteredPayouts.length} payouts`}
+            label={`Showing: ${currentPayouts.length} of ${filteredTotal} payouts`}
             sx={{
               bgcolor: "rgba(25, 118, 210, 0.1)",
               color: "#42a5f5",
@@ -700,7 +713,7 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
       </Paper>
 
       {/* Pagination */}
-      {pendingPayouts.length > 0 && (
+      {filteredTotal > 0 && (
         <Paper
           sx={{
             p: 3,
@@ -734,7 +747,13 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
               </InputLabel>
               <Select
                 value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                onChange={(e) =>
+                  onLoadPage({
+                    limit: Number(e.target.value),
+                    offset: 0,
+                    status: statusFilter,
+                  })
+                }
                 label="Items per page"
                 sx={{
                   color: "white",
@@ -761,7 +780,10 @@ export const PayoutTab: React.FC<PayoutTabProps> = ({
 
             {/* Page info */}
             <Chip
-              label={`Showing ${indexOfFirstItem + 1}-${Math.min(indexOfLastItem, pendingPayouts.length)} of ${pendingPayouts.length}`}
+              label={`Showing ${pagination.offset + 1}-${Math.min(
+                pagination.offset + currentPayouts.length,
+                filteredTotal
+              )} of ${filteredTotal}`}
               sx={{
                 bgcolor: "rgba(25, 118, 210, 0.1)",
                 color: "#42a5f5",

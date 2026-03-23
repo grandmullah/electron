@@ -328,7 +328,8 @@ export class BetHistoryService {
                   data: {
                         singleBets: transformedSingleBets,
                         multibets: transformedMultibets,
-                        total: apiResponse.data.total
+                              total: apiResponse.data.total,
+                              ...(apiResponse.data.pagination ? { pagination: apiResponse.data.pagination } : {}),
                   }
             };
       }

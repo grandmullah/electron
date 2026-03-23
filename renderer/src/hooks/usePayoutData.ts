@@ -25,17 +25,32 @@ export const usePayoutData = () => {
       const [payoutValidationResults, setPayoutValidationResults] = useState<Map<string, boolean>>(new Map());
       const [isExportingPayouts, setIsExportingPayouts] = useState(false);
       const [completingPayouts, setCompletingPayouts] = useState<Set<string>>(new Set());
+      const [pagination, setPagination] = useState({
+            limit: 10,
+            offset: 0,
+            hasMore: false,
+      });
+      const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
-      const loadPendingPayouts = useCallback(async () => {
+      const loadPendingPayouts = useCallback(async (options?: {
+            limit?: number;
+            offset?: number;
+            status?: 'all' | 'pending' | 'completed';
+      }) => {
             if (!user?.id) return;
 
             setIsLoadingPayouts(true);
             setPayoutError(null);
 
             try {
-                  console.log("🔄 Loading all payouts (pending & completed)...");
-
-                  const response = await pendingPayoutsService.getAllPayouts();
+                  const limit = options?.limit ?? pagination.limit;
+                  const offset = options?.offset ?? pagination.offset;
+                  const status = options?.status ?? statusFilter;
+                  const response = await pendingPayoutsService.getAllPayoutsPaginated({
+                        limit,
+                        offset,
+                        status,
+                  });
 
                   if (response.success && response.data) {
                         setAllPayouts(response.data.payouts);
@@ -43,6 +58,8 @@ export const usePayoutData = () => {
                         setCompletedPayouts(response.data.completedPayouts);
                         setTotalPayouts(response.data.summary.total);
                         setPayoutSummary(response.data.summary);
+                        setPagination(response.data.pagination);
+                        setStatusFilter(status);
                         console.log("✅ All payouts loaded:", {
                               total: response.data.summary.total,
                               pending: response.data.summary.pending,
@@ -64,7 +81,7 @@ export const usePayoutData = () => {
             } finally {
                   setIsLoadingPayouts(false);
             }
-      }, [user?.id]);
+      }, [user?.id, pagination.limit, pagination.offset, statusFilter]);
 
       const validatePayoutForBet = useCallback(
             async (payout: PendingPayout) => {
@@ -137,7 +154,22 @@ export const usePayoutData = () => {
 
                         // Remove the completed payout from the pending list
                         setPendingPayouts((prev) => prev.filter((payout) => payout.id !== payoutId));
-                        setTotalPayouts((prev) => Math.max(0, prev - 1));
+                        setCompletedPayouts((prev) => {
+                              const moved = pendingPayouts.find((p) => p.id === payoutId);
+                              return moved ? [{ ...moved, status: 'completed' }, ...prev] : prev;
+                        });
+                        setAllPayouts((prev) => prev.map((p) => (p.id === payoutId ? { ...p, status: 'completed' } : p)));
+                        setPayoutSummary((prev) => ({
+                              total: prev.total,
+                              pending: {
+                                    count: Math.max(0, prev.pending.count - 1),
+                                    totalAmount: Math.max(0, prev.pending.totalAmount - (pendingPayouts.find((p) => p.id === payoutId)?.amount || 0)),
+                              },
+                              completed: {
+                                    count: prev.completed.count + 1,
+                                    totalAmount: prev.completed.totalAmount + (pendingPayouts.find((p) => p.id === payoutId)?.amount || 0),
+                              },
+                        }));
 
                         return response;
                   } catch (error: any) {
@@ -151,7 +183,7 @@ export const usePayoutData = () => {
                         });
                   }
             },
-            []
+            [pendingPayouts]
       );
 
       const exportPayoutsToExcel = useCallback(async () => {
@@ -240,5 +272,8 @@ export const usePayoutData = () => {
             validateAllPayouts,
             completePayout,
             exportPayoutsToExcel,
+            pagination,
+            statusFilter,
+            setStatusFilter,
       };
 };

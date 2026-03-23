@@ -125,6 +125,37 @@ class PendingPayoutsService {
                   throw new Error(error.message || 'Failed to fetch payouts');
             }
       }
+
+      async getAllPayoutsPaginated(options?: {
+            limit?: number;
+            offset?: number;
+            status?: 'all' | 'pending' | 'completed';
+      }): Promise<AllPayoutsResponse> {
+            const limit = options?.limit ?? 20;
+            const offset = options?.offset ?? 0;
+            const status = options?.status ?? 'all';
+            const token = PendingPayoutsService.getAuthToken();
+            const params = new URLSearchParams({
+                  limit: String(limit),
+                  offset: String(offset),
+            });
+            if (status !== 'all') {
+                  params.set('status', status);
+            }
+
+            const response = await fetch(`${this.baseUrl}/payout/my-payouts?${params.toString()}`, {
+                  method: 'GET',
+                  headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                  },
+            });
+
+            if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+      }
 }
 
 export const pendingPayoutsService = new PendingPayoutsService();

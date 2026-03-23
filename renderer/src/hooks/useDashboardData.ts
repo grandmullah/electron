@@ -39,18 +39,28 @@ export const useDashboardData = () => {
                   // Call all three statistics APIs in parallel for better performance
                   const [personalResult, shopResult, dashboardResult] =
                         await Promise.allSettled([
-                              // 1. Personal Statistics API
-                              StatisticsService.getPersonalStatistics({
-                                    startDate: "2024-01-01", // Last year
-                                    endDate: new Date().toISOString().split("T")[0] || "2024-12-31", // Today with fallback
-                                    betType: "all",
-                                    status: "all",
-                              }),
+                              (() => {
+                                    const endDate = new Date();
+                                    const startDate = new Date();
+                                    startDate.setDate(endDate.getDate() - 30);
+                                    const startDateStr = startDate.toISOString().split("T")[0] || "2024-01-01";
+                                    const endDateStr = endDate.toISOString().split("T")[0] || "2024-12-31";
+                                    return StatisticsService.getPersonalStatistics({
+                                          startDate: startDateStr,
+                                          endDate: endDateStr,
+                                          betType: "all",
+                                          status: "all",
+                                    });
+                              })(),
 
                               // 2. Shop Statistics API (if user has shop access)
                               shopId
                                     ? StatisticsService.getShopStatistics(shopId, {
-                                          startDate: "2024-01-01",
+                                          startDate: (() => {
+                                                const d = new Date();
+                                                d.setDate(d.getDate() - 30);
+                                                return d.toISOString().split("T")[0] || "2024-01-01";
+                                          })(),
                                           endDate: new Date().toISOString().split("T")[0] || "2024-12-31",
                                     })
                                     : Promise.resolve(null),

@@ -527,6 +527,7 @@ export function parseOddsFromGameOddsArray(
                   name: o.outcome_name,
                   price: Number(o.outcome_price) || 0,
                   ...(o.outcome_point != null ? { point: Number(o.outcome_point) } : {}),
+                  ...((o as any).outcome_description ? { description: String((o as any).outcome_description) } : {}),
             });
             rawMarketMap.set(rawKey, rawOutcomes);
 

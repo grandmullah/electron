@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppSelector } from "../../store/hooks";
 import { Header } from "../../components/Header";
-import { DashboardTabs } from "../../components/dashboard/DashboardTabs";
 import { UserStatsTab } from "../../components/dashboard/UserStatsTab";
 import { ShopStatsTab } from "../../components/dashboard/ShopStatsTab";
 import { PayoutTab } from "../../components/dashboard/PayoutTab";
@@ -10,7 +9,6 @@ import { BetsTab } from "../../components/dashboard/BetsTab";
 import { GovernmentTaxTab } from "../../components/dashboard/GovernmentTaxTab";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { usePayoutData } from "../../hooks/usePayoutData";
-import { usePayoutSummary } from "../../hooks/usePayoutSummary";
 import {
   useFinancialSummary,
   DEFAULT_FINANCIAL_SUMMARY_DAYS,
@@ -25,22 +23,18 @@ import {
   Tab,
   Badge,
   Fade,
-  Card,
-  CardContent,
   Chip,
   LinearProgress,
-  Avatar,
   Stack,
-  Grid,
 } from "@mui/material";
+import Grid from "@mui/material/GridLegacy";
 import {
   Person as PersonIcon,
   Store as StoreIcon,
   AttachMoney as MoneyIcon,
   SportsEsports as BetsIcon,
-  TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
-  Timeline as TimelineIcon,
+  TrendingUp as TrendingUpIcon,
   AccountBalance as GovernmentIcon,
 } from "@mui/icons-material";
 
@@ -51,7 +45,14 @@ interface NavigationParams {
 
 interface DashboardPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history",
+    page:
+      | "home"
+      | "dashboard"
+      | "settings"
+      | "games"
+      | "agent"
+      | "history"
+      | "management",
     params?: NavigationParams
   ) => void;
   navigationParams?: NavigationParams;
@@ -95,18 +96,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     validateAllPayouts,
     completePayout,
     exportPayoutsToExcel,
+    pagination: payoutPagination,
+    statusFilter: payoutStatusFilter,
+    setStatusFilter: setPayoutStatusFilter,
   } = usePayoutData();
 
-  const { recentBets, isLoadingBets, betsError, loadRecentBets } =
-    useBetsData();
-
   const {
-    payoutSummary,
-    isLoadingSummary,
-    summaryError,
-    loadPayoutSummary,
-    formatCurrency,
-  } = usePayoutSummary();
+    recentBets,
+    isLoadingBets,
+    betsError,
+    loadRecentBets,
+    currentPage: betsCurrentPage,
+    pageSize: betsPageSize,
+    pagination: betsPagination,
+    statusFilter: betsStatusFilter,
+  } = useBetsData();
 
   const [financialRange, setFinancialRange] = useState<number>(
     DEFAULT_FINANCIAL_SUMMARY_DAYS
@@ -116,7 +120,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     financialSummary,
     periodSummaries,
     isLoadingFinancialSummary,
+    isLoadingPeriods,
     financialSummaryError,
+    periodsError,
     loadFinancialSummary,
     loadFinancialSummaryForPeriods,
     formatCurrency: formatFinancialCurrency,
@@ -124,15 +130,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     getWinRateColor,
     getFinancialAnalysis,
   } = useFinancialSummary();
+  const formatCurrency = useCallback((amount: number) => `SSP ${(amount || 0).toFixed(2)}`, []);
 
   // Load tab-specific data when tab changes
   useEffect(() => {
     if (activeTab === "payout") {
       loadPendingPayouts();
-      loadPayoutSummary();
     } else if (activeTab === "financial") {
-      loadFinancialSummary(financialRange);
       loadFinancialSummaryForPeriods();
+      loadFinancialSummary(financialRange);
     } else if (activeTab === "bets") {
       loadRecentBets();
     }
@@ -140,16 +146,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     activeTab,
     financialRange,
     loadPendingPayouts,
-    loadPayoutSummary,
     loadFinancialSummary,
     loadFinancialSummaryForPeriods,
     loadRecentBets,
   ]);
-
-  // Load payout summary on component mount
-  useEffect(() => {
-    loadPayoutSummary();
-  }, [loadPayoutSummary]);
 
   // Handle navigation parameters
   useEffect(() => {
@@ -188,9 +188,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const handleFinancialRangeChange = useCallback(
     (days: number) => {
       setFinancialRange(days);
-      loadFinancialSummary(days);
     },
-    [loadFinancialSummary]
+    []
   );
 
   const getTabIndex = (tab: string) => {
@@ -205,6 +204,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return tabs.indexOf(tab);
   };
 
+  const tabMeta = useMemo(
+    () => ({
+      user: { label: "User Statistics", color: "primary.main" },
+      shop: { label: "Shop Analytics", color: "info.main" },
+      payout: { label: "Payout Management", color: "warning.main" },
+      financial: { label: "Financial Analytics", color: "success.main" },
+      bets: { label: "Recent Bets", color: "secondary.main" },
+      governmentTax: { label: "Government Tax", color: "error.main" },
+    }),
+    []
+  );
+
+  const headerMetrics = useMemo(() => {
+    const summary = dashboardStats?.summary;
+    return [
+      {
+        key: "totalBets",
+        label: "Total Bets",
+        value: summary?.totalBets ?? personalStats?.totalBets ?? 0,
+        tone: "default" as const,
+      },
+      {
+        key: "totalStake",
+        label: "Total Stake",
+        value: formatCurrency(summary?.totalStake ?? personalStats?.totalStake ?? 0),
+        tone: "default" as const,
+      },
+      {
+        key: "netProfit",
+        label: "Net Profit",
+        value: formatCurrency(summary?.netProfit ?? personalStats?.netProfit ?? 0),
+        tone: (summary?.netProfit ?? personalStats?.netProfit ?? 0) >= 0 ? "success" as const : "error" as const,
+      },
+      {
+        key: "pendingPayouts",
+        label: "Pending Payouts",
+        value: totalPayouts ?? 0,
+        tone: totalPayouts > 0 ? ("warning" as const) : ("default" as const),
+      },
+    ];
+  }, [dashboardStats, personalStats, totalPayouts, formatCurrency]);
+
   return (
     <Box
       sx={{
@@ -216,23 +257,87 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     >
       <Header onNavigate={onNavigate} currentPage="dashboard" />
 
-      <Container maxWidth="xl" sx={{ py: 4, position: "relative", zIndex: 1 }}>
-        {/* Dark Theme Page Header */}
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, md: 3 }, position: "relative", zIndex: 1 }}
+      >
         <Paper
-          elevation={3}
+          elevation={2}
           sx={{
-            p: 4,
-            mb: 4,
-            borderRadius: 3,
+            p: { xs: 2, md: 2.5 },
+            mb: 2,
+            borderRadius: 2,
             background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)",
-            backdropFilter: "blur(20px)",
+              "linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: "text.primary",
-            position: "relative",
-            overflow: "hidden",
           }}
-        ></Paper>
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", md: "center" }}
+            spacing={1.5}
+          >
+            <Box>
+              <Typography variant="h5" fontWeight={700}>
+                Dashboard
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Optimized workspace for analytics, payouts, and tax workflows.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Chip
+                size="small"
+                label={`Active: ${tabMeta[activeTab].label}`}
+                sx={{ bgcolor: "rgba(255,255,255,0.08)" }}
+              />
+              <Chip
+                size="small"
+                label={user?.shop?.shop_name ? `Shop: ${user.shop.shop_name}` : "No shop linked"}
+                sx={{ bgcolor: "rgba(255,255,255,0.08)" }}
+              />
+            </Stack>
+          </Stack>
+          {isLoadingStats && <LinearProgress sx={{ mt: 1.5 }} />}
+        </Paper>
+
+        <Grid container spacing={1.25} sx={{ mb: 2 }}>
+          {headerMetrics.map((metric) => (
+            <Grid item xs={12} sm={6} lg={3} key={metric.key}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 1.5,
+                  height: "100%",
+                  borderRadius: 2,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  bgcolor: "rgba(255,255,255,0.02)",
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  {metric.label}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color:
+                      metric.tone === "success"
+                        ? "success.main"
+                        : metric.tone === "error"
+                        ? "error.main"
+                        : metric.tone === "warning"
+                        ? "warning.main"
+                        : "text.primary",
+                  }}
+                >
+                  {metric.value}
+                </Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
         {/* Dark Theme Tab Navigation */}
         <Paper
@@ -249,11 +354,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <Tabs
             value={getTabIndex(activeTab)}
             onChange={handleTabChange}
-            variant="fullWidth"
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               "& .MuiTab-root": {
-                minHeight: 64,
-                fontSize: "0.95rem",
+                minHeight: { xs: 52, md: 56 },
+                minWidth: { xs: 120, md: 140 },
+                px: { xs: 1.25, md: 1.75 },
+                fontSize: { xs: "0.8rem", md: "0.9rem" },
                 fontWeight: 600,
                 textTransform: "none",
                 transition: "all 0.3s ease",
@@ -269,6 +377,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     color: "primary.main",
                   },
                 },
+              },
+              "& .MuiTab-iconWrapper": {
+                mr: { xs: 0.5, md: 0.75 },
               },
               "& .MuiTabs-indicator": {
                 height: 3,
@@ -320,8 +431,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </Paper>
 
         {/* Tab Content */}
-        <Fade in={true} timeout={300}>
-          <Box>
+        <Fade in={true} timeout={250}>
+          <Box sx={{ mt: 1 }}>
             {activeTab === "user" && (
               <UserStatsTab
                 personalStats={personalStats}
@@ -360,6 +471,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 onValidatePayoutForBet={validatePayoutForBet}
                 onCompletePayout={completePayout}
                 onExportPayoutsToExcel={exportPayoutsToExcel}
+                pagination={payoutPagination}
+                statusFilter={payoutStatusFilter}
+                onStatusFilterChange={setPayoutStatusFilter}
+                onLoadPage={loadPendingPayouts}
                 onNavigate={
                   onNavigate as (
                     page:
@@ -369,6 +484,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       | "games"
                       | "agent"
                       | "history"
+                      | "management",
+                    params?: NavigationParams
                   ) => void
                 }
               />
@@ -380,8 +497,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 periodSummaries={periodSummaries}
                 isLoadingSummary={isLoadingFinancialSummary}
                 summaryError={financialSummaryError}
-                isLoadingPeriods={isLoadingFinancialSummary}
-                periodsError={financialSummaryError}
+                isLoadingPeriods={isLoadingPeriods}
+                periodsError={periodsError}
                 onRetry={() => {
                   loadFinancialSummary(financialRange);
                   loadFinancialSummaryForPeriods();
@@ -401,6 +518,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 isLoadingBets={isLoadingBets}
                 betsError={betsError}
                 onLoadRecentBets={loadRecentBets}
+                currentPage={betsCurrentPage}
+                pageSize={betsPageSize}
+                pagination={betsPagination}
+                statusFilter={betsStatusFilter}
               />
             )}
 

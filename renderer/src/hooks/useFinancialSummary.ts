@@ -25,6 +25,19 @@ export const useFinancialSummary = () => {
       const loadFinancialSummary = useCallback(async (days: number = DEFAULT_FINANCIAL_SUMMARY_DAYS) => {
             if (!user?.id) return;
 
+            if (days === 1 && periodSummaries.today) {
+                  setFinancialSummary(periodSummaries.today);
+                  return;
+            }
+            if (days === 7 && periodSummaries.thisWeek) {
+                  setFinancialSummary(periodSummaries.thisWeek);
+                  return;
+            }
+            if (days === 30 && periodSummaries.thisMonth) {
+                  setFinancialSummary(periodSummaries.thisMonth);
+                  return;
+            }
+
             setIsLoadingFinancialSummary(true);
             setFinancialSummaryError(null);
 
@@ -52,7 +65,7 @@ export const useFinancialSummary = () => {
             } finally {
                   setIsLoadingFinancialSummary(false);
             }
-      }, [user?.id]);
+      }, [user?.id, periodSummaries.today, periodSummaries.thisWeek, periodSummaries.thisMonth]);
 
       const loadFinancialSummaryForPeriods = useCallback(async () => {
             if (!user?.id) return;
