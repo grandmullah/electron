@@ -101,7 +101,10 @@ const GameCardComponent: React.FC<GameCardProps> = ({
             : "0 20px 40px rgba(0, 212, 255, 0.15)",
         },
       }}
-      onClick={() => onSelect(game)}
+      onClick={(event) => {
+        onSelect(game);
+        onToggleExpanded(game.id, event);
+      }}
     >
       <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
         {isMobile ? (
