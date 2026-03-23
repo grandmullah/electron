@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Typography, Stack } from "@mui/material";
 import { Game } from "../../services/gamesService";
 import { BettingOption } from "./BettingOption";
@@ -28,7 +28,7 @@ interface TotalsSectionProps {
   variant?: "mobile" | "desktop";
 }
 
-export const TotalsSection: React.FC<TotalsSectionProps> = ({
+const TotalsSectionComponent: React.FC<TotalsSectionProps> = ({
   game,
   totals,
   onlyPoint,
@@ -39,45 +39,30 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
 }) => {
   if (!totals || totals.length === 0) return null;
 
-  let workingTotals = totals;
-  if (onlyPoint != null) {
-    workingTotals = totals.filter((t) => Math.abs(t.point - onlyPoint) < 0.01);
-    if (workingTotals.length === 0) return null;
-  }
-
-  // Filter out .25 and .75 points if corresponding .5 exists
-  // Also filter out .0 if corresponding .5 exists
-  const allPoints = workingTotals.map((t) => t.point);
-
-  // Helper to check if a value exists in array (with floating point tolerance)
-  const hasValue = (value: number) => {
-    return allPoints.some((p) => Math.abs(p - value) < 0.001);
-  };
-
-  const filteredTotals = workingTotals.filter((total) => {
-    const point = total.point;
-    const decimal = point % 1; // Get decimal part
-    const isWholeNumber =
-      Math.abs(decimal) < 0.001 || Math.abs(decimal - 1) < 0.001;
-
-    // If it's .0 (whole number), check if corresponding .5 exists
-    if (isWholeNumber) {
-      const correspondingHalf = Math.floor(point) + 0.5;
-      return !hasValue(correspondingHalf);
+  const sortedFilteredTotals = useMemo(() => {
+    let workingTotals = totals;
+    if (onlyPoint != null) {
+      workingTotals = totals.filter((t) => Math.abs(t.point - onlyPoint) < 0.01);
     }
+    if (!workingTotals.length) return [];
 
-    // If it's .25 or .75, check if corresponding .5 exists
-    if (Math.abs(decimal - 0.25) < 0.001) {
-      const correspondingHalf = Math.floor(point) + 0.5;
-      return !hasValue(correspondingHalf);
-    }
-    if (Math.abs(decimal - 0.75) < 0.001) {
-      const correspondingHalf = Math.floor(point) + 0.5;
-      return !hasValue(correspondingHalf);
-    }
+    const pointSet = new Set(workingTotals.map((t) => t.point.toFixed(3)));
+    const hasValue = (value: number) => pointSet.has(value.toFixed(3));
 
-    return true;
-  });
+    const filtered = workingTotals.filter((total) => {
+      const point = total.point;
+      const decimal = point % 1;
+      const isWholeNumber = Math.abs(decimal) < 0.001 || Math.abs(decimal - 1) < 0.001;
+      if (isWholeNumber) return !hasValue(Math.floor(point) + 0.5);
+      if (Math.abs(decimal - 0.25) < 0.001) return !hasValue(Math.floor(point) + 0.5);
+      if (Math.abs(decimal - 0.75) < 0.001) return !hasValue(Math.floor(point) + 0.5);
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => a.point - b.point);
+  }, [totals, onlyPoint]);
+
+  if (sortedFilteredTotals.length === 0) return null;
 
   const getBetType = () => {
     switch (period) {
@@ -125,9 +110,7 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
           {getTitle()}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
-          {filteredTotals
-            .sort((a, b) => a.point - b.point)
-            .map((total) => (
+          {sortedFilteredTotals.map((total) => (
               <Box
                 key={total.point}
                 sx={{
@@ -150,7 +133,19 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
                     fontWeight: 600,
                   }}
                 >
-                  OVER {total.point}
+                  O/U {total.point}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: { xs: "0.6rem", sm: "0.65rem" },
+                    color: "rgba(255, 255, 255, 0.55)",
+                    display: "block",
+                    mb: 0.35,
+                    fontWeight: 600,
+                  }}
+                >
+                  OVER
                 </Typography>
                 <BettingOption
                   game={game}
@@ -172,7 +167,7 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
                     fontWeight: 600,
                   }}
                 >
-                  UNDER {total.point}
+                  UNDER
                 </Typography>
                 <BettingOption
                   game={game}
@@ -218,7 +213,7 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
       <Box sx={{ overflow: "hidden" }}>
         {/* Create rows of 3 totals each */}
         {Array.from(
-          { length: Math.ceil(filteredTotals.length / 3) },
+          { length: Math.ceil(sortedFilteredTotals.length / 3) },
           (_, rowIndex) => (
             <Stack
               key={rowIndex}
@@ -226,12 +221,11 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
               spacing={{ xs: 0.4, sm: 0.5, md: 0.6 }}
               justifyContent="space-between"
               mb={
-                rowIndex < Math.ceil(filteredTotals.length / 3) - 1 ? 0.5 : 0
+                rowIndex < Math.ceil(sortedFilteredTotals.length / 3) - 1 ? 0.5 : 0
               }
               sx={{ overflow: "hidden", width: "100%" }}
             >
-              {filteredTotals
-                .sort((a, b) => a.point - b.point) // Sort by point value ascending
+              {sortedFilteredTotals
                 .slice(rowIndex * 3, (rowIndex + 1) * 3)
                 .map((total, index) => (
                   <Box
@@ -259,7 +253,7 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {total.point}
+                      O/U {total.point}
                     </Typography>
                     <Stack
                       direction="row"
@@ -360,3 +354,6 @@ export const TotalsSection: React.FC<TotalsSectionProps> = ({
 };
 
 
+
+
+export const TotalsSection = React.memo(TotalsSectionComponent);

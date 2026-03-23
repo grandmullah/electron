@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,8 @@ import {
   Collapse,
   Divider,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { Game } from "../../services/gamesService";
 import { GameCardHeader } from "./GameCardHeader";
@@ -34,24 +36,27 @@ interface GameCardProps {
     betType: string,
     selection: string,
   ) => boolean;
-  expandedGames: Set<string>;
+  isExpanded: boolean;
   onToggleExpanded: (gameId: string, event: React.MouseEvent) => void;
   gameNumber?: number;
   isHighlighted?: boolean;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({
+const GameCardComponent: React.FC<GameCardProps> = ({
   game,
   isSelected,
   onSelect,
   onAddToBetSlip,
   isSelectionInBetSlip,
-  expandedGames,
+  isExpanded,
   onToggleExpanded,
   gameNumber,
   isHighlighted = false,
 }) => {
-  const getMarketCount = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const marketCount = useMemo(() => {
     let count = 1;
     if (
       game.doubleChance?.homeOrDraw ||
@@ -68,12 +73,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     if (game.totals_h2 && game.totals_h2.length > 0) count++;
     if (game.rawMarkets?.length) count = game.rawMarkets.length;
     return count;
-  };
-
-  const marketCount = getMarketCount();
-
-  const gameId = game.externalId || game.id;
-  const shortId = gameId.length > 8 ? gameId.slice(-8) : gameId;
+  }, [game]);
 
   return (
     <Card
@@ -104,27 +104,26 @@ export const GameCard: React.FC<GameCardProps> = ({
       onClick={() => onSelect(game)}
     >
       <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-        {/* Mobile Layout */}
-        <Box sx={{ display: { xs: "block", md: "none" }, mb: 2 }}>
-          <GameCardHeader
-            game={game}
-            marketCount={marketCount}
-            onToggleExpanded={onToggleExpanded}
-          />
-          <H2HSection
-            game={game}
-            period="full-time"
-            homeOdds={game.homeOdds}
-            drawOdds={game.drawOdds}
-            awayOdds={game.awayOdds}
-            onAddToBetSlip={onAddToBetSlip}
-            isSelectionInBetSlip={isSelectionInBetSlip}
-            variant="mobile"
-          />
-        </Box>
-
-        {/* Desktop Layout */}
-        <Box sx={{ display: { xs: "none", md: "block" } }}>
+        {isMobile ? (
+          <Box sx={{ mb: 2 }}>
+            <GameCardHeader
+              game={game}
+              marketCount={marketCount}
+              onToggleExpanded={onToggleExpanded}
+            />
+            <H2HSection
+              game={game}
+              period="full-time"
+              homeOdds={game.homeOdds}
+              drawOdds={game.drawOdds}
+              awayOdds={game.awayOdds}
+              onAddToBetSlip={onAddToBetSlip}
+              isSelectionInBetSlip={isSelectionInBetSlip}
+              variant="mobile"
+            />
+          </Box>
+        ) : (
+          <Box>
           <Box
             sx={{
               overflowX: "auto",
@@ -432,9 +431,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                 <IconButton
                   onClick={(e) => onToggleExpanded(game.id, e)}
                   sx={{
-                    transform: expandedGames.has(game.id)
-                      ? "rotate(180deg)"
-                      : "rotate(0deg)",
+                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
                     transition: "transform 0.3s ease",
                   }}
                 >
@@ -443,22 +440,25 @@ export const GameCard: React.FC<GameCardProps> = ({
               </Box>
             </Stack>
           </Box>
+          </Box>
+        )}
 
-          {/* Expanded: Full Markets Panel */}
-          <Collapse
-            in={expandedGames.has(game.id)}
-            timeout="auto"
-            unmountOnExit
-          >
-            <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.1)" }} />
-            <GameDetailsPanel
-              game={game}
-              onAddToBetSlip={onAddToBetSlip}
-              isSelectionInBetSlip={isSelectionInBetSlip}
-            />
-          </Collapse>
-        </Box>
+        {/* Expanded: Full Markets Panel */}
+        <Collapse
+          in={isExpanded}
+          timeout="auto"
+          unmountOnExit
+        >
+          <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.1)" }} />
+          <GameDetailsPanel
+            game={game}
+            onAddToBetSlip={onAddToBetSlip}
+            isSelectionInBetSlip={isSelectionInBetSlip}
+          />
+        </Collapse>
       </CardContent>
     </Card>
   );
 };
+
+export const GameCard = React.memo(GameCardComponent);

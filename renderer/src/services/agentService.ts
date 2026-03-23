@@ -87,6 +87,118 @@ interface PlaceShopBetRequest {
       stake: number;
 }
 
+interface SavedShopSelection {
+      gameId: string;
+      homeTeam?: string;
+      awayTeam?: string;
+      marketType: string;
+      outcome: string;
+      odds?: { decimal?: number; american?: number; multiplier?: number } | number;
+      bookmaker?: string;
+      gameTime?: string;
+      sportKey?: string;
+}
+
+interface SavedShopBetSlip {
+      id?: string;
+      userId?: string;
+      stake: number;
+      selections: SavedShopSelection[];
+}
+
+export interface StalePendingSelectionActionable {
+      canUpdateScores: boolean;
+      canUpdateHalftime: boolean;
+      canFetchFromApiFootball: boolean;
+      missingEvents: boolean;
+      missingStats: boolean;
+}
+
+export interface StalePendingSelectionRow {
+      selectionId: string;
+      betId: string;
+      selectionGameId: string;
+      marketType: string;
+      selection: string;
+      selectionCreatedAt: string;
+      betStatus: string;
+      gameId: string;
+      externalId: string | null;
+      commenceTime: string | null;
+      gameStatus: string | null;
+      gameSettlementStatus: string | null;
+      homeScore: number | null;
+      awayScore: number | null;
+      homeHalftimeScore: number | null;
+      awayHalftimeScore: number | null;
+      halftimeSettlementStatus: string | null;
+      leagueKey: string | null;
+      hasStatistics: boolean;
+      hasEvents: boolean;
+      blockers: string[];
+      actionable: StalePendingSelectionActionable;
+}
+
+export interface StalePendingSelectionsPagination {
+      total: number;
+      limit: number;
+      offset: number;
+}
+
+export interface ListStalePendingSelectionsParams {
+      minAgeHours?: number;
+      limit?: number;
+      offset?: number;
+      leagueKey?: string;
+      marketType?: string;
+}
+
+export interface ListStalePendingSelectionsResponse {
+      success: boolean;
+      data: StalePendingSelectionRow[];
+      pagination: StalePendingSelectionsPagination;
+}
+
+export interface RemediatePendingSelectionPayload {
+      fetchFromApiFootball?: boolean;
+      manual?: Record<string, unknown>;
+}
+
+export interface RemediatePendingSelectionResponse {
+      success: boolean;
+      message: string;
+      data: {
+            selectionId: string;
+            before?: {
+                  blockers?: string[];
+                  actionable?: Partial<StalePendingSelectionActionable>;
+            };
+            after?: {
+                  blockers?: string[];
+                  actionable?: Partial<StalePendingSelectionActionable>;
+            };
+            impactedSelectionIds?: string[];
+            impactedBetIds?: string[];
+            settlementResult?: {
+                  message?: string;
+                  selectionsProcessed?: number;
+                  selectionsWon?: number;
+                  selectionsLost?: number;
+                  selectionsVoided?: number;
+                  errors?: number;
+            };
+            betSettlementResult?: {
+                  message?: string;
+                  betsProcessed?: number;
+                  betsWon?: number;
+                  betsLost?: number;
+                  betsVoided?: number;
+                  totalWinnings?: number;
+                  errors?: number;
+            };
+      };
+}
+
 class AgentService {
       private static getAuthHeaders(): Record<string, string> {
             const token = localStorage.getItem('authToken');
@@ -566,6 +678,52 @@ class AgentService {
             }
       }
 
+      static async lookupSavedSelectionsByCode(code: string): Promise<SavedShopBetSlip> {
+            try {
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/selections/lookup`,
+                        { betCode: code },
+                        { headers: this.getAuthHeaders() }
+                  );
+
+                  const data = response.data;
+                  if (data?.success && data?.data) {
+                        return data.data as SavedShopBetSlip;
+                  }
+
+                  throw new Error(data?.error || 'Code lookup failed');
+            } catch (error: any) {
+                  throw new Error(error.response?.data?.error || error.message || 'Failed to lookup saved selections');
+            }
+      }
+
+      static async placeShopBetFromCode(code: string, overrideStake?: number): Promise<AgentBet> {
+            const betSlip = await this.lookupSavedSelectionsByCode(code);
+            const stake = Number(overrideStake ?? betSlip?.stake ?? 0);
+
+            if (!Array.isArray(betSlip?.selections) || betSlip.selections.length === 0) {
+                  throw new Error('Saved code has no selections');
+            }
+            if (!stake || stake <= 0) {
+                  throw new Error('Saved code has invalid stake');
+            }
+
+            return this.placeShopBet({
+                  stake,
+                  selections: betSlip.selections.map((s) => ({
+                        gameId: s.gameId,
+                        homeTeam: s.homeTeam || 'TBD',
+                        awayTeam: s.awayTeam || 'TBD',
+                        marketType: s.marketType,
+                        outcome: s.outcome,
+                        odds: typeof s.odds === 'number' ? s.odds : Number(s.odds?.decimal || 1),
+                        bookmaker: s.bookmaker || 'Betzone',
+                        ...(s.gameTime ? { gameTime: s.gameTime } : {}),
+                        ...(s.sportKey ? { sportKey: s.sportKey } : { sportKey: 'soccer' })
+                  }))
+            });
+      }
+
       static async getAgentBets(status?: 'pending' | 'accepted' | 'rejected' | 'settled'): Promise<AgentBet[]> {
             try {
                   const url = status
@@ -799,6 +957,78 @@ class AgentService {
             } catch (error: any) {
                   console.error('Failed to fetch balance history:', error);
                   throw new Error(error.response?.data?.message || error.message || 'Failed to fetch balance history');
+            }
+      }
+
+      static async listStalePendingBetSelections(
+            params: ListStalePendingSelectionsParams = {}
+      ): Promise<ListStalePendingSelectionsResponse> {
+            try {
+                  const response = await axios.get(`${API_BASE_URL}/admin/bet-selections/pending-stale`, {
+                        headers: this.getAuthHeaders(),
+                        params,
+                  });
+
+                  const rawRows: any[] = Array.isArray(response.data?.data) ? response.data.data : [];
+                  const normalizedRows: StalePendingSelectionRow[] = rawRows.map((row) => ({
+                        selectionId: String(row.selection_id ?? row.selectionId ?? ""),
+                        betId: String(row.bet_id ?? row.betId ?? ""),
+                        selectionGameId: String(row.selection_game_id ?? row.selectionGameId ?? ""),
+                        marketType: String(row.market_type ?? row.marketType ?? ""),
+                        selection: String(row.selection ?? ""),
+                        selectionCreatedAt: String(row.selection_created_at ?? row.selectionCreatedAt ?? ""),
+                        betStatus: String(row.bet_status ?? row.betStatus ?? ""),
+                        gameId: String(row.game_id ?? row.gameId ?? ""),
+                        externalId: row.external_id ?? row.externalId ?? null,
+                        commenceTime: row.commence_time ?? row.commenceTime ?? null,
+                        gameStatus: row.game_status ?? row.gameStatus ?? null,
+                        gameSettlementStatus: row.game_settlement_status ?? row.gameSettlementStatus ?? null,
+                        homeScore: row.home_score ?? row.homeScore ?? null,
+                        awayScore: row.away_score ?? row.awayScore ?? null,
+                        homeHalftimeScore: row.home_halftime_score ?? row.homeHalftimeScore ?? null,
+                        awayHalftimeScore: row.away_halftime_score ?? row.awayHalftimeScore ?? null,
+                        halftimeSettlementStatus: row.halftime_settlement_status ?? row.halftimeSettlementStatus ?? null,
+                        leagueKey: row.league_key ?? row.leagueKey ?? null,
+                        hasStatistics: Boolean(row.has_statistics ?? row.hasStatistics),
+                        hasEvents: Boolean(row.has_events ?? row.hasEvents),
+                        blockers: Array.isArray(row.blockers) ? row.blockers.map((b: unknown) => String(b)) : [],
+                        actionable: {
+                              canUpdateScores: Boolean(row.actionable?.canUpdateScores),
+                              canUpdateHalftime: Boolean(row.actionable?.canUpdateHalftime),
+                              canFetchFromApiFootball: Boolean(row.actionable?.canFetchFromApiFootball),
+                              missingEvents: Boolean(row.actionable?.missingEvents),
+                              missingStats: Boolean(row.actionable?.missingStats),
+                        },
+                  }));
+
+                  const pagination = response.data?.pagination || {};
+                  return {
+                        success: Boolean(response.data?.success),
+                        data: normalizedRows,
+                        pagination: {
+                              total: Number(pagination.total ?? normalizedRows.length),
+                              limit: Number(pagination.limit ?? params.limit ?? 100),
+                              offset: Number(pagination.offset ?? params.offset ?? 0),
+                        },
+                  };
+            } catch (error: any) {
+                  throw new Error(error.response?.data?.message || error.message || "Failed to fetch stale pending bet selections");
+            }
+      }
+
+      static async remediatePendingBetSelection(
+            selectionId: string,
+            payload: RemediatePendingSelectionPayload = { fetchFromApiFootball: true }
+      ): Promise<RemediatePendingSelectionResponse> {
+            try {
+                  const response = await axios.post(
+                        `${API_BASE_URL}/admin/bet-selections/pending-stale/${selectionId}/remediate`,
+                        payload,
+                        { headers: this.getAuthHeaders() }
+                  );
+                  return response.data as RemediatePendingSelectionResponse;
+            } catch (error: any) {
+                  throw new Error(error.response?.data?.message || error.message || "Failed to remediate stale pending selection");
             }
       }
 

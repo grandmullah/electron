@@ -1,23 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import useSWR from "swr";
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Alert,
-  Divider,
-} from "@mui/material";
+import { Box, Paper, Typography, TextField, Button, Stack, CircularProgress, Alert } from "@mui/material";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import GamesService from "../../services/gamesService";
-import { Game, GameSearchFilters } from "../../types/games";
+import { Game } from "../../types/games";
 import { GameCard } from "./GameCard";
 
 interface GameSearchProps {
@@ -83,7 +69,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
 
     if (!query || query.length < 2) return [];
 
-    console.log("🔍 SWR fetching autocomplete for:", query);
     const suggestions = await GamesService.autocompleteGames(query, 20);
 
     // Transform suggestions to Game objects
@@ -91,7 +76,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
       GamesService.transformAutocompleteToGame(suggestion)
     );
 
-    console.log("✅ SWR autocomplete results:", games.length);
     return games;
   };
 
@@ -101,12 +85,13 @@ export const GameSearch: React.FC<GameSearchProps> = ({
     error: apiError,
     isLoading: isLoadingAPI,
   } = useSWR(
-    shouldFetchFromAPI ? `/autocomplete/${trimmedQuery}` : null,
+    shouldFetchFromAPI ? `/autocomplete/${trimmedQuery.toLowerCase()}` : null,
     autocompleteFetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 2000, // Dedupe requests within 2 seconds
+      dedupingInterval: 10000,
+      focusThrottleInterval: 15000,
       errorRetryCount: 1,
       keepPreviousData: true, // Keep showing previous results while loading new ones
     }
@@ -114,14 +99,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
 
   // Handle search results from API
   useEffect(() => {
-    console.log("🔄 Search effect triggered:", {
-      debouncedQuery: trimmedQuery,
-      shouldFetchFromAPI,
-      hasApiResults: !!apiResults,
-      apiError: apiError?.message,
-      isLoadingAPI,
-    });
-
     if (!trimmedQuery) {
       setSearchResults([]);
       setError(null);
@@ -138,7 +115,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
 
     // Handle API errors
     if (apiError) {
-      console.error("❌ API error:", apiError);
       setError(apiError.message || "Failed to search games");
       setSearchResults([]);
       onSearchResultsChange?.(false);
@@ -147,7 +123,6 @@ export const GameSearch: React.FC<GameSearchProps> = ({
 
     // Handle API results (for both text and index searches)
     if (apiResults) {
-      console.log("📊 Processing API results:", apiResults.length);
       if (apiResults.length === 0) {
         setError(`No games found matching "${trimmedQuery}"`);
         setSearchResults([]);
@@ -171,11 +146,11 @@ export const GameSearch: React.FC<GameSearchProps> = ({
   ]);
 
   // Handle autocomplete input change
-  const handleAutocompleteChange = (value: string) => {
+  const handleAutocompleteChange = useCallback((value: string) => {
     setAutocompleteQuery(value);
-  };
+  }, []);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setAutocompleteQuery("");
     setDebouncedQuery("");
     setSearchResults([]);
@@ -187,18 +162,22 @@ export const GameSearch: React.FC<GameSearchProps> = ({
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-  };
+  }, [onSearchResultsChange]);
 
-  const toggleExpanded = (gameId: string, event: React.MouseEvent) => {
+  const toggleExpanded = useCallback((gameId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    const newExpanded = new Set(expandedGames);
-    if (newExpanded.has(gameId)) {
-      newExpanded.delete(gameId);
-    } else {
-      newExpanded.add(gameId);
-    }
-    setExpandedGames(newExpanded);
-  };
+    setExpandedGames((prev) => {
+      const next = new Set(prev);
+      if (next.has(gameId)) next.delete(gameId);
+      else next.add(gameId);
+      return next;
+    });
+  }, []);
+
+  const fallbackAddToBetSlip = useCallback(() => {}, []);
+  const fallbackSelectionInSlip = useCallback(() => false, []);
+  const selectedGameId = selectedGame?.id;
+  const renderedResults = useMemo(() => searchResults, [searchResults]);
 
   return (
     <Box>
@@ -432,26 +411,21 @@ export const GameSearch: React.FC<GameSearchProps> = ({
             Search Results ({searchResults.length})
           </Typography>
           <Stack spacing={2}>
-            {searchResults.map((game) => {
+            {renderedResults.map((game) => {
               const gameNumber = game.team_index?.fullIndex || 0;
 
               return (
                 <GameCard
                   key={game.id}
                   game={game}
-                  isSelected={selectedGame?.id === game.id}
+                  isSelected={selectedGameId === game.id}
                   onSelect={(g) => {
                     setSelectedGame(g);
                     onGameSelect?.(g);
                   }}
-                  onAddToBetSlip={
-                    onAddToBetSlip ||
-                    (() => {
-                      console.log("Add to bet slip not configured");
-                    })
-                  }
-                  isSelectionInBetSlip={isSelectionInBetSlip || (() => false)}
-                  expandedGames={expandedGames}
+                  onAddToBetSlip={onAddToBetSlip || fallbackAddToBetSlip}
+                  isSelectionInBetSlip={isSelectionInBetSlip || fallbackSelectionInSlip}
+                  isExpanded={expandedGames.has(game.id)}
                   onToggleExpanded={toggleExpanded}
                   gameNumber={gameNumber}
                 />

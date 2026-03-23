@@ -9,7 +9,7 @@ interface GameCardHeaderProps {
   onToggleExpanded: (gameId: string, event: React.MouseEvent) => void;
 }
 
-export const GameCardHeader: React.FC<GameCardHeaderProps> = ({
+const GameCardHeaderComponent: React.FC<GameCardHeaderProps> = ({
   game,
   marketCount,
   onToggleExpanded,
@@ -24,7 +24,7 @@ export const GameCardHeader: React.FC<GameCardHeaderProps> = ({
     return `${day}/${month}/${year} - ${hours}:${minutes}`;
   };
 
-  const gameId = game.externalId || game.id;
+  const gameId = game.externalId || game.team_index?.externalId || game.id;
   const shortId = gameId.length > 8 ? gameId.slice(-8) : gameId;
 
   return (
@@ -88,3 +88,6 @@ export const GameCardHeader: React.FC<GameCardHeaderProps> = ({
 };
 
 
+
+
+export const GameCardHeader = React.memo(GameCardHeaderComponent);

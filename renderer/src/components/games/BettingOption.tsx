@@ -21,7 +21,7 @@ interface BettingOptionProps {
   ) => boolean;
 }
 
-export const BettingOption: React.FC<BettingOptionProps> = ({
+const BettingOptionComponent: React.FC<BettingOptionProps> = ({
   game,
   betType,
   selection,
@@ -32,7 +32,7 @@ export const BettingOption: React.FC<BettingOptionProps> = ({
 }) => {
   const numericOdds = typeof odds === "string" ? parseFloat(odds) : odds;
   const isClickable = !!numericOdds && !isNaN(numericOdds);
-  const gameKey = game.externalId || game.id;
+  const gameKey = game.externalId || game.team_index?.externalId || game.id;
   const isSelected = isSelectionInBetSlip(gameKey, betType, selection);
   const reducedOdds = numericOdds;
 
@@ -93,3 +93,6 @@ export const BettingOption: React.FC<BettingOptionProps> = ({
     </Button>
   );
 };
+
+
+export const BettingOption = React.memo(BettingOptionComponent);

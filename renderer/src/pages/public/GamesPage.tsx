@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Header } from "../../components/Header";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -10,7 +10,7 @@ import GamesService, { Game } from "../../services/gamesService";
 // Dynamic import for printService to enable code splitting
 import settingsService from "../../services/settingsService";
 import { API_BASE_URL, getApiHeaders } from "../../services/apiConfig";
-import { useOdds, useRefreshOdds } from "../../hooks/useOdds";
+import { useOdds } from "../../hooks/useOdds";
 import useSWR from "swr";
 import { GameCard } from "../../components/games/GameCard";
 import { GameSearch } from "../../components/games/GameSearch";
@@ -63,7 +63,14 @@ import {
 
 interface GamesPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
+    page:
+      | "home"
+      | "dashboard"
+      | "settings"
+      | "games"
+      | "agent"
+      | "history"
+      | "management",
   ) => void;
 }
 
@@ -110,7 +117,6 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   // Use SWR for odds fetching
   const { games, isLoading, error, mutate, isError, isEmpty, pagination } =
     useOdds(leagueKey, upcomingPage, 50);
-  const { refresh } = useRefreshOdds();
 
   // League interface
   interface League {
@@ -145,7 +151,11 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     message?: string;
     data?:
       | {
-          byCountry?: Array<{ country: string; countryFlag?: string; leagues: SupportedLeagueApiItem[] }>;
+          byCountry?: Array<{
+            country: string;
+            countryFlag?: string;
+            leagues: SupportedLeagueApiItem[];
+          }>;
           all?: SupportedLeagueApiItem[];
           leagues?: SupportedLeagueApiItem[];
         }
@@ -156,14 +166,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
   type SupportedLeaguesClientModel = {
     all: League[];
-    byCountry: Array<{ country: string; countryFlag?: string; leagues: League[] }>;
+    byCountry: Array<{
+      country: string;
+      countryFlag?: string;
+      leagues: League[];
+    }>;
     count?: number;
     meta?: { daysAhead?: number };
   };
 
   const normalizeLeague = (
     league: SupportedLeagueApiItem,
-    opts: { fallbackCountry?: string; includeCountryInDisplayName: boolean }
+    opts: { fallbackCountry?: string; includeCountryInDisplayName: boolean },
   ): League => {
     const sportKeyFromField =
       typeof (league as any)?.sport === "string"
@@ -179,14 +193,25 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         : typeof (league as any)?.sport?.name === "string"
           ? ((league as any).sport.name as string)
           : undefined;
-    const key = typeof (league as any)?.key === "string" ? ((league as any).key as string) : undefined;
+    const key =
+      typeof (league as any)?.key === "string"
+        ? ((league as any).key as string)
+        : undefined;
     const sportKeyFromKey = key ? key.split("_")[0] : undefined;
     const sportKey = sportKeyFromField || sportKeyFromKey || "unknown";
-    const name = typeof (league as any)?.name === "string" ? ((league as any).name as string) : "Unknown";
-    const countryRaw = typeof (league as any)?.country === "string" ? ((league as any).country as string) : undefined;
+    const name =
+      typeof (league as any)?.name === "string"
+        ? ((league as any).name as string)
+        : "Unknown";
+    const countryRaw =
+      typeof (league as any)?.country === "string"
+        ? ((league as any).country as string)
+        : undefined;
     const country = countryRaw || opts.fallbackCountry;
     const displayName =
-      opts.includeCountryInDisplayName && country ? `${name} (${country})` : name;
+      opts.includeCountryInDisplayName && country
+        ? `${name} (${country})`
+        : name;
 
     const out: League = {
       key: key ?? sportKey,
@@ -196,21 +221,35 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     };
 
     if (sportName) out.sportName = sportName;
-    const source = typeof (league as any)?.source === "string" ? ((league as any).source as string) : undefined;
+    const source =
+      typeof (league as any)?.source === "string"
+        ? ((league as any).source as string)
+        : undefined;
     if (source) out.source = source;
-    const category = typeof (league as any)?.category === "string" ? ((league as any).category as string) : undefined;
+    const category =
+      typeof (league as any)?.category === "string"
+        ? ((league as any).category as string)
+        : undefined;
     if (category) out.category = category;
     if (country) out.country = country;
-    const logo = typeof (league as any)?.logo === "string" ? ((league as any).logo as string) : undefined;
+    const logo =
+      typeof (league as any)?.logo === "string"
+        ? ((league as any).logo as string)
+        : undefined;
     if (logo) out.logo = logo;
-    const countryFlag = typeof (league as any)?.countryFlag === "string" ? ((league as any).countryFlag as string) : undefined;
+    const countryFlag =
+      typeof (league as any)?.countryFlag === "string"
+        ? ((league as any).countryFlag as string)
+        : undefined;
     if (countryFlag) out.countryFlag = countryFlag;
 
     return out;
   };
 
   // SWR fetcher function for leagues
-  const leaguesFetcher = async (url: string): Promise<SupportedLeaguesClientModel> => {
+  const leaguesFetcher = async (
+    url: string,
+  ): Promise<SupportedLeaguesClientModel> => {
     const response = await fetch(url, {
       headers: getApiHeaders(false),
     });
@@ -224,7 +263,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     // { success: true, data: { byCountry: [...], all: [...] }, count, meta }
     // Backward compatibility: older API shapes returned { data: leagues[] } or { data: { leagues: leagues[] } }
     const payload = data?.data;
-    const allItems: SupportedLeagueApiItem[] = Array.isArray((payload as any)?.all)
+    const allItems: SupportedLeagueApiItem[] = Array.isArray(
+      (payload as any)?.all,
+    )
       ? ((payload as any).all as SupportedLeagueApiItem[])
       : Array.isArray((payload as any)?.leagues)
         ? ((payload as any).leagues as SupportedLeagueApiItem[])
@@ -233,11 +274,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           : [];
 
     const all = allItems.map((l) =>
-      normalizeLeague(l, { includeCountryInDisplayName: true })
+      normalizeLeague(l, { includeCountryInDisplayName: true }),
     );
 
-    const byCountryFromApi =
-      Array.isArray((payload as any)?.byCountry) ? ((payload as any).byCountry as Array<{ country: string; countryFlag?: string; leagues: SupportedLeagueApiItem[] }>) : undefined;
+    const byCountryFromApi = Array.isArray((payload as any)?.byCountry)
+      ? ((payload as any).byCountry as Array<{
+          country: string;
+          countryFlag?: string;
+          leagues: SupportedLeagueApiItem[];
+        }>)
+      : undefined;
 
     const byCountry =
       byCountryFromApi?.map((group) => ({
@@ -250,14 +296,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 ...(group.country && group.country !== "Other"
                   ? { fallbackCountry: group.country }
                   : {}),
-              })
+              }),
             )
           : [],
       })) ??
       (() => {
         const groups = new Map<string, League[]>();
         for (const league of all) {
-          const country = league.country?.trim() ? league.country.trim() : "Other";
+          const country = league.country?.trim()
+            ? league.country.trim()
+            : "Other";
           const list = groups.get(country) ?? [];
           list.push({
             ...league,
@@ -266,7 +314,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           groups.set(country, list);
         }
 
-        const countries = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+        const countries = Array.from(groups.keys()).sort((a, b) =>
+          a.localeCompare(b),
+        );
         const otherIdx = countries.indexOf("Other");
         if (otherIdx >= 0) {
           countries.splice(otherIdx, 1);
@@ -295,13 +345,12 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     `${API_BASE_URL}/leagues/supported`,
     leaguesFetcher,
     {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    dedupingInterval: 60000, // Dedupe requests for 1 minute
-    errorRetryCount: 2,
-    onError: (error) => {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000, // Dedupe requests for 1 minute
+      errorRetryCount: 2,
+      onError: (error) => {},
     },
-    }
   );
 
   const supportedLeagues = supportedLeaguesData?.all;
@@ -313,7 +362,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     if (!leagueKey || !supportedLeaguesByCountry) return;
     const group = supportedLeaguesByCountry.find((g) =>
-      g.leagues.some((l) => l.key === leagueKey)
+      g.leagues.some((l) => l.key === leagueKey),
     );
     if (group) {
       setExpandedCountries((prev) => new Set(prev).add(group.country));
@@ -329,7 +378,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [leaguesSearchQuery, setLeaguesSearchQuery] = useState("");
   const [leaguesSectionExpanded, setLeaguesSectionExpanded] = useState(true);
-  const [expandedCountries, setExpandedCountries] = useState<Set<string>>(new Set());
+  const [expandedCountries, setExpandedCountries] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Game indexes now come from the API via team_index field
   // No local index creation needed
@@ -352,9 +403,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
   }, [games, isLoading]);
 
   // Manual refresh function for users
-  const handleManualRefresh = () => {
+  const handleManualRefresh = useCallback(() => {
     mutate(); // Trigger SWR revalidation
-  };
+  }, [mutate]);
 
   // Test printer (used by Header when on Games page)
   const handleTestPrinter = useCallback(async () => {
@@ -912,7 +963,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       <div class="betting-option-label-vertical">U${total.point}</div>
                       <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
                     </div>
-                  `
+                  `,
                           )
                           .join("")
                       : ""
@@ -989,7 +1040,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       <div class="betting-option-label-vertical">H1-U${total.point}</div>
                       <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
                     </div>
-                  `
+                  `,
                           )
                           .join("")
                       : ""
@@ -1010,7 +1061,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                       <div class="betting-option-label-vertical">H2-U${total.point}</div>
                       <div class="betting-option-value-vertical ${total.under ? "clickable" : ""}">${total.under || "-"}</div>
                     </div>
-                  `
+                  `,
                           )
                           .join("")
                       : ""
@@ -1136,7 +1187,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       if (!window.electronAPI?.showSaveDialog) {
         // Fallback to browser download if Electron API is not available
         alert(
-          "File dialog not available in this environment. Using default download location."
+          "File dialog not available in this environment. Using default download location.",
         );
       }
 
@@ -1151,7 +1202,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
           point: number;
           over: number | string | null;
           under: number | string | null;
-        }>
+        }>,
       ) => {
         if (!totals || totals.length === 0) return [];
 
@@ -1218,13 +1269,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
       // Sort total points for consistent column ordering
       const sortedTotalPoints = Array.from(allTotalPoints).sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       );
       const sortedHalfTimeTotalPoints = Array.from(allHalfTimeTotalPoints).sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       );
       const sortedSecondHalfTotalPoints = Array.from(
-        allSecondHalfTotalPoints
+        allSecondHalfTotalPoints,
       ).sort((a, b) => a - b);
 
       // Prepare data for export - flatten the games data
@@ -1416,7 +1467,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         });
         const result = await window.electronAPI.writeExcelFile(
           filePath,
-          buffer
+          buffer,
         );
         if (result.success) {
           alert(`Games data exported successfully to ${filePath}`);
@@ -1497,17 +1548,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const getCountryFlag = (country: string) =>
-    COUNTRY_FLAGS[country] ?? "🌐";
+  const getCountryFlag = (country: string) => COUNTRY_FLAGS[country] ?? "🌐";
 
-  const toggleCountryExpanded = (country: string) => {
+  const toggleCountryExpanded = useCallback((country: string) => {
     setExpandedCountries((prev) => {
       const next = new Set(prev);
       if (next.has(country)) next.delete(country);
       else next.add(country);
       return next;
     });
-  };
+  }, []);
 
   const getLeagueDisplayName = (leagueKey: string) => {
     if (!leagueKey || leagueKey.trim() === "") return "Today's games";
@@ -1517,45 +1567,56 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       : leagueKey.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const toggleExpanded = (gameId: string, event: React.MouseEvent) => {
+  const toggleExpanded = useCallback((gameId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    const newExpanded = new Set(expandedGames);
-    if (newExpanded.has(gameId)) {
-      newExpanded.delete(gameId);
-    } else {
-      newExpanded.add(gameId);
-    }
-    setExpandedGames(newExpanded);
-  };
+    setExpandedGames((prev) => {
+      const next = new Set(prev);
+      if (next.has(gameId)) next.delete(gameId);
+      else next.add(gameId);
+      return next;
+    });
+  }, []);
 
-  const isSelectionInBetSlip = (
+  const getCanonicalGameId = useCallback((game: Game): string => {
+    return game.externalId || game.team_index?.externalId || game.id;
+  }, []);
+
+  const betSlipSelectionLookup = useMemo(() => {
+    const lookup = new Set<string>();
+    const gameLookup = new Set<string>();
+    for (const item of betSlipItems) {
+      lookup.add(`${item.gameId}::${item.betType}::${item.selection}`);
+      gameLookup.add(item.gameId);
+    }
+    return { selectionLookup: lookup, gameLookup };
+  }, [betSlipItems]);
+
+  const isSelectionInBetSlip = useCallback((
     gameId: string,
     betType: string,
-    selection: string
+    selection: string,
   ): boolean => {
-    return betSlipItems.some(
-      (item) =>
-        item.gameId === gameId &&
-        item.betType === betType &&
-        item.selection === selection
+    return betSlipSelectionLookup.selectionLookup.has(
+      `${gameId}::${betType}::${selection}`,
     );
-  };
+  }, [betSlipSelectionLookup]);
 
-  const handleAddToBetSlip = (
+  const handleAddToBetSlip = useCallback((
     game: Game,
     betType: string,
     selection: string,
     odds: number,
-    marketKey?: string
+    marketKey?: string,
   ) => {
     // Use original odds without reduction
     const reducedOdds = odds;
+    const canonicalGameId = getCanonicalGameId(game);
     // Agent mode now only handles walk-in clients (shop bets), so no user selection needed
 
     // Regular user flow - add to bet slip
     const betSlipItem: BetSlipItem = {
       id: `${game.id}-${betType}-${selection}`,
-      gameId: game.externalId || game.id, // Use externalId for validation API
+      gameId: canonicalGameId,
       homeTeam: game.homeTeam,
       awayTeam: game.awayTeam,
       betType,
@@ -1584,16 +1645,47 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
         element.classList.remove("pulse");
       }, 600);
     }
-  };
+  }, [dispatch, getCanonicalGameId]);
 
-  const gamesPageActions = {
-    onBackToHome: () => onNavigate("home"),
+  const onBackToHome = useCallback(() => onNavigate("home"), [onNavigate]);
+
+  const gamesPageActions = useMemo(() => ({
+    onBackToHome,
     onPrintGames: handlePrintGames,
     onExportToExcel: handleExportToExcel,
     onTestPrinter: handleTestPrinter,
     isExporting,
     hasGames: !!(games && games.length > 0),
-  };
+  }), [onBackToHome, handlePrintGames, handleExportToExcel, handleTestPrinter, isExporting, games]);
+
+  const validGames = useMemo(
+    () => games.filter((game) => game && game.id && game.homeTeam && game.awayTeam),
+    [games],
+  );
+
+  const filteredCountryGroups = useMemo(() => {
+    if (!supportedLeaguesByCountry) return [];
+    const trimmed = leaguesSearchQuery.trim().toLowerCase();
+    if (!trimmed) {
+      return supportedLeaguesByCountry
+        .map((group) => ({ ...group, filteredLeagues: group.leagues }))
+        .filter((group) => group.filteredLeagues.length > 0);
+    }
+    return supportedLeaguesByCountry
+      .map((group) => {
+        const countryMatch = group.country.toLowerCase().includes(trimmed);
+        const filteredLeagues = countryMatch
+          ? group.leagues
+          : group.leagues.filter(
+              (l) =>
+                l.name.toLowerCase().includes(trimmed) ||
+                l.displayName.toLowerCase().includes(trimmed) ||
+                l.key.toLowerCase().includes(trimmed),
+            );
+        return { ...group, filteredLeagues };
+      })
+      .filter((group) => group.filteredLeagues.length > 0);
+  }, [supportedLeaguesByCountry, leaguesSearchQuery]);
 
   if (isLoading) {
     return (
@@ -1769,7 +1861,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 onChange={(e) => setLeaguesSearchQuery(e.target.value)}
                 startAdornment={
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }} />
+                    <SearchIcon
+                      sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}
+                    />
                   </InputAdornment>
                 }
                 sx={{
@@ -1782,7 +1876,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                   border: "1px solid rgba(255,255,255,0.15)",
                   color: "rgba(255,255,255,0.9)",
                   "& input": { fontSize: 14 },
-                  "& input::placeholder": { color: "rgba(255,255,255,0.5)", opacity: 1 },
+                  "& input::placeholder": {
+                    color: "rgba(255,255,255,0.5)",
+                    opacity: 1,
+                  },
                 }}
               />
 
@@ -1816,47 +1913,32 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                     <Chip
                       icon={<SoccerIcon />}
                       label="Today's games"
-                      onClick={() => { setLeagueKey(""); setUpcomingPage(1); }}
+                      onClick={() => {
+                        setLeagueKey("");
+                        setUpcomingPage(1);
+                      }}
                       color={!leagueKey ? "primary" : "default"}
                       variant={!leagueKey ? "filled" : "outlined"}
                       sx={{
                         fontWeight: 600,
                         width: "100%",
                         justifyContent: "flex-start",
-                        backgroundColor: !leagueKey ? "#667eea" : "rgba(255,255,255,0.08)",
+                        backgroundColor: !leagueKey
+                          ? "#667eea"
+                          : "rgba(255,255,255,0.08)",
                         color: !leagueKey ? "white" : "rgba(255,255,255,0.8)",
                         borderColor: "rgba(255,255,255,0.15)",
                         "&:hover": {
-                          backgroundColor: !leagueKey ? "#5a6fd8" : "rgba(255,255,255,0.15)",
+                          backgroundColor: !leagueKey
+                            ? "#5a6fd8"
+                            : "rgba(255,255,255,0.15)",
                         },
                       }}
                     />
                   </Box>
 
-                  {supportedLeaguesByCountry
-                    ?.filter((group) => {
-                      if (!leaguesSearchQuery.trim()) return true;
-                      const q = leaguesSearchQuery.toLowerCase().trim();
-                      const countryMatch = group.country.toLowerCase().includes(q);
-                      const leagueMatch = group.leagues.some(
-                        (l) =>
-                          l.name.toLowerCase().includes(q) ||
-                          l.displayName.toLowerCase().includes(q) ||
-                          l.key.toLowerCase().includes(q)
-                      );
-                      return countryMatch || leagueMatch;
-                    })
-                    .map((group) => {
-                      const filteredLeagues = leaguesSearchQuery.trim()
-                        ? group.leagues.filter((l) => {
-                            const q = leaguesSearchQuery.toLowerCase().trim();
-                            return (
-                              l.name.toLowerCase().includes(q) ||
-                              l.displayName.toLowerCase().includes(q) ||
-                              l.key.toLowerCase().includes(q)
-                            );
-                          })
-                        : group.leagues;
+                  {filteredCountryGroups.map((group) => {
+                      const filteredLeagues = group.filteredLeagues;
                       const count = filteredLeagues.length;
                       if (count === 0) return null;
 
@@ -1895,8 +1977,18 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                                   component="img"
                                   src={group.countryFlag}
                                   alt=""
-                                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                  sx={{ width: 20, height: 15, objectFit: "cover", borderRadius: "2px", flexShrink: 0 }}
+                                  onError={(e) => {
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.display = "none";
+                                  }}
+                                  sx={{
+                                    width: 20,
+                                    height: 15,
+                                    objectFit: "cover",
+                                    borderRadius: "2px",
+                                    flexShrink: 0,
+                                  }}
                                 />
                               ) : (
                                 <Typography
@@ -1919,17 +2011,22 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                                 {group.country} ({count})
                               </Typography>
                             </Box>
-                            {!leaguesSearchQuery.trim() && (
-                              isCountryExpanded ? (
+                            {!leaguesSearchQuery.trim() &&
+                              (isCountryExpanded ? (
                                 <ExpandLessIcon
-                                  sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}
+                                  sx={{
+                                    color: "rgba(255,255,255,0.5)",
+                                    fontSize: 20,
+                                  }}
                                 />
                               ) : (
                                 <ExpandMoreIcon
-                                  sx={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}
+                                  sx={{
+                                    color: "rgba(255,255,255,0.5)",
+                                    fontSize: 20,
+                                  }}
                                 />
-                              )
-                            )}
+                              ))}
                           </Box>
                           <Collapse in={isCountryExpanded}>
                             <Stack spacing={0.75} sx={{ pl: 2, pb: 1 }}>
@@ -1942,8 +2039,17 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                                         component="img"
                                         src={league.logo}
                                         alt=""
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                        sx={{ width: 18, height: 18, objectFit: "contain", ml: 0.5 }}
+                                        onError={(e) => {
+                                          (
+                                            e.target as HTMLImageElement
+                                          ).style.display = "none";
+                                        }}
+                                        sx={{
+                                          width: 18,
+                                          height: 18,
+                                          objectFit: "contain",
+                                          ml: 0.5,
+                                        }}
                                       />
                                     ) : (
                                       <SoccerIcon sx={{ fontSize: 16 }} />
@@ -1955,8 +2061,16 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                                     setLeagueKey(league.key);
                                     setUpcomingPage(1);
                                   }}
-                                  color={leagueKey === league.key ? "primary" : "default"}
-                                  variant={leagueKey === league.key ? "filled" : "outlined"}
+                                  color={
+                                    leagueKey === league.key
+                                      ? "primary"
+                                      : "default"
+                                  }
+                                  variant={
+                                    leagueKey === league.key
+                                      ? "filled"
+                                      : "outlined"
+                                  }
                                   size="small"
                                   sx={{
                                     fontWeight: 600,
@@ -2022,13 +2136,13 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                         Shop Agent Active
                       </Typography>
                     </Stack>
-                        <Typography
+                    <Typography
                       variant="caption"
-                          color="text.secondary"
+                      color="text.secondary"
                       align="center"
-                        >
+                    >
                       Processing walk-in client bets
-                        </Typography>
+                    </Typography>
                   </Stack>
                 </Paper>
               </Box>
@@ -2154,13 +2268,9 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                 ) : (
                   <>
                     <Stack spacing={2}>
-                      {games
-                        .filter(
-                          (game) =>
-                            game && game.id && game.homeTeam && game.awayTeam
-                        )
-                        .map((game) => {
+                      {validGames.map((game) => {
                           const gameNumber = game.team_index?.fullIndex || 0;
+                          const canonicalGameId = getCanonicalGameId(game);
 
                           return (
                             <GameCard
@@ -2170,10 +2280,10 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                               onSelect={setSelectedGame}
                               onAddToBetSlip={handleAddToBetSlip}
                               isSelectionInBetSlip={isSelectionInBetSlip}
-                              expandedGames={expandedGames}
+                              isExpanded={expandedGames.has(game.id)}
                               onToggleExpanded={toggleExpanded}
                               gameNumber={gameNumber}
-                              isHighlighted={betSlipItems.some((item) => item.gameId === game.id)}
+                              isHighlighted={betSlipSelectionLookup.gameLookup.has(canonicalGameId)}
                             />
                           );
                         })}
@@ -2191,22 +2301,41 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                           variant="outlined"
                           size="small"
                           disabled={upcomingPage <= 1}
-                          onClick={() => { setUpcomingPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          onClick={() => {
+                            setUpcomingPage((p) => Math.max(1, p - 1));
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
                           sx={{
                             color: "rgba(255,255,255,0.8)",
                             borderColor: "rgba(255,255,255,0.2)",
-                            "&:hover": { borderColor: "primary.main", bgcolor: "rgba(25,118,210,0.1)" },
-                            "&.Mui-disabled": { color: "rgba(255,255,255,0.3)", borderColor: "rgba(255,255,255,0.1)" },
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              bgcolor: "rgba(25,118,210,0.1)",
+                            },
+                            "&.Mui-disabled": {
+                              color: "rgba(255,255,255,0.3)",
+                              borderColor: "rgba(255,255,255,0.1)",
+                            },
                           }}
                         >
                           Previous
                         </Button>
                         <Typography
                           variant="body2"
-                          sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 500 }}
+                          sx={{
+                            color: "rgba(255,255,255,0.7)",
+                            fontWeight: 500,
+                          }}
                         >
                           Page {pagination.page} of {pagination.totalPages}
-                          <Typography component="span" sx={{ color: "rgba(255,255,255,0.4)", ml: 1, fontSize: "0.75rem" }}>
+                          <Typography
+                            component="span"
+                            sx={{
+                              color: "rgba(255,255,255,0.4)",
+                              ml: 1,
+                              fontSize: "0.75rem",
+                            }}
+                          >
                             {`(${pagination.total} games)`}
                           </Typography>
                         </Typography>
@@ -2214,12 +2343,23 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
                           variant="outlined"
                           size="small"
                           disabled={upcomingPage >= pagination.totalPages}
-                          onClick={() => { setUpcomingPage((p) => Math.min(pagination.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          onClick={() => {
+                            setUpcomingPage((p) =>
+                              Math.min(pagination.totalPages, p + 1),
+                            );
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
                           sx={{
                             color: "rgba(255,255,255,0.8)",
                             borderColor: "rgba(255,255,255,0.2)",
-                            "&:hover": { borderColor: "primary.main", bgcolor: "rgba(25,118,210,0.1)" },
-                            "&.Mui-disabled": { color: "rgba(255,255,255,0.3)", borderColor: "rgba(255,255,255,0.1)" },
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              bgcolor: "rgba(25,118,210,0.1)",
+                            },
+                            "&.Mui-disabled": {
+                              color: "rgba(255,255,255,0.3)",
+                              borderColor: "rgba(255,255,255,0.1)",
+                            },
                           }}
                         >
                           Next
@@ -2235,61 +2375,60 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       </Container>
 
       {/* Floating BetSlip Button - Only on small/medium screens */}
-        {betSlipItems.length > 0 && (
-          <Box
+      {betSlipItems.length > 0 && (
+        <Box
+          sx={{
+            display: { xs: "flex", lg: "none" },
+            position: "fixed",
+            right: { xs: 16, sm: 24 },
+            bottom: 80,
+            zIndex: 1000,
+          }}
+        >
+          <Badge
+            badgeContent={betSlipItems.length}
             sx={{
-              display: { xs: "flex", lg: "none" },
-              position: "fixed",
-              right: { xs: 16, sm: 24 },
-              bottom: 80,
-              zIndex: 1000,
-              }}
-            >
-            <Badge
-              badgeContent={betSlipItems.length}
-                sx={{
-                "& .MuiBadge-badge": {
-                  bgcolor: "#ff6b6b",
-                  color: "white",
-                  fontWeight: 600,
-                  right: -8,
-                  top: -8,
-                  minWidth: 20,
-                  height: 20,
+              "& .MuiBadge-badge": {
+                bgcolor: "#ff6b6b",
+                color: "white",
+                fontWeight: 600,
+                right: -8,
+                top: -8,
+                minWidth: 20,
+                height: 20,
+              },
+            }}
+          >
+            <Button
+              variant="contained"
+              startIcon={<ReceiptIcon />}
+              onClick={() => dispatch(toggleBetSlipVisibility())}
+              sx={{
+                background: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+                color: "white",
+                borderRadius: "12px",
+                px: 2,
+                py: 1.5,
+                fontWeight: 600,
+                boxShadow: "0 4px 20px rgba(25, 118, 210, 0.4)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                  boxShadow: "0 6px 24px rgba(25, 118, 210, 0.5)",
+                  transform: "translateY(-2px)",
                 },
               }}
             >
-              <Button
-                variant="contained"
-                startIcon={<ReceiptIcon />}
-                onClick={() => dispatch(toggleBetSlipVisibility())}
-                        sx={{
-                  background:
-                    "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-                  color: "white",
-                  borderRadius: "12px",
-                  px: 2,
-                  py: 1.5,
-                  fontWeight: 600,
-                  boxShadow: "0 4px 20px rgba(25, 118, 210, 0.4)",
-                          "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
-                    boxShadow: "0 6px 24px rgba(25, 118, 210, 0.5)",
-                    transform: "translateY(-2px)",
-                          },
-                        }}
-                      >
-                              <Typography
-                                variant="body2"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                              >
-                  Betslip
-                              </Typography>
-                </Button>
-            </Badge>
-          </Box>
-        )}
+              <Typography
+                variant="body2"
+                sx={{ display: { xs: "none", sm: "block" } }}
+              >
+                Betslip
+              </Typography>
+            </Button>
+          </Badge>
+        </Box>
+      )}
     </Box>
   );
-  }
+};

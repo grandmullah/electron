@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
+  addToBetSlip,
   removeFromBetSlip,
   updateBetSlipStake,
   clearBetSlip,
@@ -79,6 +80,9 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [validationData, setValidationData] = useState<any>(null);
   const [stakeErrors, setStakeErrors] = useState<{ [key: string]: string }>({});
+  const [selectionCode, setSelectionCode] = useState("");
+  const [isLoadingCode, setIsLoadingCode] = useState(false);
+  const [codeMessage, setCodeMessage] = useState<string | null>(null);
 
   // Initialize betslip with user limits when component mounts or user changes
   useEffect(() => {
@@ -469,6 +473,72 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
     }
   };
 
+  const mapLookupSelectionToBetSlipItem = (selection: any, index: number): BetSlipItem => {
+    const decimalOdds =
+      typeof selection?.odds === "number"
+        ? selection.odds
+        : Number(selection?.odds?.decimal || selection?.odds?.multiplier || 1);
+    const stakeBase = Number(selection?.stake || 0);
+    const safeOdds = Number.isFinite(decimalOdds) && decimalOdds > 0 ? decimalOdds : 1;
+    const safeStake = Number.isFinite(stakeBase) && stakeBase > 0 ? stakeBase : 0;
+
+    return {
+      id: `${selection?.gameId || "game"}-${selection?.marketType || "market"}-${selection?.outcome || index}-${index}`,
+      gameId: String(selection?.gameId || ""),
+      homeTeam: String(selection?.homeTeam || "TBD"),
+      awayTeam: String(selection?.awayTeam || "TBD"),
+      betType: String(selection?.marketType || "market"),
+      marketKey: String(selection?.marketType || ""),
+      selection: String(selection?.outcome || ""),
+      odds: safeOdds,
+      stake: safeStake,
+      potentialWinnings: safeStake * safeOdds,
+      bookmaker: String(selection?.bookmaker || "Betzone"),
+      gameTime:
+        selection?.gameTime ||
+        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      sportKey: String(selection?.sportKey || "soccer"),
+    };
+  };
+
+  const handleLoadSelectionCode = async () => {
+    const code = selectionCode.trim();
+    if (!code) {
+      setCodeMessage("Enter a valid bet code.");
+      return;
+    }
+
+    setIsLoadingCode(true);
+    setCodeMessage(null);
+    try {
+      const savedSlip = await AgentService.lookupSavedSelectionsByCode(code);
+      const savedSelections = Array.isArray(savedSlip?.selections)
+        ? savedSlip.selections
+        : [];
+
+      if (savedSelections.length === 0) {
+        throw new Error("This code has no selections.");
+      }
+
+      dispatch(clearBetSlip());
+      const mappedItems = savedSelections.map((selection: any, idx: number) =>
+        mapLookupSelectionToBetSlipItem(selection, idx)
+      );
+      mappedItems.forEach((item) => dispatch(addToBetSlip(item)));
+
+      const stakeFromCode = Number(savedSlip?.stake || 0);
+      if (stakeFromCode > 0) {
+        dispatch(setMultibetStake(stakeFromCode));
+      }
+
+      setCodeMessage("Selections loaded. You can now place the bet.");
+    } catch (error: any) {
+      setCodeMessage(error?.message || "Failed to load code.");
+    } finally {
+      setIsLoadingCode(false);
+    }
+  };
+
   // Load betslip data when items change
   useEffect(() => {
     if (betSlipItems && (betSlipItems?.length || 0) > 0) {
@@ -852,6 +922,62 @@ export const MUIBetSlip: React.FC<MUIBetSlipProps> = ({
                     </Box>
                   </Paper>
                 )}
+
+              {/* Validation Message */}
+              {isAgentMode && (
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 3,
+                    background: "#1a1d29",
+                    border: "1px solid #2a2d3a",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    sx={{ color: "rgba(255,255,255,0.9)", mb: 1 }}
+                  >
+                    Place From Saved Code
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Bet Code"
+                      value={selectionCode}
+                      onChange={(e) => setSelectionCode(e.target.value)}
+                      placeholder="Enter saved code"
+                      sx={{
+                        "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
+                        "& .MuiOutlinedInput-root": {
+                          color: "rgba(255,255,255,0.9)",
+                          "& fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                          "&:hover fieldset": {
+                            borderColor: "rgba(255,255,255,0.4)",
+                          },
+                          "&.Mui-focused fieldset": { borderColor: "#42a5f5" },
+                        },
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      disabled={isLoadingCode}
+                      onClick={handleLoadSelectionCode}
+                    >
+                      {isLoadingCode ? "Loading..." : "Load"}
+                    </Button>
+                  </Stack>
+                  {codeMessage && (
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1, color: "rgba(255,255,255,0.75)" }}
+                    >
+                      {codeMessage}
+                    </Typography>
+                  )}
+                </Paper>
+              )}
 
               {/* Validation Message */}
               {(betSlipItems?.length || 0) > 0 && (

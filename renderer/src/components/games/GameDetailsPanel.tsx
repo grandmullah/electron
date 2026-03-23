@@ -85,7 +85,7 @@ interface GameDetailsPanelProps {
 
 type Outcome = { name: string; price: number; point?: number; description?: string };
 
-export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
+const GameDetailsPanelComponent: React.FC<GameDetailsPanelProps> = ({
   game,
   onAddToBetSlip,
   isSelectionInBetSlip,
@@ -190,6 +190,17 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
     return sortedKeys.filter((k) => allowed.includes(k));
   }, [activeTab, sortedKeys]);
 
+  const groupedOutcomesByMarket = useMemo(() => {
+    const grouped = new Map<string, Array<{ label?: string; outcomes: Outcome[] }>>();
+    for (const [marketKey, outcomes] of markets.entries()) {
+      grouped.set(
+        marketKey,
+        groupOutcomes(marketKey, outcomes, game.homeTeam, game.awayTeam),
+      );
+    }
+    return grouped;
+  }, [markets, game.homeTeam, game.awayTeam]);
+
   if (markets.size === 0) {
     return (
       <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", py: 1 }}>
@@ -259,10 +270,20 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
     });
   };
 
+  const displayLabelForGroupedOutcome = (mk: string, outcome: Outcome): string => {
+    if (mk.startsWith("totals") || mk.startsWith("team_totals")) {
+      const name = outcome.name.toLowerCase();
+      if (name.includes("over")) return "Over";
+      if (name.includes("under")) return "Under";
+      return outcome.name;
+    }
+    return displayLabelForOutcome(mk, outcome);
+  };
+
   const OddsBtn: React.FC<{ outcome: Outcome; marketKey: string; label: string }> = ({ outcome, marketKey, label }) => {
     const betType = betTypeForMarket(marketKey, outcome);
     const selection = selectionLabel(marketKey, outcome);
-    const gameKey = game.externalId || game.id;
+    const gameKey = game.externalId || game.team_index?.externalId || game.id;
     const isSelected = isSelectionInBetSlip(gameKey, betType, selection);
     const numericOdds = outcome.price;
     const isClickable = !!numericOdds && !isNaN(numericOdds);
@@ -356,7 +377,9 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
   const SectionBlock: React.FC<{ marketKey: string; outcomes: Outcome[] }> = ({ marketKey, outcomes }) => {
     const collapsed = collapsedSections[marketKey];
     const title = MARKET_TITLES[marketKey] || marketKey.replace(/_/g, " ").toUpperCase();
-    const grouped = groupOutcomes(marketKey, outcomes);
+    const grouped = groupedOutcomesByMarket.get(marketKey) || [];
+    const isTotalsLikeMarket =
+      marketKey.startsWith("totals") || marketKey.startsWith("team_totals");
 
     return (
       <Box
@@ -401,34 +424,60 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
         </Box>
         {!collapsed && (
           <Box>
-            {grouped.map((group, gi) => (
-              <Box key={gi} sx={{ mb: gi < grouped.length - 1 ? 1 : 0 }}>
-                {group.label && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: "0.6rem",
-                      color: "rgba(255,255,255,0.5)",
-                      fontWeight: 600,
-                      display: "block",
-                      mb: 0.5,
-                    }}
-                  >
-                    {group.label}
-                  </Typography>
-                )}
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                  {group.outcomes.map((o, i) => (
-                    <OddsBtn
-                      key={`${o.name}-${o.point ?? ""}-${i}`}
-                      outcome={o}
-                      marketKey={marketKey}
-                      label={displayLabelForOutcome(marketKey, o)}
-                    />
-                  ))}
+            <Box
+              sx={
+                isTotalsLikeMarket
+                  ? {
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "repeat(2, minmax(0, 1fr))",
+                        sm: "repeat(3, minmax(0, 1fr))",
+                        md: "repeat(4, minmax(0, 1fr))",
+                      },
+                      gap: 1,
+                    }
+                  : {}
+              }
+            >
+              {grouped.map((group, gi) => (
+                <Box
+                  key={gi}
+                  sx={{
+                    mb: !isTotalsLikeMarket && gi < grouped.length - 1 ? 1 : 0,
+                    minWidth: 0,
+                    p: isTotalsLikeMarket ? 0.5 : 0,
+                    borderRadius: isTotalsLikeMarket ? 0.75 : 0,
+                    bgcolor: isTotalsLikeMarket ? "rgba(255,255,255,0.03)" : "transparent",
+                    border: isTotalsLikeMarket ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  }}
+                >
+                  {group.label && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: "0.6rem",
+                        color: "rgba(255,255,255,0.5)",
+                        fontWeight: 600,
+                        display: "block",
+                        mb: 0.5,
+                      }}
+                    >
+                      {group.label}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {group.outcomes.map((o, i) => (
+                      <OddsBtn
+                        key={`${o.name}-${o.point ?? ""}-${i}`}
+                        outcome={o}
+                        marketKey={marketKey}
+                        label={displayLabelForGroupedOutcome(marketKey, o)}
+                      />
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
+            </Box>
           </Box>
         )}
       </Box>
@@ -487,35 +536,99 @@ export const GameDetailsPanel: React.FC<GameDetailsPanelProps> = ({
   );
 };
 
+export const GameDetailsPanel = React.memo(GameDetailsPanelComponent);
+
 function groupOutcomes(
   marketKey: string,
-  outcomes: Outcome[]
+  outcomes: Outcome[],
+  homeTeam?: string,
+  awayTeam?: string
 ): Array<{ label?: string; outcomes: Outcome[] }> {
   const hasPoints = outcomes.some((o) => o.point != null);
   const hasDescriptions = outcomes.some((o) => o.description);
+  const isTotalsMarket =
+    marketKey.startsWith("totals") || marketKey.startsWith("team_totals");
 
   if (marketKey === "team_totals" || marketKey === "team_totals_h1" || marketKey === "team_totals_h2") {
     const byTeam = new Map<string, Outcome[]>();
+    const homeLower = (homeTeam || "").toLowerCase().trim();
+    const awayLower = (awayTeam || "").toLowerCase().trim();
+
+    const resolveTeamLabel = (o: Outcome): string => {
+      const description = (o.description || "").toLowerCase().trim();
+      const name = (o.name || "").toLowerCase().trim();
+
+      if (description && homeLower && (description === homeLower || description.includes(homeLower) || homeLower.includes(description))) {
+        return homeTeam || "Home";
+      }
+      if (description && awayLower && (description === awayLower || description.includes(awayLower) || awayLower.includes(description))) {
+        return awayTeam || "Away";
+      }
+
+      if (homeLower && (name.includes(homeLower) || homeLower.includes(name))) {
+        return homeTeam || "Home";
+      }
+      if (awayLower && (name.includes(awayLower) || awayLower.includes(name))) {
+        return awayTeam || "Away";
+      }
+
+      if (name.includes("home")) return homeTeam || "Home";
+      if (name.includes("away")) return awayTeam || "Away";
+      return o.description || "Other";
+    };
+
     for (const o of outcomes) {
-      const team = o.description || (o.name.toLowerCase().includes("home") ? "Home" : "Away");
+      const team = resolveTeamLabel(o);
       if (!byTeam.has(team)) byTeam.set(team, []);
       byTeam.get(team)!.push(o);
     }
-    return Array.from(byTeam.entries()).map(([team, outs]) => ({
-      label: team,
-      outcomes: outs.sort((a, b) => (a.point ?? 0) - (b.point ?? 0)),
-    }));
+    const grouped: Array<{ label?: string; outcomes: Outcome[] }> = [];
+    for (const [team, outs] of byTeam.entries()) {
+      const byPoint = new Map<number, Outcome[]>();
+      for (const o of outs) {
+        const point = o.point ?? -1;
+        if (!byPoint.has(point)) byPoint.set(point, []);
+        byPoint.get(point)!.push(o);
+      }
+      const sortedPoints = Array.from(byPoint.keys()).sort((a, b) => a - b);
+      for (const point of sortedPoints) {
+        const pointOutcomes = (byPoint.get(point) || []).sort((a, b) => {
+          const aOver = a.name.toLowerCase().includes("over") ? 0 : 1;
+          const bOver = b.name.toLowerCase().includes("over") ? 0 : 1;
+          return aOver - bOver;
+        });
+        grouped.push({
+          label: point >= 0 ? `${team} - O/U ${point}` : team,
+          outcomes: pointOutcomes,
+        });
+      }
+    }
+    return grouped;
+  }
+
+  if (hasPoints && !hasDescriptions && isTotalsMarket) {
+    const byPoint = new Map<number, Outcome[]>();
+    for (const o of outcomes) {
+      const point = o.point ?? -1;
+      if (!byPoint.has(point)) byPoint.set(point, []);
+      byPoint.get(point)!.push(o);
+    }
+    return Array.from(byPoint.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([point, outs]) => {
+        const sortedOutcomes = outs.sort((a, b) => {
+          const aOver = a.name.toLowerCase().includes("over") ? 0 : 1;
+          const bOver = b.name.toLowerCase().includes("over") ? 0 : 1;
+          return aOver - bOver;
+        });
+        return point >= 0
+          ? { label: `O/U ${point}`, outcomes: sortedOutcomes }
+          : { outcomes: sortedOutcomes };
+      });
   }
 
   if (hasPoints && !hasDescriptions) {
-    const sorted = [...outcomes].sort((a, b) => {
-      const pa = a.point ?? 0;
-      const pb = b.point ?? 0;
-      if (pa !== pb) return pa - pb;
-      const aOver = a.name.toLowerCase().includes("over") ? 0 : 1;
-      const bOver = b.name.toLowerCase().includes("over") ? 0 : 1;
-      return aOver - bOver;
-    });
+    const sorted = [...outcomes].sort((a, b) => (a.point ?? 0) - (b.point ?? 0));
     return [{ outcomes: sorted }];
   }
 

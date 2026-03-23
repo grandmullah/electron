@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useAppSelector } from "../../store/hooks";
 import GameManagementService from "../../services/gameManagementService";
 import LeagueManagementService from "../../services/leagueManagementService";
-import AgentService from "../../services/agentService";
+import AgentService, {
+  type StalePendingSelectionRow,
+  type StalePendingSelectionsPagination,
+  type RemediatePendingSelectionResponse,
+} from "../../services/agentService";
 import GamesService from "../../services/gamesService";
 import ShopManagementService, { type ShopUser, type ShopAnalytics } from "../../services/shopManagementService";
 import { Header } from "../../components/Header";
@@ -68,6 +72,7 @@ import {
   Money as MoneyIcon,
   RemoveCircleOutline as RemoveBalanceIcon,
   PersonSearch as PersonSearchIcon,
+  Healing as HealingIcon,
 } from "@mui/icons-material";
 import type { Shop } from "../../types/shops";
 import type { ManagedAgent } from "../../store/agentSlice";
@@ -82,7 +87,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const { user } = useAppSelector((state) => state.auth);
   // Super agents default to postponed tab, admins default to leagues
   const defaultTab = user?.role === "super_agent" ? "postponed" : "leagues";
-  const [activeTab, setActiveTab] = useState<"leagues" | "games" | "cron" | "postponed" | "shops" | "users">(defaultTab as any);
+  const [activeTab, setActiveTab] = useState<"leagues" | "games" | "cron" | "postponed" | "shops" | "users" | "stale-selections">(defaultTab as any);
   const [leagues, setLeagues] = useState<any[]>([]);
   const [leagueStats, setLeagueStats] = useState({ total: 0, active: 0, inactive: 0 });
   const [cronStatus, setCronStatus] = useState<any>(null);
@@ -155,6 +160,20 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const [postponedResult, setPostponedResult] = useState<any>(null);
   const [showPostponedResultDialog, setShowPostponedResultDialog] = useState(false);
   const [processingPostponed, setProcessingPostponed] = useState(false);
+  const [staleSelections, setStaleSelections] = useState<StalePendingSelectionRow[]>([]);
+  const [stalePagination, setStalePagination] = useState<StalePendingSelectionsPagination>({
+    total: 0,
+    limit: 100,
+    offset: 0,
+  });
+  const [staleMinAgeHours, setStaleMinAgeHours] = useState<number>(24);
+  const [staleLeagueKey, setStaleLeagueKey] = useState("");
+  const [staleMarketType, setStaleMarketType] = useState("");
+  const [staleLoading, setStaleLoading] = useState(false);
+  const [staleRemediatingSelectionId, setStaleRemediatingSelectionId] = useState<string | null>(null);
+  const [staleRemediateDialogOpen, setStaleRemediateDialogOpen] = useState(false);
+  const [staleRemediateTarget, setStaleRemediateTarget] = useState<StalePendingSelectionRow | null>(null);
+  const [staleRemediationResult, setStaleRemediationResult] = useState<RemediatePendingSelectionResponse["data"] | null>(null);
 
   // Admin: user search + actions
   const [usersPhoneQuery, setUsersPhoneQuery] = useState("");
@@ -201,10 +220,12 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     } else if (activeTab === "users" && isAdmin) {
       // Users tab needs shops list for optional assignment when promoting to agent
       if (shops.length === 0) loadShops();
+    } else if (activeTab === "stale-selections" && isAdmin) {
+      loadStalePendingSelections();
     } else if (activeTab === "postponed") {
       loadPostponedMatches();
     }
-  }, [activeTab, isAdmin, isSuperAgent, gamesOffset, gamesLimit, gamesStatus]);
+  }, [activeTab, isAdmin, isSuperAgent, gamesOffset, gamesLimit, gamesStatus, stalePagination.offset, stalePagination.limit]);
 
   const searchUsersByPhone = async () => {
     setIsLoading(true);
@@ -503,6 +524,67 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
       setError(err.message || "Failed to load games");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadStalePendingSelections = async () => {
+    setStaleLoading(true);
+    setError(null);
+    try {
+      const params: {
+        minAgeHours: number;
+        limit: number;
+        offset: number;
+        leagueKey?: string;
+        marketType?: string;
+      } = {
+        minAgeHours: staleMinAgeHours,
+        limit: stalePagination.limit,
+        offset: stalePagination.offset,
+      };
+      const trimmedLeagueKey = staleLeagueKey.trim();
+      const trimmedMarketType = staleMarketType.trim();
+      if (trimmedLeagueKey) params.leagueKey = trimmedLeagueKey;
+      if (trimmedMarketType) params.marketType = trimmedMarketType;
+
+      const response = await AgentService.listStalePendingBetSelections(params);
+      setStaleSelections(response.data || []);
+      setStalePagination(response.pagination || { total: 0, limit: stalePagination.limit, offset: stalePagination.offset });
+    } catch (err: any) {
+      setError(err.message || "Failed to load stale pending selections");
+    } finally {
+      setStaleLoading(false);
+    }
+  };
+
+  const openStaleRemediateDialog = (row: StalePendingSelectionRow) => {
+    setStaleRemediateTarget(row);
+    setStaleRemediateDialogOpen(true);
+  };
+
+  const closeStaleRemediateDialog = () => {
+    if (staleRemediatingSelectionId) return;
+    setStaleRemediateDialogOpen(false);
+    setStaleRemediateTarget(null);
+  };
+
+  const submitStaleRemediation = async () => {
+    if (!staleRemediateTarget) return;
+    setStaleRemediatingSelectionId(staleRemediateTarget.selectionId);
+    setError(null);
+    try {
+      const response = await AgentService.remediatePendingBetSelection(staleRemediateTarget.selectionId, {
+        fetchFromApiFootball: true,
+      });
+      setStaleRemediationResult(response.data || null);
+      setSuccess(response.message || "Remediation completed");
+      setStaleRemediateDialogOpen(false);
+      setStaleRemediateTarget(null);
+      await loadStalePendingSelections();
+    } catch (err: any) {
+      setError(err.message || "Failed to remediate pending selection");
+    } finally {
+      setStaleRemediatingSelectionId(null);
     }
   };
 
@@ -1021,6 +1103,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               onClick={() => {
                 if (activeTab === "leagues") loadLeagues();
                 else if (activeTab === "cron") loadCronStatus();
+                else if (activeTab === "stale-selections") loadStalePendingSelections();
               }}
               sx={{
                 borderColor: "divider",
@@ -1069,6 +1152,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             {isAdmin && <Tab icon={<SettingsIcon />} label="Games" value="games" />}
             {isAdmin && <Tab icon={<ShopIcon />} label="Shops" value="shops" />}
             {isAdmin && <Tab icon={<PersonSearchIcon />} label="Users" value="users" />}
+            {isAdmin && <Tab icon={<HealingIcon />} label="Stale Selections" value="stale-selections" />}
             {isAdmin && <Tab icon={<SyncIcon />} label="Cron Jobs" value="cron" />}
             <Tab icon={<PostponedIcon />} label="Postponed Matches" value="postponed" />
           </Tabs>
@@ -1502,6 +1586,265 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             )}
           </Paper>
         )}
+
+        {activeTab === "stale-selections" && isAdmin && (
+          <Paper
+            elevation={3}
+            sx={{
+              p: 3,
+              borderRadius: 2,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={2}>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Stale Pending Bet Selections
+                </Typography>
+                <Typography variant="body2" color="rgba(255,255,255,0.6)">
+                  Review stale pending selections and remediate via API-Football.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={loadStalePendingSelections}
+                disabled={staleLoading || Boolean(staleRemediatingSelectionId)}
+                sx={{ borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+              >
+                Refresh
+              </Button>
+            </Box>
+
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2} mb={2}>
+              <TextField
+                label="Min Age Hours"
+                type="number"
+                value={staleMinAgeHours}
+                onChange={(e) => setStaleMinAgeHours(Math.max(1, Number(e.target.value) || 24))}
+                sx={{ maxWidth: { xs: "100%", md: 220 } }}
+                InputLabelProps={{ sx: { color: "rgba(255,255,255,0.7)" } }}
+                InputProps={{
+                  sx: {
+                    color: "white",
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.2)" },
+                  },
+                }}
+              />
+              <TextField
+                label="League Key (optional)"
+                value={staleLeagueKey}
+                onChange={(e) => setStaleLeagueKey(e.target.value)}
+                fullWidth
+                InputLabelProps={{ sx: { color: "rgba(255,255,255,0.7)" } }}
+                InputProps={{
+                  sx: {
+                    color: "white",
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.2)" },
+                  },
+                }}
+              />
+              <TextField
+                label="Market Type (optional)"
+                value={staleMarketType}
+                onChange={(e) => setStaleMarketType(e.target.value)}
+                fullWidth
+                InputLabelProps={{ sx: { color: "rgba(255,255,255,0.7)" } }}
+                InputProps={{
+                  sx: {
+                    color: "white",
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.2)" },
+                  },
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setStalePagination((prev) => ({ ...prev, offset: 0 }));
+                  loadStalePendingSelections();
+                }}
+                disabled={staleLoading || Boolean(staleRemediatingSelectionId)}
+                sx={{ minWidth: 120, textTransform: "none" }}
+              >
+                Apply
+              </Button>
+            </Stack>
+
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} flexWrap="wrap" gap={1}>
+              <Typography variant="body2" color="rgba(255,255,255,0.6)">
+                Showing {Math.min(stalePagination.offset + staleSelections.length, stalePagination.total)} of {stalePagination.total}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={staleLoading || stalePagination.offset <= 0}
+                  onClick={() =>
+                    setStalePagination((prev) => ({
+                      ...prev,
+                      offset: Math.max(0, prev.offset - prev.limit),
+                    }))
+                  }
+                  sx={{ borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={staleLoading || stalePagination.offset + stalePagination.limit >= stalePagination.total}
+                  onClick={() =>
+                    setStalePagination((prev) => ({
+                      ...prev,
+                      offset: prev.offset + prev.limit,
+                    }))
+                  }
+                  sx={{ borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+                >
+                  Next
+                </Button>
+              </Stack>
+            </Box>
+
+            {staleLoading ? (
+              <Box display="flex" justifyContent="center" p={4}>
+                <CircularProgress />
+              </Box>
+            ) : staleSelections.length === 0 ? (
+              <Box p={4}>
+                <Typography color="rgba(255,255,255,0.6)">
+                  No stale pending selections found for the selected filters.
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Selection</TableCell>
+                      <TableCell>Game</TableCell>
+                      <TableCell>Market</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Blockers</TableCell>
+                      <TableCell>Actionable</TableCell>
+                      <TableCell align="right">Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {staleSelections.map((row) => (
+                      <TableRow key={row.selectionId} hover>
+                        <TableCell sx={{ color: "white" }}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {row.selection}
+                          </Typography>
+                          <Typography variant="caption" color="rgba(255,255,255,0.6)">
+                            {row.selectionId.slice(0, 8)}... | Bet {row.betId.slice(0, 8)}...
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ color: "rgba(255,255,255,0.85)" }}>
+                          <Typography variant="body2">{row.gameId.slice(0, 8)}...</Typography>
+                          <Typography variant="caption" color="rgba(255,255,255,0.6)">
+                            External: {row.externalId || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ color: "rgba(255,255,255,0.85)" }}>
+                          <Typography variant="body2">{row.marketType || "N/A"}</Typography>
+                          <Typography variant="caption" color="rgba(255,255,255,0.6)">
+                            League: {row.leagueKey || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Chip label={row.gameStatus || "unknown"} size="small" />
+                            <Chip
+                              label={row.gameSettlementStatus || "pending"}
+                              size="small"
+                              color={row.gameSettlementStatus === "settled" ? "success" : "warning"}
+                            />
+                          </Stack>
+                        </TableCell>
+                        <TableCell sx={{ color: "rgba(255,255,255,0.75)" }}>
+                          <Typography variant="caption">
+                            {row.blockers.length > 0 ? row.blockers.join(" | ") : "None"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} flexWrap="wrap">
+                            <Chip label={row.actionable.canFetchFromApiFootball ? "API-Ready" : "API Blocked"} size="small" />
+                            {row.actionable.missingEvents && <Chip label="Missing Events" size="small" color="warning" />}
+                            {row.actionable.missingStats && <Chip label="Missing Stats" size="small" color="warning" />}
+                          </Stack>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => openStaleRemediateDialog(row)}
+                            disabled={Boolean(staleRemediatingSelectionId)}
+                            sx={{ textTransform: "none" }}
+                          >
+                            Remediate
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
+        )}
+
+        <Dialog open={staleRemediateDialogOpen} onClose={closeStaleRemediateDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>Remediate Pending Selection</DialogTitle>
+          <DialogContent>
+            {staleRemediateTarget && (
+              <Stack spacing={1.5}>
+                <Typography variant="body2">
+                  Selection <strong>{staleRemediateTarget.selectionId}</strong> will be remediated using API-Football data.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This action can settle impacted selections and bets.
+                </Typography>
+                {staleRemediationResult && (
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      borderRadius: 1,
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                      Last remediation result
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "white", mt: 0.5 }}>
+                      Impacted selections: {staleRemediationResult.impactedSelectionIds?.length || 0} | Impacted bets:{" "}
+                      {staleRemediationResult.impactedBetIds?.length || 0}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)" }}>
+                      {staleRemediationResult.settlementResult?.message || "No settlement summary available"}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeStaleRemediateDialog} disabled={Boolean(staleRemediatingSelectionId)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={submitStaleRemediation}
+              disabled={!staleRemediateTarget || Boolean(staleRemediatingSelectionId)}
+            >
+              {staleRemediatingSelectionId ? "Remediating..." : "Remediate"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Feature Dialog */}
         <Dialog open={featureDialogOpen} onClose={closeFeatureDialog} maxWidth="sm" fullWidth>

@@ -65,7 +65,7 @@ import { GameOdds } from '../types/games';
 /** Normalize API market_key to internal key (e.g. match_winner → h2h). */
 export function normalizeMarketKey(raw: string | undefined): string {
       if (raw == null || raw === '') return raw || '';
-      return  raw;
+      return raw;
 }
 
 /**
@@ -127,7 +127,7 @@ export function normalizeMarketKey(raw: string | undefined): string {
 /** Convert internal market key to API key for bet placement (e.g. h2h → match_winner). */
 export function toApiMarketKey(internalKey: string | undefined): string {
       if (internalKey == null || internalKey === '') return internalKey || '';
-      return       internalKey;
+      return internalKey;
 }
 
 /**
@@ -430,18 +430,18 @@ export function extractTeamTotalsOdds(
                   const homeLower = homeTeam.toLowerCase().trim();
                   const awayLower = awayTeam.toLowerCase().trim();
                   const descLower = description.toLowerCase().trim();
-                  
+
                   // More flexible matching - check exact match first, then contains
                   // Also handle partial matches (e.g., "Arsenal" matches "Arsenal FC")
-                  if (descLower === homeLower || 
-                      descLower.includes(homeLower) || 
-                      homeLower.includes(descLower) ||
-                      descLower === 'home') {
+                  if (descLower === homeLower ||
+                        descLower.includes(homeLower) ||
+                        homeLower.includes(descLower) ||
+                        descLower === 'home') {
                         team = 'home';
-                  } else if (descLower === awayLower || 
-                            descLower.includes(awayLower) || 
-                            awayLower.includes(descLower) ||
-                            descLower === 'away') {
+                  } else if (descLower === awayLower ||
+                        descLower.includes(awayLower) ||
+                        awayLower.includes(descLower) ||
+                        descLower === 'away') {
                         team = 'away';
                   }
             }
@@ -450,7 +450,7 @@ export function extractTeamTotalsOdds(
             if (!team) {
                   const homeLower = homeTeam.toLowerCase().trim();
                   const awayLower = awayTeam.toLowerCase().trim();
-                  
+
                   // Check if name contains team name (e.g., "Arsenal Over" contains "Arsenal")
                   if (name.includes(homeLower) || name.includes('home')) {
                         team = 'home';
@@ -458,10 +458,10 @@ export function extractTeamTotalsOdds(
                         team = 'away';
                   } else {
                         // Debug: log unmatched outcomes
-                        console.warn('⚠️ Team totals: Could not match team', { 
-                              name, 
-                              description, 
-                              homeTeam, 
+                        console.warn('⚠️ Team totals: Could not match team', {
+                              name,
+                              description,
+                              homeTeam,
                               awayTeam,
                               nameLower: name,
                               homeLower,
@@ -512,43 +512,47 @@ export function parseOddsFromGameOddsArray(
       homeTeam: string,
       awayTeam: string
 ) {
-      // Build rawMarkets using the EXACT market_key from the odds feed (no renaming)
-      const rawMarkets: Array<{
-            key: string;
-            outcomes: Array<{ name: string; price: number; point?: number; description?: string }>;
-      }> = [];
+      const sourceOdds = odds || [];
 
-      for (const o of odds || []) {
+      // Build raw markets and internal-key buckets in one pass to avoid repeated filters.
+      const rawMarketMap = new Map<string, Array<{ name: string; price: number; point?: number; description?: string }>>();
+      const internalMarketMap = new Map<string, GameOdds[]>();
+
+      for (const o of sourceOdds) {
             if (!o?.market_key) continue;
-            const key = o.market_key;
-            let existing = rawMarkets.find(r => r.key === key);
-            if (!existing) {
-                  existing = { key, outcomes: [] };
-                  rawMarkets.push(existing);
-            }
-            existing.outcomes.push({
+
+            const rawKey = o.market_key;
+            const rawOutcomes = rawMarketMap.get(rawKey) || [];
+            rawOutcomes.push({
                   name: o.outcome_name,
                   price: Number(o.outcome_price) || 0,
                   ...(o.outcome_point != null ? { point: Number(o.outcome_point) } : {}),
-                  // GameOdds format doesn't currently include a separate description field; keep shape consistent
             });
+            rawMarketMap.set(rawKey, rawOutcomes);
+
+            const internalKey = normalizeMarketKey(rawKey);
+            const list = internalMarketMap.get(internalKey) || [];
+            list.push(o);
+            internalMarketMap.set(internalKey, list);
       }
 
-      // Group odds by internal market type for the high‑level fields
-      const h2hOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h');
-      const dcOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'double_chance');
-      const totalsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals');
-      const bttsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'btts');
-      const spreadsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'spreads');
-      const teamTotalsOdds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals'); // full-time (total_home/total_away → team_totals)
+      const rawMarkets = Array.from(rawMarketMap.entries()).map(([key, outcomes]) => ({ key, outcomes }));
+
+      // Group odds by internal market type for the high-level fields
+      const h2hOdds = internalMarketMap.get('h2h') || [];
+      const dcOdds = internalMarketMap.get('double_chance') || [];
+      const totalsOdds = internalMarketMap.get('totals') || [];
+      const bttsOdds = internalMarketMap.get('btts') || [];
+      const spreadsOdds = internalMarketMap.get('spreads') || [];
+      const teamTotalsOdds = internalMarketMap.get('team_totals') || [];
 
       // Half-time markets
-      const h2h_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h_h1');
-      const h2h_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'h2h_h2');
-      const totals_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals_h1');
-      const totals_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'totals_h2');
-      const team_totals_h1_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals_h1');
-      const team_totals_h2_Odds = odds.filter(o => normalizeMarketKey(o?.market_key) === 'team_totals_h2');
+      const h2h_h1_Odds = internalMarketMap.get('h2h_h1') || [];
+      const h2h_h2_Odds = internalMarketMap.get('h2h_h2') || [];
+      const totals_h1_Odds = internalMarketMap.get('totals_h1') || [];
+      const totals_h2_Odds = internalMarketMap.get('totals_h2') || [];
+      const team_totals_h1_Odds = internalMarketMap.get('team_totals_h1') || [];
+      const team_totals_h2_Odds = internalMarketMap.get('team_totals_h2') || [];
 
       const h2h = extractH2HOdds(h2hOdds, homeTeam, awayTeam);
       const doubleChance = extractDoubleChanceOdds(dcOdds, homeTeam, awayTeam);
@@ -645,56 +649,46 @@ export function parseOddsFromBookmakersArray(
             };
       }
 
-      // Collect ALL markets into rawMarkets for the expanded panel
-      const rawMarkets: Array<{ key: string; outcomes: Array<{ name: string; price: number; point?: number; description?: string }> }> = [];
+      // Collect all markets in one pass for both raw display and fast lookups.
+      const rawMarketMap = new Map<string, Array<{ name: string; price: number; point?: number; description?: string }>>();
+      const internalOutcomeMap = new Map<string, any[]>();
       for (const bm of bookmakers) {
             if (!Array.isArray(bm.markets)) continue;
             for (const m of bm.markets) {
                   if (!m.key || !Array.isArray(m.outcomes) || m.outcomes.length === 0) continue;
-                  const existing = rawMarkets.find(r => r.key === m.key);
                   const mapped = m.outcomes.map((o: any) => ({
                         name: o.name as string,
                         price: Number(o.price) || 0,
                         ...(o.point != null ? { point: Number(o.point) } : {}),
                         ...(o.description ? { description: o.description as string } : {}),
                   }));
-                  if (existing) {
-                        existing.outcomes.push(...mapped);
-                  } else {
-                        rawMarkets.push({ key: m.key, outcomes: mapped });
-                  }
+
+                  const rawList = rawMarketMap.get(m.key) || [];
+                  rawList.push(...mapped);
+                  rawMarketMap.set(m.key, rawList);
+
+                  const internalKey = normalizeMarketKey(m.key);
+                  const internalList = internalOutcomeMap.get(internalKey) || [];
+                  internalList.push(...m.outcomes);
+                  internalOutcomeMap.set(internalKey, internalList);
             }
       }
+      const rawMarkets = Array.from(rawMarketMap.entries()).map(([key, outcomes]) => ({ key, outcomes }));
 
-      const h2hMarket = findMarketFromBookmakers(bookmakers, 'h2h');
-      const dcMarket = findMarketFromBookmakers(bookmakers, 'double_chance');
-      const totalsMarket = findMarketFromBookmakers(bookmakers, 'totals');
-      const bttsMarket = findMarketFromBookmakers(bookmakers, 'btts');
-      const spreadsMarket = findMarketFromBookmakers(bookmakers, 'spreads');
-      const teamTotalsMarket = findMarketFromBookmakers(bookmakers, 'team_totals'); // Full-time team totals
+      const h2h = extractH2HOdds(internalOutcomeMap.get('h2h') || [], homeTeam, awayTeam);
+      const doubleChance = extractDoubleChanceOdds(internalOutcomeMap.get('double_chance') || [], homeTeam, awayTeam);
+      const totals = extractTotalsOdds(internalOutcomeMap.get('totals') || []);
+      const bothTeamsToScore = extractBTTSOdds(internalOutcomeMap.get('btts') || []);
+      const spreads = extractSpreadOdds(internalOutcomeMap.get('spreads') || [], homeTeam, awayTeam);
+      const teamTotals = extractTeamTotalsOdds(internalOutcomeMap.get('team_totals') || [], homeTeam, awayTeam);
 
-      // Half-time markets
-      const h2h_h1_Market = findMarketFromBookmakers(bookmakers, 'h2h_h1');
-      const h2h_h2_Market = findMarketFromBookmakers(bookmakers, 'h2h_h2');
-      const totals_h1_Market = findMarketFromBookmakers(bookmakers, 'totals_h1');
-      const totals_h2_Market = findMarketFromBookmakers(bookmakers, 'totals_h2');
-      const team_totals_h1_Market = findMarketFromBookmakers(bookmakers, 'team_totals_h1');
-      const team_totals_h2_Market = findMarketFromBookmakers(bookmakers, 'team_totals_h2');
-
-      const h2h = extractH2HOdds(h2hMarket?.outcomes || [], homeTeam, awayTeam);
-      const doubleChance = extractDoubleChanceOdds(dcMarket?.outcomes || [], homeTeam, awayTeam);
-      const totals = extractTotalsOdds(totalsMarket?.outcomes || []);
-      const bothTeamsToScore = extractBTTSOdds(bttsMarket?.outcomes || []);
-      const spreads = extractSpreadOdds(spreadsMarket?.outcomes || [], homeTeam, awayTeam);
-      const teamTotals = extractTeamTotalsOdds(teamTotalsMarket?.outcomes || [], homeTeam, awayTeam); // Full-time team totals
-      
       // Parse half-time markets
-      const h2h_h1 = extractH2HOdds(h2h_h1_Market?.outcomes || [], homeTeam, awayTeam);
-      const h2h_h2 = extractH2HOdds(h2h_h2_Market?.outcomes || [], homeTeam, awayTeam);
-      const totals_h1 = extractTotalsOdds(totals_h1_Market?.outcomes || []);
-      const totals_h2 = extractTotalsOdds(totals_h2_Market?.outcomes || []);
-      const team_totals_h1 = extractTeamTotalsOdds(team_totals_h1_Market?.outcomes || [], homeTeam, awayTeam);
-      const team_totals_h2 = extractTeamTotalsOdds(team_totals_h2_Market?.outcomes || [], homeTeam, awayTeam);
+      const h2h_h1 = extractH2HOdds(internalOutcomeMap.get('h2h_h1') || [], homeTeam, awayTeam);
+      const h2h_h2 = extractH2HOdds(internalOutcomeMap.get('h2h_h2') || [], homeTeam, awayTeam);
+      const totals_h1 = extractTotalsOdds(internalOutcomeMap.get('totals_h1') || []);
+      const totals_h2 = extractTotalsOdds(internalOutcomeMap.get('totals_h2') || []);
+      const team_totals_h1 = extractTeamTotalsOdds(internalOutcomeMap.get('team_totals_h1') || [], homeTeam, awayTeam);
+      const team_totals_h2 = extractTeamTotalsOdds(internalOutcomeMap.get('team_totals_h2') || [], homeTeam, awayTeam);
 
       const oddsData = {
             homeOdds: h2h.homeOdds,

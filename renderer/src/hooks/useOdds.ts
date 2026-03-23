@@ -37,13 +37,14 @@ export const useOdds = (leagueKey: string, page: number = 1, limit: number = 50)
             oddsFetcher,
             {
                   refreshInterval: 30000,
-                  revalidateOnFocus: true,
+                  revalidateOnFocus: false,
                   revalidateOnReconnect: true,
                   shouldRetryOnError: (err) => err?.status !== 404,
                   errorRetryCount: 3,
                   errorRetryInterval: 5000,
                   keepPreviousData: true,
-                  dedupingInterval: 2000,
+                  dedupingInterval: 10000,
+                  focusThrottleInterval: 15000,
             }
       );
 
@@ -52,13 +53,14 @@ export const useOdds = (leagueKey: string, page: number = 1, limit: number = 50)
             upcomingFetcher,
             {
                   refreshInterval: 30000,
-                  revalidateOnFocus: true,
+                  revalidateOnFocus: false,
                   revalidateOnReconnect: true,
                   shouldRetryOnError: (err) => err?.status !== 404,
                   errorRetryCount: 3,
                   errorRetryInterval: 5000,
                   keepPreviousData: true,
-                  dedupingInterval: 2000,
+                  dedupingInterval: 10000,
+                  focusThrottleInterval: 15000,
             }
       );
 
@@ -86,13 +88,3 @@ export const useOdds = (leagueKey: string, page: number = 1, limit: number = 50)
       };
 };
 
-// Hook for manual refresh
-export const useRefreshOdds = () => {
-      const refresh = () => {
-            if (typeof window !== 'undefined' && (window as any).swrCache) {
-                  (window as any).swrCache.clear();
-            }
-      };
-
-      return { refresh };
-};

@@ -14,7 +14,7 @@ interface H2HSectionProps {
     betType: string,
     selection: string,
     odds: number,
-    marketKey?: string
+    marketKey?: string,
   ) => void;
   isSelectionInBetSlip: (
     gameId: string,
@@ -24,7 +24,7 @@ interface H2HSectionProps {
   variant?: "mobile" | "desktop";
 }
 
-export const H2HSection: React.FC<H2HSectionProps> = ({
+const H2HSectionComponent: React.FC<H2HSectionProps> = ({
   game,
   period = "full-time",
   homeOdds,
@@ -83,7 +83,8 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
               ["Away", "2", awayOdds],
             ] as const
           ).map(([sel, lbl, odds]) => {
-            const gameKey = game.externalId || game.id;
+            const gameKey =
+              game.externalId || game.team_index?.externalId || game.id;
             const selected = isSelectionInBetSlip(gameKey, betType, sel);
             return (
               <Grid size={4} key={sel}>
@@ -164,7 +165,8 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
             ["Away", "2", awayOdds],
           ] as const
         ).map(([sel, lbl, odds]) => {
-          const gameKey = game.externalId || game.id;
+          const gameKey =
+            game.externalId || game.team_index?.externalId || game.id;
           const selected = isSelectionInBetSlip(gameKey, betType, sel);
           return (
             <Box
@@ -209,3 +211,6 @@ export const H2HSection: React.FC<H2HSectionProps> = ({
     </Box>
   );
 };
+
+
+export const H2HSection = React.memo(H2HSectionComponent);

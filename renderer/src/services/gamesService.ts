@@ -314,10 +314,18 @@ class GamesService {
             const homeTeam = suggestion.homeTeam;
             const awayTeam = suggestion.awayTeam;
 
-            // Parse odds if available
+            // Autocomplete can return either:
+            // - odds: GameOdds[] (newer shape)
+            // - bookmakers: [{ markets: [...] }] (legacy/upcoming-like shape)
             let parsedOdds;
             if (suggestion.odds && suggestion.odds.length > 0) {
                   parsedOdds = parseOddsFromGameOddsArray(suggestion.odds, homeTeam, awayTeam);
+            } else if (Array.isArray((suggestion as any).bookmakers) && (suggestion as any).bookmakers.length > 0) {
+                  parsedOdds = parseOddsFromBookmakersArray(
+                        (suggestion as any).bookmakers,
+                        homeTeam,
+                        awayTeam
+                  );
             } else {
                   // No odds available
                   parsedOdds = {
@@ -349,8 +357,10 @@ class GamesService {
                   };
             }
 
-            // Extract externalId: prioritize team_index.externalId, then top-level external_id, finally fall back to id
-            const externalId = (suggestion as any).team_index?.externalId || suggestion.external_id || suggestion.id;
+            // Preserve all backend variants for team index identifiers
+            const teamIndex = (suggestion as any).team_index || (suggestion as any).teamIndex;
+            // Extract externalId: prioritize team index external ID, then top-level external_id, finally fall back to id
+            const externalId = teamIndex?.externalId || suggestion.external_id || suggestion.id;
 
             return {
                   id: suggestion.id,
@@ -368,8 +378,8 @@ class GamesService {
                   },
                   currentPeriod: suggestion.currentPeriod || 0,
                   currentTime: suggestion.currentTime || null,
-                  // Preserve team_index from API (if available)
-                  team_index: (suggestion as any).team_index,
+                  // Preserve team index from API (snake_case or camelCase)
+                  team_index: teamIndex,
             };
       }
 
