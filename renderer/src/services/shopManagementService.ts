@@ -10,6 +10,9 @@ export interface ShopUser {
   balance?: string | number;
   is_active?: boolean;
   created_at?: string;
+  email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 export interface ShopAnalytics {
@@ -97,6 +100,24 @@ class ShopManagementService {
     const res = await axios.post(
       `${API_BASE_URL}/admin/users/${encodeURIComponent(params.userId)}/password/reset`,
       { newPassword: params.newPassword },
+      { headers: this.getAuthHeaders() }
+    );
+    return res.data;
+  }
+
+  static async updateUserProfile(params: { 
+    userId: string; 
+    email?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+  }): Promise<any> {
+    const res = await axios.put(
+      `${API_BASE_URL}/admin/users/${encodeURIComponent(params.userId)}`,
+      { 
+        email: params.email, 
+        first_name: params.first_name, 
+        last_name: params.last_name 
+      },
       { headers: this.getAuthHeaders() }
     );
     return res.data;

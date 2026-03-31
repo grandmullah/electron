@@ -9,6 +9,7 @@ import { GamesPage } from "./pages/public/GamesPage";
 import { AgentPage } from "./pages/private/AgentPage";
 import { HistoryPage } from "./pages/private/HistoryPage";
 import { ManagementPage } from "./pages/private/ManagementPage";
+import { AdminDashboardPage } from "./pages/private/AdminDashboardPage";
 import AuthService from "./services/authService";
 import { loginSuccess, loginStart, loginFailure } from "./store/authSlice";
 import { convertAuthUserToUser } from "./store/authSlice";
@@ -16,7 +17,7 @@ import { SWRProvider } from "./providers/SWRProvider";
 import { MUIProviderWrapper } from "./providers/MUIProvider";
 import "./styles/index.css";
 
-type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management";
+type Page = "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management" | "admin";
 
 interface NavigationParams {
   tab?: string;
@@ -73,7 +74,8 @@ const AppContent: React.FC = () => {
       (page === "dashboard" ||
         page === "settings" ||
         page === "agent" ||
-        page === "history") &&
+        page === "history" ||
+        page === "admin") &&
       !user
     ) {
       // Redirect to home page if not logged in
@@ -119,6 +121,12 @@ const AppContent: React.FC = () => {
       case "management":
         return user && (user.role === "super_agent" || user.role === "admin") ? (
           <ManagementPage onNavigate={navigateTo} />
+        ) : (
+          <HomePage onNavigate={navigateTo} />
+        );
+      case "admin":
+        return user && user.role === "admin" ? (
+          <AdminDashboardPage onNavigate={navigateTo} />
         ) : (
           <HomePage onNavigate={navigateTo} />
         );

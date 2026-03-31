@@ -137,7 +137,7 @@ const GamesActionsDropdown: React.FC<{ gamesPageActions: GamesPageActions }> = (
 
 interface HeaderProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management" | "admin"
   ) => void;
   currentPage: string;
   isAgentMode?: boolean;
@@ -442,6 +442,41 @@ export const Header: React.FC<HeaderProps> = ({
                   }}
                 >
                   Management
+                </Button>
+              )}
+              {user && user.role === "admin" && (
+                <Button
+                  onClick={() => onNavigate("admin")}
+                  sx={{
+                    color:
+                      currentPage === "admin"
+                        ? "#ef5350"
+                        : "rgba(255, 255, 255, 0.7)",
+                    bgcolor:
+                      currentPage === "admin"
+                        ? "rgba(239, 83, 80, 0.15)"
+                        : "transparent",
+                    border:
+                      currentPage === "admin"
+                        ? "1px solid rgba(239, 83, 80, 0.4)"
+                        : "1px solid transparent",
+                    borderRadius: "8px",
+                    px: 2,
+                    py: 0.75,
+                    fontWeight: currentPage === "admin" ? 600 : 500,
+                    fontSize: "0.95rem",
+                    textTransform: "none",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      color: "white",
+                      bgcolor: "rgba(239, 83, 80, 0.25)",
+                      borderColor: "rgba(239, 83, 80, 0.5)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(239, 83, 80, 0.3)",
+                    },
+                  }}
+                >
+                  Admin
                 </Button>
               )}
             </Stack>

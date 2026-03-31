@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { financialSummaryService, FinancialSummary } from '../services/financialSummaryService';
 
@@ -22,19 +22,25 @@ export const useFinancialSummary = () => {
       const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
       const [periodsError, setPeriodsError] = useState<string | null>(null);
 
+      // Use ref to access periodSummaries without creating dependency cycles
+      const periodSummariesRef = useRef(periodSummaries);
+      periodSummariesRef.current = periodSummaries;
+
       const loadFinancialSummary = useCallback(async (days: number = DEFAULT_FINANCIAL_SUMMARY_DAYS) => {
             if (!user?.id) return;
 
-            if (days === 1 && periodSummaries.today) {
-                  setFinancialSummary(periodSummaries.today);
+            // Check cache using ref to avoid dependency cycle
+            const cached = periodSummariesRef.current;
+            if (days === 1 && cached.today) {
+                  setFinancialSummary(cached.today);
                   return;
             }
-            if (days === 7 && periodSummaries.thisWeek) {
-                  setFinancialSummary(periodSummaries.thisWeek);
+            if (days === 7 && cached.thisWeek) {
+                  setFinancialSummary(cached.thisWeek);
                   return;
             }
-            if (days === 30 && periodSummaries.thisMonth) {
-                  setFinancialSummary(periodSummaries.thisMonth);
+            if (days === 30 && cached.thisMonth) {
+                  setFinancialSummary(cached.thisMonth);
                   return;
             }
 
@@ -65,7 +71,7 @@ export const useFinancialSummary = () => {
             } finally {
                   setIsLoadingFinancialSummary(false);
             }
-      }, [user?.id, periodSummaries.today, periodSummaries.thisWeek, periodSummaries.thisMonth]);
+      }, [user?.id]);
 
       const loadFinancialSummaryForPeriods = useCallback(async () => {
             if (!user?.id) return;

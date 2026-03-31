@@ -375,6 +375,137 @@ class AuthService {
                   throw new Error(error.message || 'Token refresh failed');
             }
       }
+
+      // ==========================================
+      // PROFILE MANAGEMENT
+      // ==========================================
+
+      /**
+       * Update user profile
+       * PUT /api/auth/profile
+       */
+      static async updateProfile(profileData: {
+            first_name?: string;
+            last_name?: string;
+            email?: string;
+      }): Promise<ProfileResponse> {
+            try {
+                  const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+                        method: 'PUT',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify(profileData),
+                  });
+
+                  if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to update profile');
+                  }
+
+                  const data: ProfileResponse = await response.json();
+                  return data;
+            } catch (error: any) {
+                  console.error('Update profile error:', error);
+                  throw new Error(error.message || 'Failed to update profile');
+            }
+      }
+
+      /**
+       * Change user password
+       * Note: This may require a dedicated endpoint or use profile update
+       */
+      static async changePassword(oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+            try {
+                  // Try the dedicated password change endpoint first
+                  const response = await fetch(`${API_BASE_URL}/auth/password/change`, {
+                        method: 'POST',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify({ oldPassword, newPassword }),
+                  });
+
+                  if (!response.ok) {
+                        // If endpoint doesn't exist, we might need admin assistance
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to change password');
+                  }
+
+                  return await response.json();
+            } catch (error: any) {
+                  console.error('Change password error:', error);
+                  throw new Error(error.message || 'Failed to change password');
+            }
+      }
+
+      /**
+       * Delete user account (soft delete)
+       * DELETE /api/auth/delete-account
+       */
+      static async deleteAccount(password?: string): Promise<{ success: boolean; message: string }> {
+            try {
+                  const response = await fetch(`${API_BASE_URL}/auth/delete-account`, {
+                        method: 'DELETE',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify(password ? { password } : {}),
+                  });
+
+                  if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to delete account');
+                  }
+
+                  // Clear token after successful deletion
+                  this.logout();
+
+                  return await response.json();
+            } catch (error: any) {
+                  console.error('Delete account error:', error);
+                  throw new Error(error.message || 'Failed to delete account');
+            }
+      }
+
+      /**
+       * Update user preferences
+       * Note: This might be part of profile update or a separate endpoint
+       */
+      static async updatePreferences(preferences: {
+            oddsFormat?: 'decimal' | 'american' | 'fractional';
+            timezone?: string;
+            notifications?: {
+                  betSettled?: boolean;
+                  oddsChanged?: boolean;
+                  newGames?: boolean;
+            };
+      }): Promise<ProfileResponse> {
+            try {
+                  // Convert camelCase to snake_case for backend
+                  const backendPreferences: any = {};
+                  if (preferences.oddsFormat) backendPreferences.odds_format = preferences.oddsFormat;
+                  if (preferences.timezone) backendPreferences.timezone = preferences.timezone;
+                  if (preferences.notifications) {
+                        backendPreferences.notifications = {
+                              bet_settled: preferences.notifications.betSettled,
+                              odds_changed: preferences.notifications.oddsChanged,
+                              new_games: preferences.notifications.newGames,
+                        };
+                  }
+
+                  const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+                        method: 'PUT',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify({ preferences: backendPreferences }),
+                  });
+
+                  if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to update preferences');
+                  }
+
+                  const data: ProfileResponse = await response.json();
+                  return data;
+            } catch (error: any) {
+                  console.error('Update preferences error:', error);
+                  throw new Error(error.message || 'Failed to update preferences');
+            }
+      }
 }
 
 export default AuthService; 

@@ -152,7 +152,7 @@ export const DoubleChanceSection: React.FC<DoubleChanceSectionProps> = ({
     );
   }
 
-  // Desktop variant
+  // Desktop variant - Compact single row layout
   return (
     <Box
       textAlign="center"
@@ -174,64 +174,51 @@ export const DoubleChanceSection: React.FC<DoubleChanceSectionProps> = ({
       >
         DOUBLE CHANCE
       </Typography>
-      <Stack direction="row" spacing={1} justifyContent="center">
-        <Box textAlign="center">
-          <Typography
-            variant="caption"
-            color="rgba(255,255,255,0.6)"
-            display="block"
-            mb={0.5}
-          >
-            1X
-          </Typography>
-          <BettingOption
-            game={game}
-            betType="Double Chance"
-            selection="1 or X"
-            odds={homeOrDraw}
-            label="1X"
-            onAddToBetSlip={onAddToBetSlip}
-            isSelectionInBetSlip={isSelectionInBetSlip}
-          />
-        </Box>
-        <Box textAlign="center">
-          <Typography
-            variant="caption"
-            color="rgba(255,255,255,0.6)"
-            display="block"
-            mb={0.5}
-          >
-            X2
-          </Typography>
-          <BettingOption
-            game={game}
-            betType="Double Chance"
-            selection="X or 2"
-            odds={drawOrAway}
-            label="X2"
-            onAddToBetSlip={onAddToBetSlip}
-            isSelectionInBetSlip={isSelectionInBetSlip}
-          />
-        </Box>
-        <Box textAlign="center">
-          <Typography
-            variant="caption"
-            color="rgba(255,255,255,0.6)"
-            display="block"
-            mb={0.5}
-          >
-            12
-          </Typography>
-          <BettingOption
-            game={game}
-            betType="Double Chance"
-            selection="1 or 2"
-            odds={homeOrAway}
-            label="12"
-            onAddToBetSlip={onAddToBetSlip}
-            isSelectionInBetSlip={isSelectionInBetSlip}
-          />
-        </Box>
+      <Stack direction="row" spacing={0.75} justifyContent="center">
+        {(
+          [
+            ["1 or X", "1X", homeOrDraw],
+            ["X or 2", "X2", drawOrAway],
+            ["1 or 2", "12", homeOrAway],
+          ] as const
+        ).map(([sel, lbl, odds]) => {
+          const gameKey = game.externalId || game.team_index?.externalId || game.id;
+          const selected = isSelectionInBetSlip(gameKey, "Double Chance", sel);
+          return (
+            <Box
+              key={sel}
+              textAlign="center"
+              sx={{
+                px: 0.5,
+                py: 0.5,
+                borderRadius: 1,
+                bgcolor: selected ? "rgba(255, 193, 7, 0.25)" : "transparent",
+                border: selected ? "2px solid #FFC107" : "1px solid transparent",
+                boxShadow: selected ? "0 0 14px rgba(255, 193, 7, 0.6)" : "none",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <Typography
+                variant="caption"
+                color={selected ? "#FFE082" : "rgba(255,255,255,0.6)"}
+                fontWeight={selected ? 700 : 400}
+                display="block"
+                mb={0.5}
+              >
+                {lbl}
+              </Typography>
+              <BettingOption
+                game={game}
+                betType="Double Chance"
+                selection={sel}
+                odds={odds}
+                label={lbl}
+                onAddToBetSlip={onAddToBetSlip}
+                isSelectionInBetSlip={isSelectionInBetSlip}
+              />
+            </Box>
+          );
+        })}
       </Stack>
     </Box>
   );

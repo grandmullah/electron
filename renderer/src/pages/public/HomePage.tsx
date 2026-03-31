@@ -53,7 +53,7 @@ type CountryCode = string;
 
 interface HomePageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
   ) => void;
 }
 

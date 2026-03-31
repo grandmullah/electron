@@ -67,7 +67,7 @@ import {
 
 interface AgentPageProps {
   onNavigate: (
-    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history"
+    page: "home" | "dashboard" | "settings" | "games" | "agent" | "history" | "management"
   ) => void;
 }
 

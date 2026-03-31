@@ -801,6 +801,26 @@ export class BetSlipService {
             }
       }
 
+      // Cancel a bet
+      static async cancelBet(betId: string): Promise<{ success: boolean; message: string; data?: any }> {
+            try {
+                  const response = await axios.put(
+                        `${API_BASE_URL}/bets/${betId}/cancel`,
+                        {},
+                        {
+                              headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                              },
+                        }
+                  );
+
+                  return response.data;
+            } catch (error: any) {
+                  throw this.handleError(error);
+            }
+      }
+
       // Error handling
       private static handleError(error: any): Error {
             if (error.response) {

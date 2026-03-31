@@ -76,6 +76,8 @@ import {
 } from "@mui/icons-material";
 import type { Shop } from "../../types/shops";
 import type { ManagedAgent } from "../../store/agentSlice";
+import { ShopAgentPerformancePanel } from "../../components/shop";
+import type { ShopAgentWithPerformance } from "../../types/shopAgents";
 
 interface ManagementPageProps {
   onNavigate: (
@@ -174,6 +176,13 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const [staleRemediateDialogOpen, setStaleRemediateDialogOpen] = useState(false);
   const [staleRemediateTarget, setStaleRemediateTarget] = useState<StalePendingSelectionRow | null>(null);
   const [staleRemediationResult, setStaleRemediationResult] = useState<RemediatePendingSelectionResponse["data"] | null>(null);
+  const [staleRemediationMode, setStaleRemediationMode] = useState<"api" | "manual">("api");
+  const [staleManualScores, setStaleManualScores] = useState({
+    homeScore: "",
+    awayScore: "",
+    homeHalftimeScore: "",
+    awayHalftimeScore: "",
+  });
 
   // Admin: user search + actions
   const [usersPhoneQuery, setUsersPhoneQuery] = useState("");
@@ -188,6 +197,12 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
   const [resetUserPasswordTarget, setResetUserPasswordTarget] = useState<ShopUser | null>(null);
   const [resetUserPasswordValue, setResetUserPasswordValue] = useState("");
   const [resetUserPasswordLoading, setResetUserPasswordLoading] = useState(false);
+
+  // Admin: edit user profile (email)
+  const [userEditOpen, setUserEditOpen] = useState(false);
+  const [userEditTarget, setUserEditTarget] = useState<ShopUser | null>(null);
+  const [userEditEmail, setUserEditEmail] = useState("");
+  const [userEditLoading, setUserEditLoading] = useState(false);
 
   // Dialog states
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -355,6 +370,41 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
       setError(err.message || "Failed to reset password");
     } finally {
       setResetUserPasswordLoading(false);
+    }
+  };
+
+  const openUserEdit = (u: ShopUser) => {
+    setUserEditTarget(u);
+    setUserEditEmail(u.email || "");
+    setUserEditOpen(true);
+  };
+
+  const submitUserEdit = async () => {
+    if (!userEditTarget) return;
+    const email = userEditEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    setUserEditLoading(true);
+    setError(null);
+    try {
+      const res = await ShopManagementService.updateUserProfile({
+        userId: userEditTarget.id,
+        email: email || null,
+      });
+      if (!res?.success) throw new Error(res?.error || "Failed to update user");
+      setUsersResults((prev) =>
+        prev.map((u) => (u.id === userEditTarget.id ? { ...u, email: email || undefined } : u))
+      );
+      setSuccess("User profile updated");
+      setUserEditOpen(false);
+      setUserEditTarget(null);
+      setUserEditEmail("");
+    } catch (err: any) {
+      setError(err.message || "Failed to update user");
+    } finally {
+      setUserEditLoading(false);
     }
   };
 
@@ -559,6 +609,14 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
 
   const openStaleRemediateDialog = (row: StalePendingSelectionRow) => {
     setStaleRemediateTarget(row);
+    setStaleRemediationMode(row.actionable.canFetchFromApiFootball ? "api" : "manual");
+    setStaleManualScores({
+      homeScore: row.homeScore?.toString() || "",
+      awayScore: row.awayScore?.toString() || "",
+      homeHalftimeScore: row.homeHalftimeScore?.toString() || "",
+      awayHalftimeScore: row.awayHalftimeScore?.toString() || "",
+    });
+    setStaleRemediationResult(null);
     setStaleRemediateDialogOpen(true);
   };
 
@@ -566,6 +624,13 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     if (staleRemediatingSelectionId) return;
     setStaleRemediateDialogOpen(false);
     setStaleRemediateTarget(null);
+    setStaleRemediationResult(null);
+    setStaleManualScores({
+      homeScore: "",
+      awayScore: "",
+      homeHalftimeScore: "",
+      awayHalftimeScore: "",
+    });
   };
 
   const submitStaleRemediation = async () => {
@@ -573,9 +638,25 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     setStaleRemediatingSelectionId(staleRemediateTarget.selectionId);
     setError(null);
     try {
-      const response = await AgentService.remediatePendingBetSelection(staleRemediateTarget.selectionId, {
-        fetchFromApiFootball: true,
-      });
+      const payload: import("../../services/agentService").RemediatePendingSelectionPayload =
+        staleRemediationMode === "api"
+          ? { fetchFromApiFootball: true }
+          : {
+              manual: {
+                scores: {
+                  home: parseInt(staleManualScores.homeScore, 10) || 0,
+                  away: parseInt(staleManualScores.awayScore, 10) || 0,
+                  status: "finished",
+                  settlementStatus: "settled",
+                },
+                halftimeScores: {
+                  home: parseInt(staleManualScores.homeHalftimeScore, 10) || 0,
+                  away: parseInt(staleManualScores.awayHalftimeScore, 10) || 0,
+                  settled: true,
+                },
+              },
+            };
+      const response = await AgentService.remediatePendingBetSelection(staleRemediateTarget.selectionId, payload);
       setStaleRemediationResult(response.data || null);
       setSuccess(response.message || "Remediation completed");
       setStaleRemediateDialogOpen(false);
@@ -1800,13 +1881,110 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
           <DialogTitle>Remediate Pending Selection</DialogTitle>
           <DialogContent>
             {staleRemediateTarget && (
-              <Stack spacing={1.5}>
-                <Typography variant="body2">
-                  Selection <strong>{staleRemediateTarget.selectionId}</strong> will be remediated using API-Football data.
-                </Typography>
+              <Stack spacing={2}>
+                {/* Selection Info */}
+                <Box>
+                  <Typography variant="body2" fontWeight="bold">
+                    {staleRemediateTarget.selection}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Selection ID: {staleRemediateTarget.selectionId}
+                  </Typography>
+                </Box>
+
+                {/* Remediation Mode Toggle */}
+                <FormControl component="fieldset">
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Remediation Method
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant={staleRemediationMode === "api" ? "contained" : "outlined"}
+                      onClick={() => setStaleRemediationMode("api")}
+                      disabled={!staleRemediateTarget.actionable.canFetchFromApiFootball || Boolean(staleRemediatingSelectionId)}
+                      sx={{ textTransform: "none" }}
+                    >
+                      API-Football
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={staleRemediationMode === "manual" ? "contained" : "outlined"}
+                      onClick={() => setStaleRemediationMode("manual")}
+                      disabled={Boolean(staleRemediatingSelectionId)}
+                      sx={{ textTransform: "none" }}
+                    >
+                      Manual Entry
+                    </Button>
+                  </Stack>
+                  {!staleRemediateTarget.actionable.canFetchFromApiFootball && (
+                    <Typography variant="caption" color="warning.main" sx={{ mt: 0.5 }}>
+                      API-Football unavailable (no valid external ID)
+                    </Typography>
+                  )}
+                </FormControl>
+
+                {/* Manual Score Entry Form */}
+                {staleRemediationMode === "manual" && (
+                  <Box sx={{ p: 2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 1, background: "rgba(255,255,255,0.02)" }}>
+                    <Typography variant="body2" fontWeight="bold" sx={{ mb: 2 }}>
+                      Enter Match Scores
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <TextField
+                          label="Home Score (FT)"
+                          type="number"
+                          size="small"
+                          fullWidth
+                          value={staleManualScores.homeScore}
+                          onChange={(e) => setStaleManualScores((p) => ({ ...p, homeScore: e.target.value }))}
+                          inputProps={{ min: 0 }}
+                        />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <TextField
+                          label="Away Score (FT)"
+                          type="number"
+                          size="small"
+                          fullWidth
+                          value={staleManualScores.awayScore}
+                          onChange={(e) => setStaleManualScores((p) => ({ ...p, awayScore: e.target.value }))}
+                          inputProps={{ min: 0 }}
+                        />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <TextField
+                          label="Home Score (HT)"
+                          type="number"
+                          size="small"
+                          fullWidth
+                          value={staleManualScores.homeHalftimeScore}
+                          onChange={(e) => setStaleManualScores((p) => ({ ...p, homeHalftimeScore: e.target.value }))}
+                          inputProps={{ min: 0 }}
+                          helperText="For H2 markets"
+                        />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <TextField
+                          label="Away Score (HT)"
+                          type="number"
+                          size="small"
+                          fullWidth
+                          value={staleManualScores.awayHalftimeScore}
+                          onChange={(e) => setStaleManualScores((p) => ({ ...p, awayHalftimeScore: e.target.value }))}
+                          inputProps={{ min: 0 }}
+                          helperText="For H2 markets"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
                 <Typography variant="body2" color="text.secondary">
                   This action can settle impacted selections and bets.
                 </Typography>
+
                 {staleRemediationResult && (
                   <Box
                     sx={{
@@ -1839,7 +2017,12 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
             <Button
               variant="contained"
               onClick={submitStaleRemediation}
-              disabled={!staleRemediateTarget || Boolean(staleRemediatingSelectionId)}
+              disabled={
+                !staleRemediateTarget ||
+                Boolean(staleRemediatingSelectionId) ||
+                (staleRemediationMode === "manual" &&
+                  (staleManualScores.homeScore === "" || staleManualScores.awayScore === ""))
+              }
             >
               {staleRemediatingSelectionId ? "Remediating..." : "Remediate"}
             </Button>
@@ -2168,7 +2351,31 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
 
                               <Box>
                                 <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.9)", mb: 1 }}>
-                                  Shop Agents
+                                  Shop Agents Performance
+                                </Typography>
+                                <ShopAgentPerformancePanel
+                                  shop={shop}
+                                  onSendMoney={(agent) => {
+                                    // Convert ShopAgentWithPerformance to ShopUser format for mint dialog
+                                    const agentAsShopUser = {
+                                      id: agent.id,
+                                      phone_number: agent.phone_number,
+                                      role: agent.role,
+                                      balance: agent.balance,
+                                      is_active: agent.is_active,
+                                      created_at: agent.created_at,
+                                    };
+                                    openShopMintDialog(shop.id, agentAsShopUser);
+                                  }}
+                                  currency={shop.default_currency}
+                                />
+                              </Box>
+
+                              <Divider sx={{ my: 2 }} />
+
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.9)", mb: 1 }}>
+                                  Quick Actions
                                 </Typography>
                                 {loadingAgents ? (
                                   <Box display="flex" justifyContent="center" p={2}>
@@ -2256,7 +2463,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                   Users
                 </Typography>
                 <Typography variant="body2" color="rgba(255,255,255,0.6)">
-                  Admin-only: search users by phone, promote to agent, and mint balance.
+                  Admin-only: search users by phone, edit profile (email required for password reset), promote to agent, and mint balance.
                 </Typography>
               </Box>
             </Box>
@@ -2289,6 +2496,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                   <TableHead>
                     <TableRow>
                       <TableCell>Phone</TableCell>
+                      <TableCell>Email</TableCell>
                       <TableCell>Role</TableCell>
                       <TableCell>Shop</TableCell>
                       <TableCell>Balance</TableCell>
@@ -2304,6 +2512,9 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                       return (
                         <TableRow key={u.id} hover>
                           <TableCell sx={{ color: "white" }}>{u.phone_number}</TableCell>
+                          <TableCell sx={{ color: u.email ? "white" : "rgba(255,255,255,0.4)", fontStyle: u.email ? "normal" : "italic" }}>
+                            {u.email || "Not set"}
+                          </TableCell>
                           <TableCell>
                             <Chip label={String(u.role).toUpperCase()} size="small" />
                           </TableCell>
@@ -2339,6 +2550,14 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => openUserEdit(u)}
+                                sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.2)", color: "white" }}
+                              >
+                                Edit Profile
+                              </Button>
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -2633,6 +2852,44 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
               disabled={resetUserPasswordLoading || !resetUserPasswordTarget}
             >
               {resetUserPasswordLoading ? "Resetting..." : "Reset"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Admin Edit User Profile */}
+        <Dialog
+          open={userEditOpen}
+          onClose={() => !userEditLoading && setUserEditOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Edit User Profile</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              User: <b>{userEditTarget?.phone_number}</b>
+            </Typography>
+            <Box mt={2}>
+              <TextField
+                label="Email"
+                type="email"
+                value={userEditEmail}
+                onChange={(e) => setUserEditEmail(e.target.value)}
+                fullWidth
+                placeholder="user@example.com"
+                helperText="Email is required for password reset functionality"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUserEditOpen(false)} disabled={userEditLoading}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={submitUserEdit}
+              disabled={userEditLoading || !userEditTarget}
+            >
+              {userEditLoading ? "Saving..." : "Save"}
             </Button>
           </DialogActions>
         </Dialog>

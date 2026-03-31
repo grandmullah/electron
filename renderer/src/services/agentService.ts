@@ -161,7 +161,19 @@ export interface ListStalePendingSelectionsResponse {
 
 export interface RemediatePendingSelectionPayload {
       fetchFromApiFootball?: boolean;
-      manual?: Record<string, unknown>;
+      manual?: {
+            scores?: {
+                  home: number;
+                  away: number;
+                  status?: string;
+                  settlementStatus?: string;
+            };
+            halftimeScores?: {
+                  home: number;
+                  away: number;
+                  settled?: boolean;
+            };
+      };
 }
 
 export interface RemediatePendingSelectionResponse {
@@ -1069,6 +1081,135 @@ class AgentService {
                         error.response?.data?.message ||
                         error.message ||
                         'Failed to handle postponed game'
+                  );
+            }
+      }
+
+      // ==========================================
+      // WITHDRAWAL PROCESSING
+      // ==========================================
+
+      /**
+       * Lookup a withdrawal by code
+       * GET /api/agent/withdrawal/lookup?code=ABC12
+       */
+      static async lookupWithdrawal(code: string): Promise<{
+            success: boolean;
+            found: boolean;
+            data?: {
+                  withdrawalId: string;
+                  userId: string;
+                  amount: number;
+                  userPhone: string;
+                  userName: string;
+                  createdAt: string;
+            };
+      }> {
+            try {
+                  const response = await axios.get(
+                        `${API_BASE_URL}/agent/withdrawal/lookup?code=${encodeURIComponent(code)}`,
+                        { headers: this.getAuthHeaders() }
+                  );
+                  return response.data;
+            } catch (error: any) {
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to lookup withdrawal'
+                  );
+            }
+      }
+
+      /**
+       * Complete a withdrawal by code
+       * POST /api/agent/withdrawal/complete
+       */
+      static async completeWithdrawal(withdrawalCode: string): Promise<{
+            success: boolean;
+            message: string;
+            data?: {
+                  withdrawalId: string;
+                  amount: number;
+                  userId: string;
+            };
+      }> {
+            try {
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/withdrawal/complete`,
+                        { withdrawalCode },
+                        { headers: this.getAuthHeaders() }
+                  );
+                  return response.data;
+            } catch (error: any) {
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to complete withdrawal'
+                  );
+            }
+      }
+
+      // ==========================================
+      // DEPOSIT PROCESSING
+      // ==========================================
+
+      /**
+       * Lookup a deposit by code
+       * GET /api/agent/deposit/lookup?code=ABC12
+       */
+      static async lookupDeposit(code: string): Promise<{
+            success: boolean;
+            found: boolean;
+            data?: {
+                  depositId: string;
+                  userId: string;
+                  amount: number;
+                  userPhone: string;
+                  userName: string;
+                  createdAt: string;
+            };
+      }> {
+            try {
+                  const response = await axios.get(
+                        `${API_BASE_URL}/agent/deposit/lookup?code=${encodeURIComponent(code)}`,
+                        { headers: this.getAuthHeaders() }
+                  );
+                  return response.data;
+            } catch (error: any) {
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to lookup deposit'
+                  );
+            }
+      }
+
+      /**
+       * Complete a deposit by code
+       * POST /api/agent/deposit/complete
+       */
+      static async completeDeposit(depositCode: string): Promise<{
+            success: boolean;
+            message: string;
+            data?: {
+                  depositId: string;
+                  amount: number;
+                  userId: string;
+                  newBalance: number;
+            };
+      }> {
+            try {
+                  const response = await axios.post(
+                        `${API_BASE_URL}/agent/deposit/complete`,
+                        { depositCode },
+                        { headers: this.getAuthHeaders() }
+                  );
+                  return response.data;
+            } catch (error: any) {
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to complete deposit'
                   );
             }
       }
