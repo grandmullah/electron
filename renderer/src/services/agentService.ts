@@ -50,16 +50,6 @@ interface CreateAgentRequest {
       country_code: string;
 }
 
-interface PostponedGameResult {
-      success: boolean;
-      message: string;
-      affectedBets: number;
-      affectedBetslips: number;
-      updatedBets: string[];
-      updatedBetslips: string[];
-      errors?: string[];
-}
-
 interface ShopAnalytics {
       shop_id: string;
       totalUsers: number;
@@ -1041,47 +1031,6 @@ class AgentService {
                   return response.data as RemediatePendingSelectionResponse;
             } catch (error: any) {
                   throw new Error(error.response?.data?.message || error.message || "Failed to remediate stale pending selection");
-            }
-      }
-
-      /**
-       * Handle postponed game - remove selections from bets and betslips
-       * Only super_agents and admins can perform this action
-       */
-      static async handlePostponedGame(gameId: string): Promise<PostponedGameResult> {
-            try {
-                  console.log(`Processing postponed game: ${gameId}`);
-                  const response = await axios.post(
-                        `${API_BASE_URL}/agent/postponed-game/${gameId}`,
-                        {},
-                        {
-                              headers: this.getAuthHeaders(),
-                        }
-                  );
-
-                  console.log('Postponed game handling response:', response.data);
-
-                  if (response.data.success) {
-                        return {
-                              success: true,
-                              message: response.data.message,
-                              affectedBets: response.data.data?.affectedBets || 0,
-                              affectedBetslips: response.data.data?.affectedBetslips || 0,
-                              updatedBets: response.data.data?.updatedBets || [],
-                              updatedBetslips: response.data.data?.updatedBetslips || [],
-                              errors: response.data.errors || []
-                        };
-                  }
-
-                  throw new Error(response.data.message || 'Failed to handle postponed game');
-            } catch (error: any) {
-                  console.error('Failed to handle postponed game:', error);
-                  throw new Error(
-                        error.response?.data?.error ||
-                        error.response?.data?.message ||
-                        error.message ||
-                        'Failed to handle postponed game'
-                  );
             }
       }
 

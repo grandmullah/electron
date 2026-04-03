@@ -1078,7 +1078,7 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
     setError(null);
 
     try {
-      const result = await AgentService.handlePostponedGame(selectedPostponedGame.external_id);
+      const result = await GameManagementService.handlePostponedGame(selectedPostponedGame.external_id);
       setPostponedResult(result);
       setShowPostponedResultDialog(true);
       
@@ -3346,42 +3346,181 @@ export const ManagementPage: React.FC<ManagementPageProps> = ({ onNavigate }) =>
                 </Alert>
 
                 {postponedResult.success && (
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Card
-                        sx={{
-                          background: "rgba(76, 175, 80, 0.1)",
-                          border: "1px solid rgba(76, 175, 80, 0.3)",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                            Affected Bets
-                          </Typography>
-                          <Typography variant="h4" color="#4caf50" fontWeight="bold">
-                            {postponedResult.affectedBets}
-                          </Typography>
-                        </CardContent>
-                      </Card>
+                  <>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Card
+                          sx={{
+                            background: "rgba(76, 175, 80, 0.1)",
+                            border: "1px solid rgba(76, 175, 80, 0.3)",
+                          }}
+                        >
+                          <CardContent>
+                            <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                              Affected Bets
+                            </Typography>
+                            <Typography variant="h4" color="#4caf50" fontWeight="bold">
+                              {postponedResult.affectedBets}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Card
+                          sx={{
+                            background: "rgba(33, 150, 243, 0.1)",
+                            border: "1px solid rgba(33, 150, 243, 0.3)",
+                          }}
+                        >
+                          <CardContent>
+                            <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                              Affected Betslips
+                            </Typography>
+                            <Typography variant="h4" color="#2196f3" fontWeight="bold">
+                              {postponedResult.affectedBetslips}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Card
-                        sx={{
-                          background: "rgba(33, 150, 243, 0.1)",
-                          border: "1px solid rgba(33, 150, 243, 0.3)",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                            Affected Betslips
-                          </Typography>
-                          <Typography variant="h4" color="#2196f3" fontWeight="bold">
-                            {postponedResult.affectedBetslips}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  </Grid>
+
+                    {/* Updated Bets Details */}
+                    {postponedResult.updatedBets && postponedResult.updatedBets.length > 0 && (
+                      <Accordion sx={{ mt: 2, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <CheckIcon color="success" fontSize="small" />
+                            <Typography variant="body2" color="white">
+                              Updated Bets ({postponedResult.updatedBets.length})
+                            </Typography>
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <TableContainer>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Bet ID</TableCell>
+                                  <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Action</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {postponedResult.updatedBets.map((betId: string, index: number) => (
+                                  <TableRow key={index}>
+                                    <TableCell sx={{ color: "white", fontFamily: "monospace", fontSize: "0.8rem" }}>
+                                      {betId}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip label="Selections removed" size="small" color="success" variant="outlined" />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+
+                    {/* Updated Betslips Details with Remaining Selections */}
+                    {postponedResult.betslipsData && postponedResult.betslipsData.length > 0 && (
+                      <Accordion sx={{ mt: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <CheckIcon color="info" fontSize="small" />
+                            <Typography variant="body2" color="white">
+                              Updated Betslips ({postponedResult.betslipsData.length})
+                            </Typography>
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Stack spacing={2}>
+                            {postponedResult.betslipsData.map((betslip: any, index: number) => (
+                              <Card key={index} sx={{ background: "rgba(33, 150, 243, 0.08)", border: "1px solid rgba(33, 150, 243, 0.2)" }}>
+                                <CardContent>
+                                  {/* Betslip Header */}
+                                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)", fontFamily: "monospace" }}>
+                                      ID: {betslip.betslipId.slice(0, 16)}...
+                                    </Typography>
+                                    <Box display="flex" gap={1}>
+                                      <Chip 
+                                        label={`Stake: ${betslip.stake.toFixed(2)}`} 
+                                        size="small" 
+                                        color="primary" 
+                                        variant="outlined" 
+                                      />
+                                      <Chip 
+                                        label={`Odds: ${betslip.newOdds.toFixed(2)}`} 
+                                        size="small" 
+                                        color="success" 
+                                        variant="outlined" 
+                                      />
+                                    </Box>
+                                  </Box>
+
+                                  {/* Remaining Selections */}
+                                  {betslip.remainingSelections.length > 0 ? (
+                                    <>
+                                      <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", mb: 1, fontWeight: "bold" }}>
+                                        Remaining Selections ({betslip.remainingSelections.length}):
+                                      </Typography>
+                                      <TableContainer>
+                                        <Table size="small">
+                                          <TableHead>
+                                            <TableRow>
+                                              <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Match</TableCell>
+                                              <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Market</TableCell>
+                                              <TableCell sx={{ color: "rgba(255,255,255,0.7)" }}>Selection</TableCell>
+                                              <TableCell sx={{ color: "rgba(255,255,255,0.7)" }} align="right">Odds</TableCell>
+                                            </TableRow>
+                                          </TableHead>
+                                          <TableBody>
+                                            {betslip.remainingSelections.map((selection: any, selIndex: number) => (
+                                              <TableRow key={selIndex}>
+                                                <TableCell sx={{ color: "white" }}>
+                                                  <Typography variant="caption" display="block" sx={{ fontWeight: "bold" }}>
+                                                    {selection.homeTeam}
+                                                  </Typography>
+                                                  <Typography variant="caption" display="block" color="rgba(255,255,255,0.6)">
+                                                    vs {selection.awayTeam}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell sx={{ color: "rgba(255,255,255,0.8)" }}>
+                                                  <Chip label={selection.marketType} size="small" variant="outlined" sx={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.3)" }} />
+                                                </TableCell>
+                                                <TableCell sx={{ color: "#4caf50", fontWeight: "medium" }}>
+                                                  {selection.outcome}
+                                                </TableCell>
+                                                <TableCell sx={{ color: "#ffc107", fontWeight: "bold" }} align="right">
+                                                  {selection.odds.toFixed(2)}
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </TableContainer>
+                                      <Box mt={1} display="flex" justifyContent="flex-end">
+                                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
+                                          New Potential Winnings: <span style={{ color: "#4caf50", fontWeight: "bold" }}>{betslip.newPotentialWinnings.toFixed(2)}</span>
+                                        </Typography>
+                                      </Box>
+                                    </>
+                                  ) : (
+                                    <Alert severity="warning" sx={{ background: "rgba(237, 108, 2, 0.1)", border: "1px solid rgba(237, 108, 2, 0.3)" }}>
+                                      <Typography variant="body2">
+                                        No remaining selections - Betslip was cancelled/refunded
+                                      </Typography>
+                                    </Alert>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </Stack>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+                  </>
                 )}
 
                 {postponedResult.errors && postponedResult.errors.length > 0 && (

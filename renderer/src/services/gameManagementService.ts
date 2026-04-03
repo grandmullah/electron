@@ -195,6 +195,66 @@ class GameManagementService {
             }
       }
 
+      static async handlePostponedGame(gameId: string): Promise<{
+            success: boolean;
+            message: string;
+            affectedBets: number;
+            affectedBetslips: number;
+            updatedBets: string[];
+            updatedBetslips: string[];
+            errors?: string[];
+            betslipsData?: Array<{
+                  betslipId: string;
+                  stake: number;
+                  remainingSelections: Array<{
+                        gameId: string;
+                        homeTeam: string;
+                        awayTeam: string;
+                        marketType: string;
+                        outcome: string;
+                        odds: number;
+                  }>;
+                  newOdds: number;
+                  newPotentialWinnings: number;
+            }>;
+      }> {
+            try {
+                  console.log(`Processing postponed game: ${gameId}`);
+                  const response = await axios.post(
+                        `${API_BASE_URL}/games/postponed/${gameId}/process`,
+                        {},
+                        {
+                              headers: this.getAuthHeaders(),
+                        }
+                  );
+
+                  console.log('Postponed game handling response:', response.data);
+
+                  if (response.data.success) {
+                        return {
+                              success: true,
+                              message: response.data.message,
+                              affectedBets: response.data.data?.affectedBets || 0,
+                              affectedBetslips: response.data.data?.affectedBetslips || 0,
+                              updatedBets: response.data.data?.updatedBets || [],
+                              updatedBetslips: response.data.data?.updatedBetslips || [],
+                              errors: response.data.errors || [],
+                              betslipsData: response.data.data?.betslipsData
+                        };
+                  }
+
+                  throw new Error(response.data.message || 'Failed to handle postponed game');
+            } catch (error: any) {
+                  console.error('Failed to handle postponed game:', error);
+                  throw new Error(
+                        error.response?.data?.error ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        'Failed to handle postponed game'
+                  );
+            }
+      }
+
       // Team index admin operations
       static async resetTeamIndexes(): Promise<any> {
             try {
