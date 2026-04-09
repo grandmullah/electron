@@ -70,7 +70,8 @@ interface GamesPageProps {
       | "games"
       | "agent"
       | "history"
-      | "management",
+      | "management"
+      | "admin",
   ) => void;
 }
 
@@ -1182,251 +1183,575 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
     }
 
     setIsExporting(true);
+    let XLSX: any;
+    
     try {
       // Check if electronAPI is available
       if (!window.electronAPI?.showSaveDialog) {
-        // Fallback to browser download if Electron API is not available
-        alert(
-          "File dialog not available in this environment. Using default download location.",
-        );
+        console.log("Electron API not available, using browser download fallback");
       }
 
-      // Dynamically import xlsx library
-      const XLSX = await import("xlsx");
+      // Dynamically import xlsx library with error handling
+      try {
+        XLSX = await import("xlsx");
+        
+        // Verify the library loaded correctly
+        if (!XLSX || !XLSX.utils || !XLSX.utils.book_new) {
+          throw new Error("XLSX library failed to load properly");
+        }
+      } catch (importError: any) {
+        console.error("Failed to load xlsx library:", importError);
+        alert("Failed to load Excel export library. Please check your internet connection and try again.");
+        setIsExporting(false);
+        return;
+      }
 
-      // Helper function to filter totals (same logic as GameCard)
-      // Filter out .25 and .75 points if corresponding .5 exists
-      // Also filter out .0 if corresponding .5 exists
-      const filterTotals = (
+      // Keep all totals lines for export (no truncation).
+      const getAllTotals = (
         totals: Array<{
           point: number;
           over: number | string | null;
           under: number | string | null;
         }>,
-      ) => {
-        if (!totals || totals.length === 0) return [];
+      ) => totals || [];
 
-        const allPoints = totals.map((t) => t.point);
+      const toCellValue = (value: number | string | null | undefined) =>
+        value == null ? "" : value;
 
-        // Helper to check if a value exists in array (with floating point tolerance)
-        const hasValue = (value: number) => {
-          return allPoints.some((p) => Math.abs(p - value) < 0.001);
+      const getFriendlyMarketName = (marketKey: string): string => {
+        const key = marketKey.toLowerCase().trim();
+        const map: Record<string, string> = {
+          h2h: "3 WAY",
+          h2h_h1: "3 WAY - 1ST HALF",
+          h2h_h2: "3 WAY - 2ND HALF",
+          totals: "TOTAL GOALS",
+          totals_h1: "1ST HALF O/U",
+          totals_h2: "2ND HALF O/U",
+          result_totals: "RESULT + TOTAL",
+          double_chance: "DOUBLE CHANCE",
+          btts: "BOTH TEAMS TO SCORE",
+          spreads: "ASIAN HANDICAP",
+          team_totals: "TEAM TOTALS",
+          team_totals_h1: "1ST HALF TEAM TOTALS",
+          team_totals_h2: "2ND HALF TEAM TOTALS",
+          correct_score: "CORRECT SCORE",
+          correct_score_h1: "1H CORRECT SCORE",
+          correct_score_h2: "2H CORRECT SCORE",
         };
-
-        return totals.filter((total) => {
-          const point = total.point;
-          const decimal = point % 1; // Get decimal part
-          const isWholeNumber =
-            Math.abs(decimal) < 0.001 || Math.abs(decimal - 1) < 0.001;
-
-          // If it's .0 (whole number), check if corresponding .5 exists
-          if (isWholeNumber) {
-            const correspondingHalf = Math.floor(point) + 0.5;
-            return !hasValue(correspondingHalf);
-          }
-
-          // If it's .25 or .75, check if corresponding .5 exists
-          if (Math.abs(decimal - 0.25) < 0.001) {
-            const correspondingHalf = Math.floor(point) + 0.5;
-            return !hasValue(correspondingHalf);
-          }
-          if (Math.abs(decimal - 0.75) < 0.001) {
-            const correspondingHalf = Math.floor(point) + 0.5;
-            return !hasValue(correspondingHalf);
-          }
-
-          // Keep all other points (.5)
-          return true;
-        });
+        return map[key] || key.replace(/_/g, " ").toUpperCase();
       };
 
-      // Collect all unique total points across all games (after filtering) to create consistent columns
-      const allTotalPoints = new Set<number>();
-      const allHalfTimeTotalPoints = new Set<number>();
-      const allSecondHalfTotalPoints = new Set<number>();
-      games.forEach((game) => {
-        if (game.totals && game.totals.length > 0) {
-          const filteredTotals = filterTotals(game.totals);
-          filteredTotals.forEach((total) => {
-            allTotalPoints.add(total.point);
-          });
-        }
-        // Collect halftime totals
-        if (game.totals_h1 && game.totals_h1.length > 0) {
-          const filteredH1Totals = filterTotals(game.totals_h1);
-          filteredH1Totals.forEach((total) => {
-            allHalfTimeTotalPoints.add(total.point);
-          });
-        }
-        // Collect second half totals
-        if (game.totals_h2 && game.totals_h2.length > 0) {
-          const filteredH2Totals = filterTotals(game.totals_h2);
-          filteredH2Totals.forEach((total) => {
-            allSecondHalfTotalPoints.add(total.point);
-          });
-        }
-      });
+      const shouldKeepHalfPoint = (point: number | undefined | null): boolean => {
+        if (point == null || Number.isNaN(point)) return false;
+        const decimal = Math.abs(point % 1);
+        return Math.abs(decimal - 0.5) < 0.001;
+      };
 
-      // Sort total points for consistent column ordering
-      const sortedTotalPoints = Array.from(allTotalPoints).sort(
-        (a, b) => a - b,
-      );
-      const sortedHalfTimeTotalPoints = Array.from(allHalfTimeTotalPoints).sort(
-        (a, b) => a - b,
-      );
-      const sortedSecondHalfTotalPoints = Array.from(
-        allSecondHalfTotalPoints,
-      ).sort((a, b) => a - b);
+      const getMarketFamily = (marketKey: string): string => {
+        const key = marketKey.toLowerCase().trim();
+        if (key === "h2h" || key === "h2h_h1" || key === "h2h_h2") return "Result";
+        if (key === "result_totals" || key.startsWith("totals") || key.includes("goal")) return "Goals";
+        if (key.startsWith("totals_corners") || key.includes("corner")) return "Corners";
+        if (key.startsWith("totals_cards") || key.startsWith("totals_yellow_cards") || key.includes("card")) return "Cards";
+        if (
+          key.startsWith("totals_fouls") ||
+          key.startsWith("totals_tackles") ||
+          key.startsWith("totals_shots") ||
+          key.startsWith("totals_shotongoal") ||
+          key.startsWith("totals_offsides") ||
+          key.includes("foul") ||
+          key.includes("shot") ||
+          key.includes("offside") ||
+          key.includes("tackle")
+        ) return "Stats";
+        if (key.startsWith("correct_score") || key.includes("score")) return "Score";
+        if (key.startsWith("team_totals") || key.includes("total_home") || key.includes("total_away")) return "Team Totals";
+        if (key === "spreads" || key.includes("handicap")) return "Spreads";
+        if (key === "double_chance") return "Double Chance";
+        if (key === "btts" || key.includes("both_teams")) return "BTTS";
+        return "Other Markets";
+      };
 
-      // Prepare data for export - flatten the games data
-      const exportData = games.map((game) => {
-        // Flatten nested structures for Excel
-        const row: any = {
-          "Game ID": game.id,
-          "External ID": game.externalId || "",
-          "Home Team": game.homeTeam,
-          "Away Team": game.awayTeam,
-          League: game.league,
-          Sport: game.sportKey,
-          Status: game.status,
-          "Match Time (CAT)": convertToCAT(game.matchTime),
-          "Home Odds": game.homeOdds || "",
-          "Draw Odds": game.drawOdds || "",
-          "Away Odds": game.awayOdds || "",
+      const buildMarketOutcomeColumn = (
+        marketKey: string,
+        outcome: {
+          name: string;
+          price: number;
+          point?: number;
+          description?: string;
+        },
+      ): string => {
+        const family = getMarketFamily(marketKey);
+        const marketName = getFriendlyMarketName(marketKey);
+        const parts = [family, marketName];
+        if (outcome.description) parts.push(outcome.description);
+        parts.push(outcome.name);
+        if (outcome.point != null) parts.push(String(outcome.point));
+        return parts.join(" - ");
+      };
+
+      const shouldIncludeMarketAsExtraColumn = (marketKey: string): boolean => {
+        const key = marketKey.toLowerCase().trim();
+        // These are already exported in canonical dedicated columns.
+        const coveredByCanonicalColumns = new Set([
+          "h2h",
+          "h2h_h1",
+          "h2h_h2",
+          "totals",
+          "totals_h1",
+          "totals_h2",
+          "double_chance",
+          "btts",
+        ]);
+        return !coveredByCanonicalColumns.has(key);
+      };
+
+      const CARD_MARKET_TITLES: Record<string, string> = {
+        h2h: "3 WAY",
+        h2h_h1: "3 WAY - 1ST HALF",
+        h2h_h2: "3 WAY - 2ND HALF",
+        double_chance: "DOUBLE CHANCE",
+        btts: "BOTH TEAMS TO SCORE",
+        totals: "TOTAL GOALS",
+        totals_h1: "1ST HALF O/U",
+        totals_h2: "2ND HALF O/U",
+        team_totals: "TEAM TOTALS",
+        team_totals_h1: "1ST HALF TEAM TOTALS",
+        team_totals_h2: "2ND HALF TEAM TOTALS",
+        spreads: "ASIAN HANDICAP",
+        result_totals: "RESULT + TOTAL",
+        correct_score: "CORRECT SCORE",
+        correct_score_h1: "1H CORRECT SCORE",
+        correct_score_h2: "2H CORRECT SCORE",
+      };
+
+      const CARD_MARKET_ORDER = [
+        "h2h",
+        "double_chance",
+        "totals",
+        "btts",
+        "h2h_h1",
+        "h2h_h2",
+        "totals_h1",
+        "totals_h2",
+        "team_totals",
+        "team_totals_h1",
+        "team_totals_h2",
+        "spreads",
+        "result_totals",
+        "correct_score",
+        "correct_score_h1",
+        "correct_score_h2",
+      ];
+
+      const canonicalOutcomeKey = (
+        game: Game,
+        marketKey: string,
+        outcome: { name: string; point?: number; description?: string },
+      ): string => {
+        const n = (outcome.name || "").trim();
+        const nn = n.toLowerCase();
+        const home = game.homeTeam?.toLowerCase().trim() || "";
+        const away = game.awayTeam?.toLowerCase().trim() || "";
+        const desc = (outcome.description || "").trim().toLowerCase();
+
+        const overUnderWithPoint = () => {
+          const direction = nn.includes("over")
+            ? "Over"
+            : nn.includes("under")
+              ? "Under"
+              : n;
+          return outcome.point != null ? `${direction} ${outcome.point}` : direction;
         };
 
-        // Add double chance odds
-        if (game.doubleChance) {
-          row["DC 1X"] = game.doubleChance.homeOrDraw || "";
-          row["DC X2"] = game.doubleChance.drawOrAway || "";
-          row["DC 12"] = game.doubleChance.homeOrAway || "";
+        if (marketKey === "h2h" || marketKey === "h2h_h1" || marketKey === "h2h_h2") {
+          if (nn === "draw") return "X";
+          if (home && nn.includes(home)) return "1";
+          if (away && nn.includes(away)) return "2";
+          return n;
+        }
+        if (marketKey === "double_chance") {
+          if (nn.includes("1x") || (nn.includes("draw") && home && nn.includes(home)) || nn.includes("home or draw")) return "1X";
+          if (nn.includes("x2") || (nn.includes("draw") && away && nn.includes(away)) || nn.includes("draw or away")) return "X2";
+          if (nn.includes("12") || nn.includes("home or away")) return "12";
+          return n;
+        }
+        if (marketKey === "btts") {
+          if (nn === "yes") return "Yes";
+          if (nn === "no") return "No";
+          return n;
+        }
+        if (marketKey === "result_totals") {
+          // Normalize to 1/X/2 + O/U point
+          const [teamRaw = "", restRaw = ""] = n.split("/");
+          const team = teamRaw.trim().toLowerCase();
+          let side = teamRaw.trim();
+          if (team === "draw") side = "X";
+          else if (home && team.includes(home)) side = "1";
+          else if (away && team.includes(away)) side = "2";
+          const pointInRest = restRaw.match(/(\d+(?:\.\d+)?)/)?.[1];
+          const dir =
+            restRaw.toLowerCase().includes("over")
+              ? "Over"
+              : restRaw.toLowerCase().includes("under")
+                ? "Under"
+                : restRaw.trim();
+          const p = outcome.point ?? (pointInRest ? Number(pointInRest) : undefined);
+          return p != null ? `${side}/${dir} ${p}` : `${side}/${dir}`;
+        }
+        if (
+          marketKey.startsWith("totals") ||
+          marketKey.startsWith("team_totals")
+        ) {
+          if (marketKey.startsWith("team_totals")) {
+            let teamSide = "";
+            if (desc === "home" || (home && desc.includes(home)) || (home && nn.includes(home))) teamSide = "Home ";
+            if (desc === "away" || (away && desc.includes(away)) || (away && nn.includes(away))) teamSide = "Away ";
+            return `${teamSide}${overUnderWithPoint()}`.trim();
+          }
+          return overUnderWithPoint();
+        }
+        if (marketKey === "spreads") {
+          if (home && nn.includes(home)) return outcome.point != null ? `1 ${outcome.point}` : "1";
+          if (away && nn.includes(away)) return outcome.point != null ? `2 ${outcome.point}` : "2";
+          return outcome.point != null ? `${n} ${outcome.point}` : n;
         }
 
-        // Add BTTS odds
-        if (game.bothTeamsToScore) {
-          row["BTTS Yes"] = game.bothTeamsToScore.yes || "";
-          row["BTTS No"] = game.bothTeamsToScore.no || "";
-        }
+        if (outcome.point != null) return `${n} ${outcome.point}`;
+        return n;
+      };
 
-        // Add halftime H2H odds
-        if (game.h2h_h1) {
-          row["H1 Home"] = game.h2h_h1.home || "";
-          row["H1 Draw"] = game.h2h_h1.draw || "";
-          row["H1 Away"] = game.h2h_h1.away || "";
-        }
+      // Build canonical market column set ordered like game card markets.
+      const marketOutcomeSetByKey = new Map<string, Set<string>>();
+      games.forEach((game) => {
+        const addOutcome = (marketKey: string, outcomeKey: string) => {
+          const set = marketOutcomeSetByKey.get(marketKey) || new Set<string>();
+          set.add(outcomeKey);
+          marketOutcomeSetByKey.set(marketKey, set);
+        };
 
-        // Add second half H2H odds
-        if (game.h2h_h2) {
-          row["H2 Home"] = game.h2h_h2.home || "";
-          row["H2 Draw"] = game.h2h_h2.draw || "";
-          row["H2 Away"] = game.h2h_h2.away || "";
-        }
-
-        // Add current score if available
-        if (game.currentScore) {
-          row["Home Score"] = game.currentScore.home || 0;
-          row["Away Score"] = game.currentScore.away || 0;
-        }
-
-        // Add fulltime totals as separate columns (with filtering applied)
-        const filteredTotals = filterTotals(game.totals || []);
-        const totalsMap = new Map<
-          number,
-          { over: number | string | null; under: number | string | null }
-        >();
-        filteredTotals.forEach((total) => {
-          totalsMap.set(total.point, {
-            over: total.over,
-            under: total.under,
+        if (game.rawMarkets && game.rawMarkets.length > 0) {
+          game.rawMarkets.forEach((market) => {
+            const key = market.key || "unknown_market";
+            if (!shouldIncludeMarketAsExtraColumn(key)) return;
+            (market.outcomes || []).forEach((o) => {
+              if (o.point != null && !shouldKeepHalfPoint(Number(o.point))) return;
+              addOutcome(
+                key,
+                canonicalOutcomeKey(game, key, {
+                  name: o.name,
+                  ...(o.point != null ? { point: o.point } : {}),
+                  ...(o.description ? { description: o.description } : {}),
+                }),
+              );
+            });
           });
+        }
+
+        // Ensure core card markets are always present even without rawMarkets
+        if (game.homeOdds != null || game.drawOdds != null || game.awayOdds != null) {
+          addOutcome("h2h", "1");
+          addOutcome("h2h", "X");
+          addOutcome("h2h", "2");
+        }
+        if (game.doubleChance?.homeOrDraw != null || game.doubleChance?.drawOrAway != null || game.doubleChance?.homeOrAway != null) {
+          addOutcome("double_chance", "1X");
+          addOutcome("double_chance", "X2");
+          addOutcome("double_chance", "12");
+        }
+        if (game.bothTeamsToScore?.yes != null || game.bothTeamsToScore?.no != null) {
+          addOutcome("btts", "Yes");
+          addOutcome("btts", "No");
+        }
+        getAllTotals(game.totals || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          addOutcome("totals", `Over ${t.point}`);
+          addOutcome("totals", `Under ${t.point}`);
+        });
+        getAllTotals(game.totals_h1 || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          addOutcome("totals_h1", `Over ${t.point}`);
+          addOutcome("totals_h1", `Under ${t.point}`);
+        });
+        getAllTotals(game.totals_h2 || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          addOutcome("totals_h2", `Over ${t.point}`);
+          addOutcome("totals_h2", `Under ${t.point}`);
+        });
+      });
+
+      const orderOutcomeKeys = (marketKey: string, keys: string[]): string[] => {
+        if (marketKey === "h2h" || marketKey === "h2h_h1" || marketKey === "h2h_h2") {
+          const base = ["1", "X", "2"];
+          const extras = keys.filter((k) => !base.includes(k)).sort((a, b) => a.localeCompare(b));
+          return [...base.filter((k) => keys.includes(k)), ...extras];
+        }
+        if (marketKey === "double_chance") {
+          const base = ["1X", "12", "X2"];
+          const extras = keys.filter((k) => !base.includes(k)).sort((a, b) => a.localeCompare(b));
+          return [...base.filter((k) => keys.includes(k)), ...extras];
+        }
+        return [...keys].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      };
+
+      const orderedMarketKeys = [
+        ...CARD_MARKET_ORDER.filter((k) => marketOutcomeSetByKey.has(k)),
+        ...Array.from(marketOutcomeSetByKey.keys())
+          .filter((k) => !CARD_MARKET_ORDER.includes(k))
+          .sort((a, b) => a.localeCompare(b)),
+      ];
+
+      const orderedMarketColumns = orderedMarketKeys.flatMap((marketKey) => {
+        const title = CARD_MARKET_TITLES[marketKey] || getFriendlyMarketName(marketKey);
+        const outcomeKeys = orderOutcomeKeys(
+          marketKey,
+          Array.from(marketOutcomeSetByKey.get(marketKey) || []),
+        );
+        return outcomeKeys.map((outcomeKey) => ({
+          marketKey,
+          outcomeKey,
+          columnLabel: `${getMarketFamily(marketKey)} - ${title} - ${outcomeKey}`,
+        }));
+      });
+
+      // Prepare data for export - betting shop fixture format
+      const exportData = games.map((game, index) => {
+        // Format match time
+        const matchDate = new Date(game.matchTime);
+        const timeStr = matchDate.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        const dateStr = matchDate.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
         });
 
-        // Add columns for each unique total point found across all games
-        sortedTotalPoints.forEach((point) => {
-          const total = totalsMap.get(point);
-          row[`Totals ${point} Over`] = total?.over || "";
-          row[`Totals ${point} Under`] = total?.under || "";
+        // Build row in betting shop fixture format
+        const row: any = {
+          "No": index + 1,
+          "Date": dateStr,
+          "Time": timeStr,
+          "League": game.league || "",
+          "Home": game.homeTeam,
+          "Away": game.awayTeam,
+        };
+
+        const gameMarketOdds = new Map<string, number | string>();
+        const setOdd = (marketKey: string, outcomeKey: string, value: number | string | null | undefined) => {
+          gameMarketOdds.set(`${marketKey}::${outcomeKey}`, toCellValue(value));
+        };
+
+        // Canonical core card markets from top-level game fields.
+        setOdd("h2h", "1", game.homeOdds);
+        setOdd("h2h", "X", game.drawOdds);
+        setOdd("h2h", "2", game.awayOdds);
+
+        setOdd("double_chance", "1X", game.doubleChance?.homeOrDraw);
+        setOdd("double_chance", "X2", game.doubleChance?.drawOrAway);
+        setOdd("double_chance", "12", game.doubleChance?.homeOrAway);
+
+        setOdd("btts", "Yes", game.bothTeamsToScore?.yes);
+        setOdd("btts", "No", game.bothTeamsToScore?.no);
+
+        setOdd("h2h_h1", "1", game.h2h_h1?.home);
+        setOdd("h2h_h1", "X", game.h2h_h1?.draw);
+        setOdd("h2h_h1", "2", game.h2h_h1?.away);
+
+        setOdd("h2h_h2", "1", game.h2h_h2?.home);
+        setOdd("h2h_h2", "X", game.h2h_h2?.draw);
+        setOdd("h2h_h2", "2", game.h2h_h2?.away);
+
+        getAllTotals(game.totals || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          setOdd("totals", `Over ${t.point}`, t.over);
+          setOdd("totals", `Under ${t.point}`, t.under);
+        });
+        getAllTotals(game.totals_h1 || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          setOdd("totals_h1", `Over ${t.point}`, t.over);
+          setOdd("totals_h1", `Under ${t.point}`, t.under);
+        });
+        getAllTotals(game.totals_h2 || []).forEach((t) => {
+          if (!shouldKeepHalfPoint(t.point)) return;
+          setOdd("totals_h2", `Over ${t.point}`, t.over);
+          setOdd("totals_h2", `Under ${t.point}`, t.under);
         });
 
-        // Add halftime totals as separate columns (with filtering applied)
-        const filteredH1Totals = filterTotals(game.totals_h1 || []);
-        const h1TotalsMap = new Map<
-          number,
-          { over: number | string | null; under: number | string | null }
-        >();
-        filteredH1Totals.forEach((total) => {
-          h1TotalsMap.set(total.point, {
-            over: total.over,
-            under: total.under,
+        // Additional markets from raw markets (excluding already-covered keys).
+        if (game.rawMarkets && game.rawMarkets.length > 0) {
+          game.rawMarkets.forEach((market) => {
+            const marketKey = market.key || "unknown_market";
+            if (!shouldIncludeMarketAsExtraColumn(marketKey)) return;
+            (market.outcomes || []).forEach((outcome) => {
+              if (outcome.point != null && !shouldKeepHalfPoint(Number(outcome.point))) return;
+              const outcomeKey = canonicalOutcomeKey(game, marketKey, {
+                name: outcome.name,
+                ...(outcome.point != null ? { point: outcome.point } : {}),
+                ...(outcome.description ? { description: outcome.description } : {}),
+              });
+              setOdd(marketKey, outcomeKey, outcome.price);
+            });
           });
-        });
+        }
 
-        // Add columns for each unique halftime total point found across all games
-        sortedHalfTimeTotalPoints.forEach((point) => {
-          const total = h1TotalsMap.get(point);
-          row[`H1 Totals ${point} Over`] = total?.over || "";
-          row[`H1 Totals ${point} Under`] = total?.under || "";
-        });
-
-        // Add second half totals as separate columns (with filtering applied)
-        const filteredH2Totals = filterTotals(game.totals_h2 || []);
-        const h2TotalsMap = new Map<
-          number,
-          { over: number | string | null; under: number | string | null }
-        >();
-        filteredH2Totals.forEach((total) => {
-          h2TotalsMap.set(total.point, {
-            over: total.over,
-            under: total.under,
-          });
-        });
-
-        // Add columns for each unique second half total point found across all games
-        sortedSecondHalfTotalPoints.forEach((point) => {
-          const total = h2TotalsMap.get(point);
-          row[`H2 Totals ${point} Over`] = total?.over || "";
-          row[`H2 Totals ${point} Under`] = total?.under || "";
+        orderedMarketColumns.forEach((col) => {
+          row[col.columnLabel] = toCellValue(
+            gameMarketOdds.get(`${col.marketKey}::${col.outcomeKey}`),
+          );
         });
 
         return row;
       });
 
+      // Reorder columns by sparsity:
+      // - Keep fixture columns pinned on the left.
+      // - Keep denser odds columns next.
+      // - Move very sparse columns (>=90% missing) to the far right.
+      const pinnedLeftHeaders = ["No", "Date", "Time", "League", "Home", "Away"];
+      const firstRowHeaders = Object.keys(exportData[0] || {});
+      const dynamicHeaders = firstRowHeaders.filter(
+        (h) => !pinnedLeftHeaders.includes(h),
+      );
+      const totalRows = Math.max(1, exportData.length);
+
+      const missingRatioByHeader = new Map<string, number>();
+      for (const header of dynamicHeaders) {
+        let missingCount = 0;
+        for (const row of exportData) {
+          const value = row[header];
+          const isMissing =
+            value === "" ||
+            value === null ||
+            value === undefined;
+          if (isMissing) missingCount++;
+        }
+        missingRatioByHeader.set(header, missingCount / totalRows);
+      }
+
+      const denseHeaders = dynamicHeaders.filter(
+        (h) => (missingRatioByHeader.get(h) ?? 0) < 0.9,
+      );
+      const sparseHeaders = dynamicHeaders.filter(
+        (h) => (missingRatioByHeader.get(h) ?? 0) >= 0.9,
+      );
+
+      const finalHeaderOrder = [
+        ...pinnedLeftHeaders.filter((h) => firstRowHeaders.includes(h)),
+        ...denseHeaders,
+        ...sparseHeaders,
+      ];
+
+      const reorderedExportData = exportData.map((row) => {
+        const orderedRow: Record<string, any> = {};
+        for (const header of finalHeaderOrder) {
+          orderedRow[header] = row[header] ?? "";
+        }
+        return orderedRow;
+      });
+
       // Create a new workbook
       const workbook = XLSX.utils.book_new();
 
-      // Convert data to worksheet
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      // Convert data to worksheet (without title first)
+      const worksheet = XLSX.utils.json_to_sheet(reorderedExportData);
 
-      // Set column widths for better readability
-      // Use more appropriate widths for different column types
-      const headers = Object.keys(exportData[0] || {});
+      // Build 2-row header:
+      // Row 1: Market type titles (merged)
+      // Row 2: Specific outcomes/columns
+      const numberOfCols = Object.keys(reorderedExportData[0] || {}).length;
+      const headers = Object.keys(reorderedExportData[0] || {});
+      
+      // Shift all data down by 1 row:
+      // row 0 => grouped section headers, row 1 => original column headers
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      const rowShift = 1;
+      for (let R = range.e.r; R >= 0; --R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const oldCell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
+          if (oldCell) {
+            worksheet[XLSX.utils.encode_cell({ r: R + rowShift, c: C })] = oldCell;
+          }
+        }
+      }
+
+      // Add grouped section headers in row 1 (index 0)
+      if (!worksheet['!merges']) worksheet['!merges'] = [];
+
+      // Build grouped section labels on row 1 (index 0)
+      const getHeaderGroup = (header: string): string => {
+        if (["No", "Date", "Time", "League", "Home", "Away"].includes(header)) return "Fixture Info";
+        if (header.startsWith("FT ") || header === "1" || header === "X" || header === "2") return "Full Time";
+        if (header.startsWith("1H ") || header.startsWith("H1") || header.startsWith("HX") || header.startsWith("H2") || header.startsWith("HO-") || header.startsWith("HU-")) return "1st Half";
+        if (header.startsWith("2H ")) return "2nd Half";
+        if (header.startsWith("DC ")) return "Double Chance";
+        if (header.startsWith("BTS ")) return "BTTS";
+        if (header.includes(" - ")) {
+          const parts = header.split(" - ");
+          if (parts.length >= 2) return `${parts[0]} - ${parts[1]}`;
+          return parts[0] || "Other Markets";
+        }
+        if (header.startsWith("O-") || header.startsWith("U-")) return "Full Time";
+        return "Other Odds";
+      };
+
+      let currentGroup = getHeaderGroup(headers[0] || "");
+      let groupStart = 0;
+      for (let idx = 0; idx < headers.length; idx++) {
+        const group = getHeaderGroup(headers[idx] || "");
+        const nextGroup =
+          idx < headers.length - 1
+            ? getHeaderGroup(headers[idx + 1] || "")
+            : null;
+        if (group !== currentGroup) {
+          currentGroup = group;
+          groupStart = idx;
+        }
+        if (nextGroup !== group) {
+          const startCell = XLSX.utils.encode_cell({ r: 0, c: groupStart });
+          worksheet[startCell] = { v: group, t: "s" };
+          worksheet["!merges"].push({
+            s: { r: 0, c: groupStart },
+            e: { r: 0, c: idx },
+          });
+        }
+      }
+
+      // Row 2 should show only specific outcomes/field names.
+      // For market columns shaped like "Family - Market Title - Outcome",
+      // keep only the final "Outcome" segment.
+      const getHeaderOutcomeLabel = (header: string): string => {
+        if (header.includes(" - ")) {
+          const parts = header.split(" - ").map((p) => p.trim()).filter(Boolean);
+          return parts[parts.length - 1] || header;
+        }
+        return header;
+      };
+      headers.forEach((header, idx) => {
+        const cell = XLSX.utils.encode_cell({ r: 1, c: idx });
+        worksheet[cell] = { v: getHeaderOutcomeLabel(header), t: "s" };
+      });
+      
+      // Update range to include grouped header row
+      worksheet['!ref'] = XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: range.e.r + rowShift, c: range.e.c }
+      });
+
+      // Dynamic column widths based on real content (header + data cells).
       const wscols = headers.map((header) => {
-        // Narrower columns for odds and IDs
-        if (
-          header.includes("Odds") ||
-          header.includes("ID") ||
-          header.includes("DC") ||
-          header.includes("BTTS") ||
-          header.includes("Totals") ||
-          header.includes("Score")
-        ) {
-          return { wch: 12 };
+        let maxLen = getHeaderOutcomeLabel(header).length;
+
+        for (const row of reorderedExportData) {
+          const value = row[header];
+          const text = value == null ? "" : String(value);
+          if (text.length > maxLen) maxLen = text.length;
         }
-        // Medium width for teams and league
-        if (
-          header.includes("Team") ||
-          header === "League" ||
-          header === "Sport" ||
-          header === "Status"
-        ) {
-          return { wch: 20 };
-        }
-        // Wider for match time
-        if (header.includes("Match Time")) {
-          return { wch: 25 };
-        }
-        // Default width
-        return { wch: 15 };
+
+        // Small padding and sane bounds to avoid unusable columns.
+        const width = Math.min(Math.max(maxLen + 2, 4), 60);
+        return { wch: width };
       });
       worksheet["!cols"] = wscols;
 

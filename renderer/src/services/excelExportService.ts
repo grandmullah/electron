@@ -167,8 +167,17 @@ class ExcelExportService {
        */
       async generateExcelFile(exportData: ExportSummaryData, days: number): Promise<void> {
             try {
-                  // Import xlsx library dynamically
-                  const XLSX = await import('xlsx');
+                  // Import xlsx library dynamically with error handling
+                  let XLSX: any;
+                  try {
+                        XLSX = await import('xlsx');
+                        if (!XLSX || !XLSX.utils || !XLSX.utils.book_new) {
+                              throw new Error('XLSX library failed to load properly');
+                        }
+                  } catch (importError: any) {
+                        console.error('Failed to load xlsx library:', importError);
+                        throw new Error('Failed to load Excel library. Please check your installation.');
+                  }
 
                   // Create workbook
                   const workbook = XLSX.utils.book_new();
