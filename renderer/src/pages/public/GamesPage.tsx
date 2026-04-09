@@ -1530,7 +1530,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
         // Build row in betting shop fixture format
         const row: any = {
-          "No": index + 1,
+          "Game Index": game.team_index?.fullIndex ?? index + 1,
           "Date": dateStr,
           "Time": timeStr,
           "League": game.league || "",
@@ -1609,7 +1609,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
       // - Keep fixture columns pinned on the left.
       // - Keep denser odds columns next.
       // - Move very sparse columns (>=90% missing) to the far right.
-      const pinnedLeftHeaders = ["No", "Date", "Time", "League", "Home", "Away"];
+      const pinnedLeftHeaders = ["Game Index", "Date", "Time", "League", "Home", "Away"];
       const firstRowHeaders = Object.keys(exportData[0] || {});
       const dynamicHeaders = firstRowHeaders.filter(
         (h) => !pinnedLeftHeaders.includes(h),
@@ -1681,7 +1681,7 @@ export const GamesPage: React.FC<GamesPageProps> = ({ onNavigate }) => {
 
       // Build grouped section labels on row 1 (index 0)
       const getHeaderGroup = (header: string): string => {
-        if (["No", "Date", "Time", "League", "Home", "Away"].includes(header)) return "Fixture Info";
+        if (["Game Index", "Date", "Time", "League", "Home", "Away"].includes(header)) return "Fixture Info";
         if (header.startsWith("FT ") || header === "1" || header === "X" || header === "2") return "Full Time";
         if (header.startsWith("1H ") || header.startsWith("H1") || header.startsWith("HX") || header.startsWith("H2") || header.startsWith("HO-") || header.startsWith("HU-")) return "1st Half";
         if (header.startsWith("2H ")) return "2nd Half";
